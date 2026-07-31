@@ -12,11 +12,16 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from flowos.service.controllers.http.plan_progress import router as plan_progress_router
 from flowos.service.controllers.http.system import router as system_router
+from flowos.service.services.infrastructure.persistence.engine import (
+    create_session_factory,
+    create_sqlite_engine,
+)
 from flowos.service.services.infrastructure.runtime import RuntimeManager
 
 
-def create_app(runtime: RuntimeManager) -> FastAPI:
+def create_app(runtime: RuntimeManager, engine=None) -> FastAPI:
     """Kreira i konfiguriše FastAPI aplikaciju.
 
     Args:
@@ -43,6 +48,12 @@ def create_app(runtime: RuntimeManager) -> FastAPI:
 
     # Rute
     app.include_router(system_router, tags=["System"])
+    app.include_router(plan_progress_router, tags=["Plan Progress"])
+
+    # Session factory
+    if engine is None:
+        engine = create_sqlite_engine()
+    app.state.session_factory = create_session_factory(engine)
     # Buduće rute — dodaju se kako servisi postanu dostupni
     # app.include_router(projects_router, prefix="/projects", tags=["Projects"])
     # app.include_router(tasks_router, prefix="/tasks", tags=["Tasks"])
@@ -67,6 +78,7 @@ def _make_lifespan(runtime: RuntimeManager):
 
         logger = setup_logging(level=logging.INFO)
         app.state.runtime = runtime
+
         logger.info("FlowOS servis se pokrece (pid=%d, port=%d)", runtime.pid, runtime.port)
 
         yield  # Servis radi...

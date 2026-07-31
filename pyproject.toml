@@ -81,6 +81,7 @@ ignore = ["E501"]  # line-length handled by formatter
 "src/flowos/gui/app.py" = ["T201"]
 "src/flowos/service/app.py" = ["T201"]
 "src/flowos/shared/contracts/*.py" = ["B904"]  # raise ValueError from validator je standardna Pydantic praksa
+"src/flowos/service/controllers/**/*.py" = ["B008", "B006"]  # FastAPI standardni patterni
 
 [tool.ruff.format]
 quote-style = "double"

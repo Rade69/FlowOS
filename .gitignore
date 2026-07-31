@@ -1,0 +1,62 @@
+# FlowOS .gitignore
+# Windows-first lokalni lični operativni sistem
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+
+# Node / Electron
+node_modules/
+out/
+release/
+
+# SQLite
+*.db
+*.sqlite
+*.sqlite3
+
+# Okruženje
+.env
+.env.*
+!.env.example
+
+# Tajne / kredencijali
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+*_credentials.*
+
+# Logovi
+*.log
+logs/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db
+.DS_Store
+Desktop.ini
+
+# FlowOS interni
+.flowos/
+worktrees/
+
+# Backup
+*.bak
+*.backup
+backups/

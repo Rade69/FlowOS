@@ -1,0 +1,125 @@
+# FlowOS — lokalni lični operativni sistem za koordinaciju agentskih sesija
+#
+# PySide6 + Qt Widgets GUI, FastAPI backend, SQLite/WAL,
+# View → Controller → Services troslojna arhitektura.
+# Windows 10/11 primarna platforma.
+
+[project]
+name = "flowos"
+version = "0.1.0"
+description = "Lokalni lični operativni sistem za koordinaciju agentskih sesija"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "Radovan", email = "radovan@flowos.local" }]
+keywords = ["agent", "coordination", "desktop", "cli", "worktree"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Version Control :: Git",
+]
+
+dependencies = [
+    "pyside6>=6.8",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+    "pydantic>=2.10",
+    "sqlalchemy>=2.0",
+    "alembic>=1.14",
+    "watchdog>=6.0",
+    "typer>=0.15",
+    "httpx>=0.28",
+    "pywin32>=308; sys_platform == 'win32'",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-qt>=4.4",
+    "pytest-asyncio>=0.25",
+    "coverage>=7.6",
+    "ruff>=0.9",
+    "mypy>=1.14",
+]
+
+[project.scripts]
+flowos = "flowos.cli.app:main"
+flowos-gui = "flowos.gui.app:main"
+flowos-service = "flowos.service.app:main"
+
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E", "W",    # pycodestyle
+    "F",         # pyflakes
+    "I",         # isort
+    "B",         # flake8-bugbear
+    "C4",        # flake8-comprehensions
+    "SIM",       # flake8-simplify
+    "T20",       # flake8-print
+    "UP",        # pyupgrade
+]
+ignore = ["E501"]  # line-length handled by formatter
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/*.py" = ["T201"]
+"src/flowos/gui/app.py" = ["T201"]
+"src/flowos/service/app.py" = ["T201"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = [
+    "pyside6.*",
+    "PySide6.*",
+    "watchdog.*",
+    "pywin32.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+pythonpath = ["src"]
+asyncio_mode = "auto"
+qt_api = "pyside6"
+
+[tool.coverage.run]
+source = ["src/flowos"]
+omit = ["tests/*", "*/__init__.py"]
+
+[tool.coverage.report]
+exclude_also = [
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]

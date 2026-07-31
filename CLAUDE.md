@@ -2,7 +2,7 @@
 
 > **BOOTSTRAP STATUS: ZAVRŠEN 2026-07-31 — vidi agent_reports/2026-07-31_bootstrap.md**
 
-Ovaj fajl vodi Claude Code i druge agente kroz pravila rada specifična za FlowOS. Opšta obavezna pravila za sve agente sažeta su u [AGENTS.md](./AGENTS.md), a ciljna arhitektura, faze, gateovi i acceptance kriteriji nalaze se u [FlowOS-kompletan-plan.md](./FlowOS-kompletan-plan.md).
+Ovaj fajl vodi Claude Code i druge agente kroz pravila rada specifična za FlowOS. Opšta obavezna pravila za sve agente sažeta su u [AGENTS.md](./AGENTS.md), a ciljna arhitektura, faze, gateovi i acceptance kriteriji nalaze se u [FlowOS-novi-detaljan-plan-PySide6.md](./FlowOS-novi-detaljan-plan-PySide6.md). Originalni [FlowOS-kompletan-plan.md](./FlowOS-kompletan-plan.md) ostaje kao referenca za backend arhitekturu.
 
 ## Šta je FlowOS
 
@@ -36,7 +36,8 @@ FlowOS Core
 
 ## Izvori istine
 
-- [FlowOS-kompletan-plan.md](./FlowOS-kompletan-plan.md) je izvor istine za arhitekturu, opseg, redoslijed faza, gateove i odluke o tome šta se namjerno ne gradi.
+- [FlowOS-novi-detaljan-plan-PySide6.md](./FlowOS-novi-detaljan-plan-PySide6.md) je izvor istine za arhitekturu, opseg, redoslijed faza, gateove i odluke o tome šta se namjerno ne gradi.
+- [FlowOS-kompletan-plan.md](./FlowOS-kompletan-plan.md) ostaje kao referenca za backend arhitekturu, podatkovni model i faze 5+.
 - Kod, testovi, migracije i stvarni artefakti su izvor istine za ono što je zaista implementirano.
 - Dok ne postoji poseban implementacijski tracker, status faze se utvrđuje provjerom plana, acceptance kriterija i koda. Ne oslanjati se na memoriju ili ranije poruke.
 - Kada tracker bude uveden, mora se ažurirati u istom commitu kao implementacija i postaje operativni izvor statusa. Ne prepravljati arhitektonski plan samo radi označavanja napretka.
@@ -105,20 +106,28 @@ Za nepoznatu biblioteku/API, nejasne performanse, neprovjeren format, nepoznato 
 ## Arhitektura — ne pregovara se bez izmjene plana
 
 ```text
-Electron/React GUI
-        ↓
-tanak Electron app shell i siguran IPC
-        ↓
-Python 3.12 + FastAPI lokalni servis
+PySide6 + Qt Widgets GUI (flowos-gui.exe)
+        ↓ HTTP/WebSocket (127.0.0.1)
+FastAPI lokalni servis (flowos-service.exe)
+        ↓ subprocess / Job Objects
+Claude Code | Codex | pi | CLI
         ↓
 SQLite/WAL + modularni domeni
 ```
 
-### UI i app shell
+Tri izvršna ulaza:
+- `flowos-gui.exe` — PySide6 Qt Widgets aplikacija (View → Controller → Services)
+- `flowos-service.exe` — FastAPI backend, jedini vlasnik baze, watchera i procesa
+- `flowos.exe` — Typer CLI wrapper za registraciju sesija
 
-- React/Electron renderer prikazuje stanje i prikuplja korisničke odluke.
-- Electron main upravlja lifecycleom aplikacije, sigurnim IPC-em i Python procesom.
-- Poslovna, agentska, watcher, Git/worktree, storage i AI logika ne pripadaju Electron main procesu.
+Electron, React, Node.js, npm, pnpm, yarn i QML su zabranjeni — nisu dio aplikacije ni build procesa.
+
+### GUI — PySide6 + Qt Widgets
+
+- View je isključivo prikaz i prikupljanje korisničkih akcija. Ne sme direktno pozivati Services.
+- Controller povezuje View signale sa GUI Services pozivima. Ne sme pristupati bazi/Git-u/subprocess-u.
+- GUI Services komunicira sa backendom preko HTTP/WebSocket-a (127.0.0.1).
+- Poslovna, agentska, watcher, Git/worktree, storage i AI logika ne pripadaju GUI procesu.
 
 ### Python backend
 

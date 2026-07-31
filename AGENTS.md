@@ -12,13 +12,13 @@ FlowOS je lokalni lični operativni sistem za:
 - upravljanje projektima, zadacima, odlukama i izvještajima;
 - kasniju nadogradnju modulima za Managed Execution, observability, durable izvršavanje i verifier tokove.
 
-Glavni arhitektonski i fazni plan je [FlowOS-kompletan-plan.md](./FlowOS-kompletan-plan.md). Pročitati relevantne dijelove plana prije implementacije.
+Glavni arhitektonski i fazni plan je [FlowOS-novi-detaljan-plan-PySide6.md](./FlowOS-novi-detaljan-plan-PySide6.md). Originalni plan [FlowOS-kompletan-plan.md](./FlowOS-kompletan-plan.md) ostaje kao referenca za backend arhitekturu. Pročitati relevantne dijelove oba plana prije implementacije.
 
 ## Arhitektonska pravila — obavezna
 
-- Electron/React je UI sloj.
-- Python 3.12 + FastAPI backend je stalni lokalni servis (system tray/autostart) i vlasnik domena, persistencea, `watchdog` watchera, Git/worktree koordinacije, agentskih adaptera i budućih izvršnih modula. Mora nastaviti pratiti sesije kada je GUI zatvoren.
-- Electron main proces ostaje tanak app shell: lifecycle, siguran IPC i pokretanje/nadzor lokalnog Python servisa. **Ne dodavati poslovnu, agentsku, storage, watcher, Git ili AI logiku u Electron main.**
+- **PySide6 + Qt Widgets je GUI sloj.** Electron, React, Node.js, npm, pnpm, yarn i QML su zabranjeni — nisu dio aplikacije ni build procesa.
+- Python 3.12 + FastAPI backend (`flowos-service.exe`) je stalni lokalni servis i vlasnik domena, persistencea, `watchdog` watchera, Git/worktree koordinacije, agentskih adaptera i budućih izvršnih modula. Sluša samo na 127.0.0.1. Mora nastaviti pratiti sesije kada je GUI zatvoren.
+- GUI proces (`flowos-gui.exe`) je PySide6 Qt Widgets aplikacija. Arhitektura GUI-ja je View → Controller → Services — View ne sme direktno pozivati Services, Controller ne sme pristupati bazi/Git-u/subprocess-u. **Ne dodavati poslovnu, agentsku, storage, watcher, Git ili AI logiku u GUI proces.**
 - Sistem počinje kao modularni monolit. Ne uvoditi mikroservise, broker, PostgreSQL, distribuirane workere ili kontejnere prije faze i dokazane potrebe iz plana.
 - `FlowOS Core` ne smije zavisiti od konkretnog agentskog adaptera.
 - Konkretne CLI/API razlike pripadaju isključivo adapterima i capability ugovorima.
@@ -41,7 +41,7 @@ Glavni arhitektonski i fazni plan je [FlowOS-kompletan-plan.md](./FlowOS-komplet
 - Ne snimati privatno rezonovanje modela niti svaki token.
 - Ne graditi narednu fazu dok acceptance kriterij i vertikalni eksperiment prethodne faze nisu dokazani.
 - Ne brisati napuštene worktreeje, artefakte ili djelimičan rad prije retention perioda i korisničkog pregleda.
-- Ne commitovati API ključeve, `.env*` fajlove s tajnama, lokalne baze, logove, build output, `node_modules`, virtualna okruženja ili korisničke artefakte.
+- Ne commitovati API ključeve, `.env*` fajlove s tajnama, lokalne baze, logove, build output, virtualna okruženja ili korisničke artefakte.
 
 ## Namjerno odgođeno — ne uvoditi prije uslova iz plana
 

@@ -7,17 +7,73 @@ Ne koristiti dependency-injection framework. Svaka zavisnost
 se prosleđuje eksplicitno kroz konstruktor.
 """
 
-# Placeholder — popunjava se u fazi 1
-# from flowos.service.services.projects import ProjectService
-# from flowos.service.controllers.http.projects import create_projects_router
-#
-# def create_app() -> FastAPI:
-#     project_service = ProjectService(session_factory)
-#     app = FastAPI()
-#     app.include_router(create_projects_router(project_service))
-#     return app
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from flowos.service.controllers.http.system import router as system_router
+from flowos.service.services.infrastructure.runtime import RuntimeManager
 
 
-def create_app():
-    """Vraća konfigurisanu FastAPI aplikaciju."""
-    raise NotImplementedError("Backend nije implementiran u fazi 0")
+def create_app(runtime: RuntimeManager) -> FastAPI:
+    """Kreira i konfiguriše FastAPI aplikaciju.
+
+    Args:
+        runtime: RuntimeManager instanca (lock, descriptor, port).
+
+    Returns:
+        Konfigurisana FastAPI aplikacija spremna za uvicorn.
+    """
+    app = FastAPI(
+        title="FlowOS",
+        version="0.1.0",
+        description="Lokalni lični operativni sistem za koordinaciju agentskih sesija",
+        lifespan=_make_lifespan(runtime),
+    )
+
+    # CORS — dozvoli samo loopback
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://127.0.0.1:*", "http://localhost:*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    # Rute
+    app.include_router(system_router, tags=["System"])
+    # Buduće rute — dodaju se kako servisi postanu dostupni
+    # app.include_router(projects_router, prefix="/projects", tags=["Projects"])
+    # app.include_router(tasks_router, prefix="/tasks", tags=["Tasks"])
+    # app.include_router(sessions_router, prefix="/sessions", tags=["Sessions"])
+
+    return app
+
+
+def _make_lifespan(runtime: RuntimeManager):
+    """Kreira lifespan handler za FastAPI.
+
+    Startup: inicijalizuje resurse (baza, logovi, itd.)
+    Shutdown: čisti resurse (oslobađa lock, briše descriptor)
+    """
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        # Startup
+        import logging
+
+        from flowos.service.services.infrastructure.logging import setup_logging
+
+        logger = setup_logging(level=logging.INFO)
+        app.state.runtime = runtime
+        logger.info("FlowOS servis se pokrece (pid=%d, port=%d)", runtime.pid, runtime.port)
+
+        yield  # Servis radi...
+
+        # Shutdown
+        logger.info("FlowOS servis se gasi")
+        runtime.delete_descriptor()
+        runtime.release_lock()
+
+    return lifespan

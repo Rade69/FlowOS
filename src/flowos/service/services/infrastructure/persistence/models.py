@@ -78,6 +78,9 @@ class Task(Base):
         DateTime(timezone=True), nullable=True, onupdate=_utcnow
     )
     done_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    plan_item_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("plan_items.id", ondelete="SET NULL"), nullable=True
+    )
 
     # Veze
     project: Mapped["Project"] = relationship("Project", back_populates="tasks")
@@ -126,6 +129,9 @@ class AgentSession(Base):
     )
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     exit_code: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    plan_item_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("plan_items.id", ondelete="SET NULL"), nullable=True
+    )
 
     # Veze
     task: Mapped["Task | None"] = relationship("Task", back_populates="sessions")

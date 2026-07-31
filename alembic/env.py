@@ -1,3 +1,4 @@
+# ruff: noqa: E402, I001
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
@@ -27,6 +28,10 @@ from flowos.service.services.infrastructure.persistence.base import Base  # noqa
 from flowos.service.services.infrastructure.persistence.engine import (  # noqa: E402
     get_data_directory,
 )
+
+# Osiguraj da su svi modeli importovani pre autogenerate
+import flowos.service.services.infrastructure.persistence.models  # noqa: E402, F401
+import flowos.service.services.infrastructure.persistence.plan_models  # noqa: E402, F401
 
 target_metadata = Base.metadata
 

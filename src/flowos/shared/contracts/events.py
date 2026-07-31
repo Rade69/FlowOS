@@ -2,7 +2,9 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+
+from flowos.shared.enums.event import EventType
 
 
 class SessionEventCreate(BaseModel):
@@ -12,6 +14,32 @@ class SessionEventCreate(BaseModel):
     source: str = "WRAPPER"
     idempotency_key: str
     occurred_at: datetime | None = None
+
+    @field_validator("event_type")
+    @classmethod
+    def event_type_valid(cls, v: str) -> str:
+        try:
+            EventType(v)
+        except ValueError:
+            raise ValueError(
+                f"Neispravan event_type: '{v}'. "
+                f"Dozvoljene vrednosti: {[e.value for e in EventType]}"
+            )
+        return v
+
+    @field_validator("summary")
+    @classmethod
+    def summary_not_empty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("summary ne sme biti prazan")
+        return v.strip()
+
+    @field_validator("idempotency_key")
+    @classmethod
+    def idempotency_key_not_empty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("idempotency_key ne sme biti prazan")
+        return v.strip()
 
 
 class SessionEventResponse(BaseModel):

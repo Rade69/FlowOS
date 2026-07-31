@@ -2,12 +2,27 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+
+from flowos.shared.enums.report import UserVerdict
 
 
 class ReportUpdate(BaseModel):
     user_verdict: str | None = None  # ACCEPTED | NEEDS_WORK | REJECTED
     notes: str | None = None
+
+    @field_validator("user_verdict")
+    @classmethod
+    def user_verdict_valid(cls, v: str | None) -> str | None:
+        if v is not None:
+            try:
+                UserVerdict(v)
+            except ValueError:
+                raise ValueError(
+                    f"Neispravan user_verdict: '{v}'. "
+                    f"Dozvoljene vrednosti: {[e.value for e in UserVerdict]}"
+                )
+        return v
 
 
 class ReportResponse(BaseModel):

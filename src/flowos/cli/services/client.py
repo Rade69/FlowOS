@@ -6,28 +6,34 @@ Kada backend nije dostupan, upisuje događaje u JSONL spool:
 Svaki zapis ima idempotency ključ za siguran ponovni uvoz.
 """
 
-from pathlib import Path
+
+import httpx
 
 
 class CliApiClient:
-    """API klijent za FlowOS backend iz CLI-ja.
-
-    Koristi httpx za HTTP pozive. Pri nedostupnosti backend-a,
-    upisuje u offline JSONL spool.
-    """
+    """API klijent za FlowOS backend iz CLI-ja."""
 
     def __init__(self, base_url: str = "http://127.0.0.1:9100") -> None:
         self._base_url = base_url.rstrip("/")
-        self._spool_dir = Path.home() / "AppData" / "Local" / "FlowOS" / "spool"
 
     @property
     def base_url(self) -> str:
         return self._base_url
 
-    # Placeholder metode — implementirati u fazi 2
-    # def register_session(self, data: SessionCreate) -> SessionResponse: ...
-    # def end_session(self, session_id: str) -> SessionResponse: ...
-    # def add_event(self, session_id: str, data: SessionEventCreate) -> ...: ...
+    def get(self, path: str) -> dict | list:
+        """GET zahtev ka API-ju."""
+        r = httpx.get(f"{self._base_url}{path}", timeout=5.0)
+        r.raise_for_status()
+        return r.json()
 
+    def post(self, path: str, data: dict) -> dict:
+        """POST zahtev ka API-ju."""
+        r = httpx.post(f"{self._base_url}{path}", json=data, timeout=5.0)
+        r.raise_for_status()
+        return r.json()
 
-__all__ = ["CliApiClient"]
+    def delete(self, path: str) -> dict:
+        """DELETE zahtev ka API-ju."""
+        r = httpx.delete(f"{self._base_url}{path}", timeout=5.0)
+        r.raise_for_status()
+        return r.json()

@@ -154,6 +154,7 @@ def _status_badge(status: str) -> str:
 
 class TopBar(QFrame):
     project_changed = Signal(str)
+    refresh_requested = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -198,6 +199,7 @@ class TopBar(QFrame):
         refresh_btn = QPushButton("↻")
         refresh_btn.setFixedSize(32, 32)
         refresh_btn.setStyleSheet(f"background: {BG_CARD}; border: 1px solid {BORDER}; border-radius: {RADIUS_SM}px; color: {TEXT_PRIMARY};")
+        refresh_btn.clicked.connect(self.refresh_requested.emit)
         layout.addWidget(refresh_btn)
 
 

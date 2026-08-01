@@ -16,6 +16,9 @@ from flowos.service.controllers.http.plan_progress import router as plan_progres
 from flowos.service.controllers.http.project_resume import (
     router as project_resume_router,
 )
+from flowos.service.controllers.http.sessions import (
+    router as sessions_router,
+)
 from flowos.service.controllers.http.projects import router as projects_router
 from flowos.service.controllers.http.system import router as system_router
 from flowos.service.controllers.http.tasks import router as tasks_router
@@ -46,6 +49,7 @@ def create_app(runtime: RuntimeManager, engine=None) -> FastAPI:
     app.include_router(system_router, tags=["System"])
     app.include_router(projects_router, tags=["Projects"])
     app.include_router(tasks_router, tags=["Tasks"])
+    app.include_router(sessions_router, tags=["Sessions"])
     app.include_router(plan_progress_router, tags=["Plan Progress"])
     app.include_router(project_resume_router, tags=["Project Resume"])
 

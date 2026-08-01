@@ -214,6 +214,74 @@ def resume(project_id: str = typer.Option(..., "--project", "-p")):
 
 
 # ═══════════════════════════════════════════════════════════════════
+# Sesije
+# ═══════════════════════════════════════════════════════════════════
+
+
+@session_app.command("start")
+def session_start(
+    agent: str = typer.Option(..., "--agent", "-a"),
+    project: str = typer.Option(..., "--project", "-p"),
+    repo: str = typer.Option(..., "--repo", "-r"),
+    task: Optional[str] = typer.Option(None, "--task", "-t"),
+    model: Optional[str] = typer.Option(None, "--model", "-m"),
+    worktree: Optional[str] = typer.Option(None, "--worktree", "-w"),
+    plan_item: Optional[str] = typer.Option(None, "--plan-item"),
+):
+    """Pokreni novu agentsku sesiju."""
+    client = _get_client()
+    import os
+
+    try:
+        s = client.post("/sessions", {
+            "project_id": project, "agent_type": agent, "repo_path": repo,
+            "task_id": task, "model_name": model, "worktree_path": worktree,
+            "plan_item_id": plan_item, "pid": os.getpid(),
+        })
+        typer.echo(f"✅ Sesija pokrenuta: {s['id']}")
+        typer.echo(f"   Status: {s['status']}")
+    except Exception as e:
+        typer.echo(f"Greška: {e}", err=True)
+        raise typer.Exit(code=1)
+
+
+@session_app.command("end")
+def session_end(
+    session_id: str = typer.Argument(...),
+    exit_code: Optional[int] = typer.Option(None, "--exit-code", "-e"),
+):
+    """Završi sesiju."""
+    client = _get_client()
+    try:
+        body = {"exit_code": exit_code} if exit_code is not None else {}
+        s = client.post(f"/sessions/{session_id}/end", body)
+        typer.echo(f"✅ Sesija završena: {s['id']} ({s['status']})")
+    except Exception as e:
+        typer.echo(f"Greška: {e}", err=True)
+        raise typer.Exit(code=1)
+
+
+@session_app.command("list")
+def session_list(
+    project: str = typer.Option(..., "--project", "-p"),
+    active_only: bool = typer.Option(False, "--active"),
+):
+    """Prikaži sesije za projekat."""
+    client = _get_client()
+    try:
+        path = f"/sessions/active?project_id={project}" if active_only else f"/sessions?project_id={project}"
+        sessions = client.get(path)
+        if not sessions:
+            typer.echo("Nema sesija.")
+            return
+        for s in sessions:
+            typer.echo(f"  {s['id'][:8]}... {s['agent_type']} [{s['status']}] {s.get('started_at', '')[:16]}")
+    except Exception as e:
+        typer.echo(f"Greška: {e}", err=True)
+        raise typer.Exit(code=1)
+
+
+# ═══════════════════════════════════════════════════════════════════
 
 
 def main() -> int:

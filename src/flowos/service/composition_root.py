@@ -13,7 +13,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from flowos.service.controllers.http.plan_progress import router as plan_progress_router
+from flowos.service.controllers.http.projects import router as projects_router
 from flowos.service.controllers.http.system import router as system_router
+from flowos.service.controllers.http.tasks import router as tasks_router
 from flowos.service.services.infrastructure.persistence.engine import (
     create_session_factory,
     create_sqlite_engine,
@@ -48,6 +50,8 @@ def create_app(runtime: RuntimeManager, engine=None) -> FastAPI:
 
     # Rute
     app.include_router(system_router, tags=["System"])
+    app.include_router(projects_router, tags=["Projects"])
+    app.include_router(tasks_router, tags=["Tasks"])
     app.include_router(plan_progress_router, tags=["Plan Progress"])
 
     # Session factory

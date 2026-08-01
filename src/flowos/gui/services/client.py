@@ -22,6 +22,7 @@ class GuiApiClient(QObject):
     project_deleted = Signal(str)
     plan_progress_received = Signal(dict)
     resume_received = Signal(dict)
+    sessions_received = Signal(list)
     error_occurred = Signal(int, str)
 
     def __init__(self, base_url: str = "http://127.0.0.1:9100", parent=None):
@@ -62,6 +63,11 @@ class GuiApiClient(QObject):
 
     def regenerate_resume(self, project_id: str):
         self._post(f"/projects/{project_id}/resume/regenerate", {}, self.resume_received)
+
+    # ── Sessions ───────────────────────────────────────
+
+    def get_active_sessions(self, project_id: str):
+        self._get(f"/sessions/active?project_id={project_id}", self.sessions_received)
 
     # ── HTTP helpers ───────────────────────────────────
 

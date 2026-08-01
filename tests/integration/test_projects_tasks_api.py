@@ -46,7 +46,13 @@ def app(engine):
     from flowos.service.controllers.http.tasks import router as tasks_router
 
     app = FastAPI(title="FlowOS Test", version="0.1.0")
-    app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     app.include_router(system_router)
     app.include_router(projects_router)
     app.include_router(tasks_router)
@@ -130,7 +136,9 @@ class TestTasksAPI:
         return r.json()["id"]
 
     def test_create(self, client: TestClient, project_id: str):
-        resp = client.post("/tasks", json={"project_id": project_id, "title": "Implementirati login"})
+        resp = client.post(
+            "/tasks", json={"project_id": project_id, "title": "Implementirati login"}
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["title"] == "Implementirati login"

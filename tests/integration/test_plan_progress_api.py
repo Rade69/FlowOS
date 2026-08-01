@@ -188,7 +188,9 @@ class TestStatusActions:
     def test_mark_implemented(self, client: TestClient, plan_data: dict):
         item_id = plan_data["item_ids"][0]
         client.post(f"/plans/items/{item_id}/start")
-        resp = client.post(f"/plans/items/{item_id}/mark-implemented", json={"reason": "Agent zavrsio"})
+        resp = client.post(
+            f"/plans/items/{item_id}/mark-implemented", json={"reason": "Agent zavrsio"}
+        )
         assert resp.status_code == 200
         assert resp.json()["status"] == "IMPLEMENTED"
 

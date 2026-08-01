@@ -66,7 +66,9 @@ def _make_phase(session: Session, plan_id: str) -> PlanPhase:
     return phase
 
 
-def _make_item(session: Session, phase_id: str, key: str, title: str, status: str = "NOT_STARTED", **kw):
+def _make_item(
+    session: Session, phase_id: str, key: str, title: str, status: str = "NOT_STARTED", **kw
+):
     item = PlanItem(plan_phase_id=phase_id, item_key=key, title=title, status=status, **kw)
     session.add(item)
     session.flush()
@@ -115,7 +117,14 @@ class TestResumeRegeneration:
     def test_blocked_item(self, session: Session, project: Project):
         plan = _make_plan(session, project.id)
         phase = _make_phase(session, plan.id)
-        _make_item(session, phase.id, "FLOW-BLK", "Blocked", status="BLOCKED", blocked_reason="Čeka se zavisnost")
+        _make_item(
+            session,
+            phase.id,
+            "FLOW-BLK",
+            "Blocked",
+            status="BLOCKED",
+            blocked_reason="Čeka se zavisnost",
+        )
         session.commit()
 
         svc = ProjectResumeService(session)
@@ -130,7 +139,9 @@ class TestResumeRegeneration:
         plan = _make_plan(session, project.id)
         phase = _make_phase(session, plan.id)
         _make_item(session, phase.id, "FLOW-001", "T", status="VERIFIED")
-        ws = ProjectWorkspaceState(project_id=project.id, last_known_commit_sha="abc123", reconciliation_status="CURRENT")
+        ws = ProjectWorkspaceState(
+            project_id=project.id, last_known_commit_sha="abc123", reconciliation_status="CURRENT"
+        )
         sess = AgentSession(project_id=project.id, agent_type="pi", repo_path="C:/test")
         session.add_all([ws, sess])
         session.commit()
@@ -144,7 +155,9 @@ class TestResumeRegeneration:
         plan = _make_plan(session, project.id)
         phase = _make_phase(session, plan.id)
         _make_item(session, phase.id, "FLOW-001", "T", status="IN_PROGRESS")
-        ws = ProjectWorkspaceState(project_id=project.id, reconciliation_status="EXTERNAL_DIRTY_CHANGES")
+        ws = ProjectWorkspaceState(
+            project_id=project.id, reconciliation_status="EXTERNAL_DIRTY_CHANGES"
+        )
         sess = AgentSession(project_id=project.id, agent_type="pi", repo_path="C:/test")
         session.add_all([ws, sess])
         session.commit()
@@ -170,7 +183,11 @@ class TestResumeRegeneration:
         assert r2.id == r1.id
         assert r2.resume_status == "READY_TO_CONTINUE"
 
-        count = session.query(ProjectResumeState).filter(ProjectResumeState.project_id == project.id).count()
+        count = (
+            session.query(ProjectResumeState)
+            .filter(ProjectResumeState.project_id == project.id)
+            .count()
+        )
         assert count == 1
 
     def test_preconditions(self, session: Session, project: Project):

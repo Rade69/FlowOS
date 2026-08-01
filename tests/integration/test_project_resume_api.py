@@ -48,7 +48,13 @@ def app(engine):
     from flowos.service.controllers.http.tasks import router as tasks_router
 
     app = FastAPI(title="FlowOS Test", version="0.1.0")
-    app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     app.include_router(projects_router)
     app.include_router(tasks_router)
     app.include_router(resume_router)
@@ -89,7 +95,9 @@ class TestResumeAPI:
             phase = PlanPhase(plan_id=plan.id, phase_key="F0", title="F0", sequence=0)
             s.add(phase)
             s.flush()
-            item = PlanItem(plan_phase_id=phase.id, item_key="FLOW-001", title="Test", status="IN_PROGRESS")
+            item = PlanItem(
+                plan_phase_id=phase.id, item_key="FLOW-001", title="Test", status="IN_PROGRESS"
+            )
             s.add(item)
             sess = AgentSession(project_id=project_id, agent_type="pi", repo_path="C:/p")
             s.add(sess)

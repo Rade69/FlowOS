@@ -32,6 +32,7 @@ from flowos.service.services.infrastructure.persistence.engine import (  # noqa:
 # Osiguraj da su svi modeli importovani pre autogenerate
 import flowos.service.services.infrastructure.persistence.models  # noqa: E402, F401
 import flowos.service.services.infrastructure.persistence.plan_models  # noqa: E402, F401
+import flowos.service.services.infrastructure.persistence.resume_models  # noqa: E402, F401
 
 target_metadata = Base.metadata
 

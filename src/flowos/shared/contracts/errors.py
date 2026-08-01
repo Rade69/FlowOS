@@ -17,5 +17,5 @@ from pydantic import BaseModel, Field
 class ApiErrorResponse(BaseModel):
     code: str
     message: str
-    details: dict | None = None
+    details: dict[str, object] | None = None
     correlation_id: str = Field(default_factory=lambda: str(uuid.uuid4()))

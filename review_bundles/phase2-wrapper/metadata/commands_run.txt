@@ -1,0 +1,34 @@
+Hronološke komande za Fazu 2:
+
+--- FLOW-201 (CLI skeleton) ---
+ruff format src/flowos/cli/
+ruff check src/flowos/cli/
+python -m pytest tests/ -q
+
+--- FLOW-202 (Session API) ---
+ruff format src/flowos/service/services/sessions/ src/flowos/service/controllers/http/sessions.py
+python -m pytest tests/ -q
+
+--- FLOW-203 + FLOW-204 (Claude Code adapter + Watcher) ---
+ruff format src/flowos/service/services/infrastructure/agent_adapters/
+python -m pytest tests/unit/test_agent_adapter.py -v
+python -m pytest tests/ -q
+
+--- FLOW-205 + FLOW-206 (Git polling + Attribution) ---
+python -m pytest tests/unit/test_git_attribution.py -v
+python -m pytest tests/ -q
+
+--- FLOW-207 + FLOW-208 (GUI sesije + Overview integracija) ---
+python -m pytest tests/ -q
+
+--- GUI popravka (prevod, desni panel) ---
+ruff check src/flowos/gui/views/overview_skeleton.py
+python -m pytest tests/unit/test_translations.py -v
+python -m pytest tests/ -q
+QT_QPA_PLATFORM=offscreen python -c "..." -- screenshots
+
+--- ZAVRŠNA VERIFIKACIJA ---
+ruff check src/ tests/ -- All checks passed
+python -m pytest tests/ -q -- 192 passed
+python -m pytest tests/architecture/ -v -- 7 passed
+git status --short -- clean

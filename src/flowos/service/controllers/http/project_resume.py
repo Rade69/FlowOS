@@ -3,7 +3,7 @@
 Tanke rute — samo DTO → Service → DTO. Bez ORM importa.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 from flowos.service.services.project_resume import ProjectResumeService

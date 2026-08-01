@@ -55,18 +55,21 @@ class SessionService:
         session_id: str,
         *,
         exit_code: int | None = None,
-        base_commit_sha: str | None = None,
+        result_commit_sha: str | None = None,
         status: str = "COMPLETED",
     ) -> AgentSession | None:
-        """Završava sesiju."""
+        """Završava sesiju. Ne prepisuje base_commit_sha."""
+        allowed = {"COMPLETED", "FAILED", "INTERRUPTED", "TIMED_OUT"}
+        if status not in allowed:
+            raise ValueError(f"Nedozvoljen status sesije: {status}. Dozvoljeni: {sorted(allowed)}")
         session_obj = self._session.get(AgentSession, session_id)
         if not session_obj:
             return None
         session_obj.status = status
         session_obj.ended_at = datetime.now(tz=UTC)
         session_obj.exit_code = exit_code
-        if base_commit_sha:
-            session_obj.base_commit_sha = base_commit_sha
+        if result_commit_sha:
+            session_obj.result_commit_sha = result_commit_sha
         self._session.flush()
         return session_obj
 

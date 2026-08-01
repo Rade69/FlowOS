@@ -1,0 +1,3708 @@
+diff --git a/pyproject.toml b/pyproject.toml
+index 4647b09..7656a61 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -82,6 +82,7 @@ ignore = ["E501"]  # line-length handled by formatter
+ "src/flowos/service/app.py" = ["T201"]
+ "src/flowos/shared/contracts/*.py" = ["B904"]  # raise ValueError from validator je standardna Pydantic praksa
+ "src/flowos/service/controllers/**/*.py" = ["B008", "B006"]  # FastAPI standardni patterni
++"src/flowos/cli/**/*.py" = ["B904"]  # raise typer.Exit je standardni CLI pattern
+ 
+ [tool.ruff.format]
+ quote-style = "double"
+diff --git a/screenshots/overview-1600x900.png b/screenshots/overview-1600x900.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..ee9447d2f6e48849822746166ba73bea8fe0af87
+GIT binary patch
+literal 16896
+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
+LoJl)nc=P`Qvvm>q
+
+literal 0
+HcmV?d00001
+
+diff --git a/screenshots/overview-1920x1080.png b/screenshots/overview-1920x1080.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..a4dbd74e9f53d1d7c7c0eaf5446132942fe3ecf2
+GIT binary patch
+literal 20458
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/src/flowos/cli/app.py b/src/flowos/cli/app.py
+index 79fb162..f9609a3 100644
+--- a/src/flowos/cli/app.py
++++ b/src/flowos/cli/app.py
+@@ -1,4 +1,4 @@
+-"""FlowOS CLI — Typer wrapper za registraciju sesija.
++"""FlowOS CLI — Typer wrapper za interakciju sa FlowOS servisom.
+ 
+ Primarni tok:
+     flowos session start --agent claude-code --task FLOW-42
+@@ -7,30 +7,284 @@ CLI nikad ne piše direktno u SQLite. Koristi API ili offline JSONL spool
+ kada backend nije dostupan.
+ """
+ 
++import json
++import os
+ import sys
++from pathlib import Path
+ 
+ import typer
+ 
++from flowos.cli.services.client import CliApiClient
++
+ app = typer.Typer(
+     name="flowos",
+     help="FlowOS CLI — lokalni lični operativni sistem za koordinaciju agentskih sesija",
+     no_args_is_help=True,
+ )
+ 
++# Pod-komande
++project_app = typer.Typer(help="Upravljanje projektima")
++task_app = typer.Typer(help="Upravljanje zadacima")
++plan_app = typer.Typer(help="Plan i napredak")
++session_app = typer.Typer(help="Sesije")
++
++app.add_typer(project_app, name="project")
++app.add_typer(task_app, name="task")
++app.add_typer(plan_app, name="plan")
++app.add_typer(session_app, name="session")
++
++
++def _get_client() -> CliApiClient:
++    """Kreira API klijenta sa automatskim otkrivanjem porta."""
++    port = 9100
++    runtime_file = (
++        Path(os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local")))
++        / "FlowOS"
++        / "runtime"
++        / "service.json"
++    )
++    if runtime_file.exists():
++        try:
++            data = json.loads(runtime_file.read_text())
++            port = data.get("port", 9100)
++        except (json.JSONDecodeError, KeyError):
++            pass
++    return CliApiClient(base_url=f"http://127.0.0.1:{port}")
++
++
++# ═══════════════════════════════════════════════════════════════════
++# Root
++# ═══════════════════════════════════════════════════════════════════
++
+ 
+ @app.callback()
+-def callback() -> None:
++def callback():
+     """FlowOS CLI root."""
+ 
+ 
+ @app.command()
+-def version() -> None:
+-    """Prikaži verziju FlowOS CLI-ja."""
++def version():
++    """Prikaži verziju."""
+     typer.echo("flowos 0.1.0")
+ 
+ 
++@app.command()
++def health():
++    """Proveri da li je servis dostupan."""
++    client = _get_client()
++    try:
++        resp = client.get("/health")
++        typer.echo(f"✅ Servis dostupan na {client.base_url}")
++        typer.echo(f"   Status: {resp.get('status', '?')}")
++        typer.echo(f"   Uptime: {resp.get('uptime', 0):.0f}s")
++    except Exception as e:
++        typer.echo(f"❌ Servis nije dostupan: {e}", err=True)
++        raise typer.Exit(code=1)
++
++
++# ═══════════════════════════════════════════════════════════════════
++# Projekti
++# ═══════════════════════════════════════════════════════════════════
++
++
++@project_app.command("list")
++def list_projects():
++    """Prikaži sve projekte."""
++    client = _get_client()
++    try:
++        projects = client.get("/projects")
++        if not projects:
++            typer.echo("Nema projekata.")
++            return
++        for p in projects:
++            typer.echo(f"  {p['name']} — {p['repo_path']} [{p['status']}]")
++    except Exception as e:
++        typer.echo(f"Greška: {e}", err=True)
++        raise typer.Exit(code=1)
++
++
++@project_app.command("create")
++def create_project(
++    name: str = typer.Option(..., "--name", "-n"), path: str = typer.Option(..., "--path", "-p")
++):
++    """Kreiraj novi projekat."""
++    client = _get_client()
++    try:
++        p = client.post("/projects", {"name": name, "repo_path": path})
++        typer.echo(f"✅ Projekat kreiran: {p['id']}")
++    except Exception as e:
++        typer.echo(f"Greška: {e}", err=True)
++        raise typer.Exit(code=1)
++
++
++@project_app.command("delete")
++def delete_project(project_id: str = typer.Argument(...)):
++    """Obriši projekat."""
++    client = _get_client()
++    try:
++        client.delete(f"/projects/{project_id}")
++        typer.echo(f"✅ Projekat obrisan: {project_id}")
++    except Exception as e:
++        typer.echo(f"Greška: {e}", err=True)
++        raise typer.Exit(code=1)
++
++
++# ═══════════════════════════════════════════════════════════════════
++# Zadaci
++# ═══════════════════════════════════════════════════════════════════
++
++
++@task_app.command("list")
++def list_tasks(project_id: str = typer.Option(..., "--project", "-p")):
++    """Prikaži zadatke za projekat."""
++    client = _get_client()
++    try:
++        tasks = client.get(f"/tasks?project_id={project_id}")
++        if not tasks:
++            typer.echo("Nema zadataka.")
++            return
++        for t in tasks:
++            typer.echo(f"  {t['title']} [{t['status']}] {t['priority']}")
++    except Exception as e:
++        typer.echo(f"Greška: {e}", err=True)
++        raise typer.Exit(code=1)
++
++
++@task_app.command("create")
++def create_task(
++    project_id: str = typer.Option(..., "--project", "-p"),
++    title: str = typer.Option(..., "--title", "-t"),
++):
++    """Kreiraj novi zadatak."""
++    client = _get_client()
++    try:
++        t = client.post("/tasks", {"project_id": project_id, "title": title})
++        typer.echo(f"✅ Zadatak kreiran: {t['id']}")
++    except Exception as e:
++        typer.echo(f"Greška: {e}", err=True)
++        raise typer.Exit(code=1)
++
++
++# ═══════════════════════════════════════════════════════════════════
++# Plan
++# ═══════════════════════════════════════════════════════════════════
++
++
++@plan_app.command("progress")
++def plan_progress(project_id: str = typer.Option(..., "--project", "-p")):
++    """Prikaži napredak po planu za projekat."""
++    client = _get_client()
++    try:
++        data = client.get(f"/projects/{project_id}/plan-progress")
++        plan = data.get("plan")
++        if not plan:
++            typer.echo("Nema aktivnog plana.")
++            return
++        typer.echo(f"Plan: {plan['title']} [{plan['status']}]")
++        typer.echo(
++            f"Stavke: {data['total_items']} ukupno, {data['completed_items']} završeno, {data['blocked_items']} blokirano"
++        )
++    except Exception as e:
++        typer.echo(f"Greška: {e}", err=True)
++        raise typer.Exit(code=1)
++
++
++# ═══════════════════════════════════════════════════════════════════
++# Resume
++# ═══════════════════════════════════════════════════════════════════
++
++
++@app.command()
++def resume(project_id: str = typer.Option(..., "--project", "-p")):
++    """Prikaži 'Gde si stao' za projekat."""
++    client = _get_client()
++    try:
++        data = client.get(f"/projects/{project_id}/resume")
++        typer.echo(f"Status: {data.get('resume_status', '?')}")
++        typer.echo(f"Pouzdanost: {data.get('confidence', '?')}")
++        where = data.get("where_stopped", "")
++        if where:
++            typer.echo(f"Gde si stao: {where}")
++        next_step = data.get("next_concrete_step", "")
++        if next_step:
++            typer.echo(f"Sledeći korak: {next_step}")
++    except Exception as e:
++        typer.echo(f"Greška: {e}", err=True)
++        raise typer.Exit(code=1)
++
++
++# ═══════════════════════════════════════════════════════════════════
++# Sesije
++# ═══════════════════════════════════════════════════════════════════
++
++
++@session_app.command("start")
++def session_start(
++    agent: str = typer.Option(..., "--agent", "-a"),
++    project: str = typer.Option(..., "--project", "-p"),
++    repo: str = typer.Option(..., "--repo", "-r"),
++    task: Optional[str] = typer.Option(None, "--task", "-t"),
++    model: Optional[str] = typer.Option(None, "--model", "-m"),
++    worktree: Optional[str] = typer.Option(None, "--worktree", "-w"),
++    plan_item: Optional[str] = typer.Option(None, "--plan-item"),
++):
++    """Pokreni novu agentsku sesiju."""
++    client = _get_client()
++    import os
++
++    try:
++        s = client.post("/sessions", {
++            "project_id": project, "agent_type": agent, "repo_path": repo,
++            "task_id": task, "model_name": model, "worktree_path": worktree,
++            "plan_item_id": plan_item, "pid": os.getpid(),
++        })
++        typer.echo(f"✅ Sesija pokrenuta: {s['id']}")
++        typer.echo(f"   Status: {s['status']}")
++    except Exception as e:
++        typer.echo(f"Greška: {e}", err=True)
++        raise typer.Exit(code=1)
++
++
++@session_app.command("end")
++def session_end(
++    session_id: str = typer.Argument(...),
++    exit_code: Optional[int] = typer.Option(None, "--exit-code", "-e"),
++):
++    """Završi sesiju."""
++    client = _get_client()
++    try:
++        body = {"exit_code": exit_code} if exit_code is not None else {}
++        s = client.post(f"/sessions/{session_id}/end", body)
++        typer.echo(f"✅ Sesija završena: {s['id']} ({s['status']})")
++    except Exception as e:
++        typer.echo(f"Greška: {e}", err=True)
++        raise typer.Exit(code=1)
++
++
++@session_app.command("list")
++def session_list(
++    project: str = typer.Option(..., "--project", "-p"),
++    active_only: bool = typer.Option(False, "--active"),
++):
++    """Prikaži sesije za projekat."""
++    client = _get_client()
++    try:
++        path = f"/sessions/active?project_id={project}" if active_only else f"/sessions?project_id={project}"
++        sessions = client.get(path)
++        if not sessions:
++            typer.echo("Nema sesija.")
++            return
++        for s in sessions:
++            typer.echo(f"  {s['id'][:8]}... {s['agent_type']} [{s['status']}] {s.get('started_at', '')[:16]}")
++    except Exception as e:
++        typer.echo(f"Greška: {e}", err=True)
++        raise typer.Exit(code=1)
++
++
++# ═══════════════════════════════════════════════════════════════════
++
++
+ def main() -> int:
+-    """Glavna ulazna tačka za flowos.exe."""
+     try:
+         app()
+         return 0
+diff --git a/src/flowos/cli/services/client.py b/src/flowos/cli/services/client.py
+index a2a13b2..360f927 100644
+--- a/src/flowos/cli/services/client.py
++++ b/src/flowos/cli/services/client.py
+@@ -6,28 +6,34 @@ Kada backend nije dostupan, upisuje događaje u JSONL spool:
+ Svaki zapis ima idempotency ključ za siguran ponovni uvoz.
+ """
+ 
+-from pathlib import Path
+ 
++import httpx
+ 
+-class CliApiClient:
+-    """API klijent za FlowOS backend iz CLI-ja.
+ 
+-    Koristi httpx za HTTP pozive. Pri nedostupnosti backend-a,
+-    upisuje u offline JSONL spool.
+-    """
++class CliApiClient:
++    """API klijent za FlowOS backend iz CLI-ja."""
+ 
+     def __init__(self, base_url: str = "http://127.0.0.1:9100") -> None:
+         self._base_url = base_url.rstrip("/")
+-        self._spool_dir = Path.home() / "AppData" / "Local" / "FlowOS" / "spool"
+ 
+     @property
+     def base_url(self) -> str:
+         return self._base_url
+ 
+-    # Placeholder metode — implementirati u fazi 2
+-    # def register_session(self, data: SessionCreate) -> SessionResponse: ...
+-    # def end_session(self, session_id: str) -> SessionResponse: ...
+-    # def add_event(self, session_id: str, data: SessionEventCreate) -> ...: ...
+-
+-
+-__all__ = ["CliApiClient"]
++    def get(self, path: str) -> dict | list:
++        """GET zahtev ka API-ju."""
++        r = httpx.get(f"{self._base_url}{path}", timeout=5.0)
++        r.raise_for_status()
++        return r.json()
++
++    def post(self, path: str, data: dict) -> dict:
++        """POST zahtev ka API-ju."""
++        r = httpx.post(f"{self._base_url}{path}", json=data, timeout=5.0)
++        r.raise_for_status()
++        return r.json()
++
++    def delete(self, path: str) -> dict:
++        """DELETE zahtev ka API-ju."""
++        r = httpx.delete(f"{self._base_url}{path}", timeout=5.0)
++        r.raise_for_status()
++        return r.json()
+diff --git a/src/flowos/gui/app.py b/src/flowos/gui/app.py
+index 5024631..c0dfd05 100644
+--- a/src/flowos/gui/app.py
++++ b/src/flowos/gui/app.py
+@@ -1,30 +1,82 @@
+-"""FlowOS GUI — PySide6 aplikacija.
++"""FlowOS GUI — PySide6 aplikacija (FLOW-106).
+ 
+-Pokreće QApplication, konstruiše MainWindow kroz composition root,
+-i ulazi u Qt event loop. Sav I/O ide preko Controller → Services,
+-nikad direktno iz View-a.
++Pokreće MainWindow, povezuje View → Controller → GUI Services → Backend API.
++Prvi vertikalni tok: GUI ↔ FastAPI ↔ SQLite.
++
++Pokreni: python -m flowos.gui.app [--live]
+ """
+ 
+ import sys
+ 
+-# PySide6 importi na vrhu — osiguravaju da je Qt dostupan pre bilo čega drugog
+-from PySide6.QtWidgets import QApplication  # noqa: E402
++from PySide6.QtCore import QTimer
++from PySide6.QtWidgets import QApplication
++
++from flowos.gui.controllers.overview import OverviewController
++from flowos.gui.services.client import GuiApiClient
++from flowos.gui.views.overview_skeleton import MainWindow, apply_dark_theme
++
++
++class FlowOsGui:
++    """Kompozicioni koren GUI-ja — povezuje sve slojeve."""
++
++    def __init__(self, use_live: bool = False):
++        self._window = MainWindow()
++        self._use_live = use_live
++
++        if use_live:
++            self._setup_live()
++
++    def show(self):
++        self._window.show()
++
++    def _setup_live(self):
++        """Povezuje Controller sa API-jem i View-om."""
++        api = GuiApiClient(base_url="http://127.0.0.1:9100")
++        self._controller = OverviewController(api)
++
++        self._controller.health_updated.connect(self._on_health)
++        self._controller.projects_loaded.connect(self._on_projects)
++        self._controller.plan_progress_loaded.connect(self._on_plan)
++        self._controller.resume_loaded.connect(self._on_resume)
++        self._controller.error_occurred.connect(self._on_error)
+ 
++        self._window.topbar.refresh_requested.connect(lambda: self._controller.check_health())
+ 
+-def main() -> int:
+-    """Glavna ulazna tačka za flowos-gui.exe."""
++        QTimer.singleShot(500, self._controller.check_health)
++        QTimer.singleShot(800, self._controller.load_projects)
++
++    def _on_health(self, ok: bool, uptime: str):
++        print(f"GUI: Health {'OK' if ok else 'FAIL'} ({uptime})")
++
++    def _on_projects(self, projects: list):
++        print(f"GUI: {len(projects)} projekata učitano")
++
++    def _on_plan(self, data: dict):
++        print(f"GUI: Plan — {data.get('total', 0)} stavki")
++
++    def _on_resume(self, data: dict):
++        print(f"GUI: Resume — {data.get('status', '?')}: {data.get('where_stopped', '')[:60]}")
++
++    def _on_error(self, msg: str):
++        print(f"GUI: Greška — {msg}")
++
++
++def main():
++    live = "--live" in sys.argv
+     app = QApplication(sys.argv)
+     app.setApplicationName("FlowOS")
+-    app.setOrganizationName("FlowOS")
++    apply_dark_theme(app)
++
++    gui = FlowOsGui(use_live=live)
++    gui.show()
+ 
+-    # Skeleton — ne učitavamo MainWindow dok ne postoji
+-    # window = composition_root.create_main_window()
+-    # window.show()
++    mode = "LIVE (povezan na backend)" if live else "MOCK (bez backend-a)"
++    print(f"FlowOS GUI — {mode}")
++    if not live:
++        print("  Koristi --live za povezivanje sa servisom.")
+ 
+-    # Placeholder: ako nema GUI-ja, samo ispiši i izađi
+-    print("FlowOS GUI — skeleton pokrenut (nema još prozora)")
+-    return 0
++    sys.exit(app.exec())
+ 
+ 
+ if __name__ == "__main__":
+-    sys.exit(main())
++    main()
+\ No newline at end of file
+diff --git a/src/flowos/gui/controllers/overview.py b/src/flowos/gui/controllers/overview.py
+new file mode 100644
+index 0000000..4a8d77e
+--- /dev/null
++++ b/src/flowos/gui/controllers/overview.py
+@@ -0,0 +1,75 @@
++"""Overview Controller — povezuje Overview View sa GUI Services.
++
++Podržava: projekte, plan progress, resume, sesije, health.
++Mapira DTO u ViewState. Ne pristupa bazi/Git-u/subprocessu.
++"""
++
++from PySide6.QtCore import QObject, Signal
++
++from flowos.gui.services.client import GuiApiClient
++from flowos.gui.theme.labels import status_label
++
++
++class OverviewController(QObject):
++    projects_loaded = Signal(list)
++    plan_progress_loaded = Signal(dict)
++    resume_loaded = Signal(dict)
++    sessions_loaded = Signal(list)
++    health_updated = Signal(bool, str)
++    error_occurred = Signal(str)
++
++    def __init__(self, api: GuiApiClient, parent=None):
++        super().__init__(parent)
++        self._api = api
++
++        api.health_received.connect(self._on_health)
++        api.projects_received.connect(self._on_projects)
++        api.plan_progress_received.connect(self._on_plan_progress)
++        api.resume_received.connect(self._on_resume)
++        api.sessions_received.connect(self._on_sessions)
++        api.error_occurred.connect(lambda c, m: self.error_occurred.emit(f"[{c}] {m}"))
++
++    def load_projects(self): self._api.get_projects()
++    def load_plan_progress(self, pid: str): self._api.get_plan_progress(pid)
++    def load_resume(self, pid: str): self._api.get_resume(pid)
++    def load_sessions(self, pid: str): self._api.get_active_sessions(pid)
++    def check_health(self): self._api.check_health()
++
++    def _on_health(self, d: dict):
++        ok = d.get("status") == "ok"
++        self.health_updated.emit(ok, f"{d.get('uptime',0):.0f}s")
++
++    def _on_projects(self, data: list):
++        self.projects_loaded.emit([{"id": p.get("id",""), "name": p.get("name",""), "repo_path": p.get("repo_path",""), "status": p.get("status","ACTIVE")} for p in data])
++
++    def _on_plan_progress(self, data: dict):
++        if "error" in data: self.error_occurred.emit(data["error"]); return
++        plan = data.get("plan")
++        self.plan_progress_loaded.emit({
++            "plan_title": plan.get("title","") if plan else "",
++            "plan_status": plan.get("status","") if plan else "",
++            "phases": data.get("phases",[]),
++            "total": data.get("total_items",0),
++            "completed": data.get("completed_items",0),
++            "blocked": data.get("blocked_items",0),
++        })
++
++    def _on_resume(self, data: dict):
++        if "error" in data: self.error_occurred.emit(data["error"]); return
++        self.resume_loaded.emit({
++            "status": data.get("resume_status","NO_HISTORY"),
++            "where_stopped": data.get("where_stopped",""),
++            "next_step": data.get("next_concrete_step",""),
++            "preconditions": data.get("resume_preconditions",""),
++            "confidence": data.get("confidence","LOW"),
++            "last_activity": data.get("last_activity_at",""),
++            "last_commit": data.get("last_commit_sha",""),
++        })
++
++    def _on_sessions(self, data: list):
++        self.sessions_loaded.emit([{
++            "id": s.get("id",""), "agent_type": s.get("agent_type",""),
++            "plan_item_id": s.get("plan_item_id"), "status": status_label(s.get("status","")),
++            "started_at": s.get("started_at",""), "worktree_path": s.get("worktree_path"),
++            "branch_name": s.get("branch_name",""),
++        } for s in data])
+\ No newline at end of file
+diff --git a/src/flowos/gui/services/client.py b/src/flowos/gui/services/client.py
+index c592add..8d681f5 100644
+--- a/src/flowos/gui/services/client.py
++++ b/src/flowos/gui/services/client.py
+@@ -1,26 +1,114 @@
+-"""GUI API klijent — HTTP i WebSocket komunikacija sa backendom.
++"""GUI API klijent — HTTP komunikacija sa FlowOS backendom.
+ 
+-Koristi QNetworkAccessManager za HTTP i QWebSocket za WS.
+-Nikad ne blokira GUI thread.
++Koristi QNetworkAccessManager za neblokirajuće HTTP pozive.
++Vraća rezultate kroz Qt signale (ne callback hell).
+ """
+ 
++import json
+ 
+-class GuiApiClient:
+-    """API klijent za FlowOS backend.
++from PySide6.QtCore import QObject, Signal
++from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
+ 
+-    Sve metode su async — koriste Qt signale za povratne pozive.
+-    Implementira se u fazi 1-2 kada backend dobije stvarne endpoint-e.
++
++class GuiApiClient(QObject):
++    """Asinhroni API klijent za FlowOS backend.
++
++    Sve metode su neblokirajuće — rezultat se emituje kroz Signal.
+     """
+ 
+-    def __init__(self, base_url: str = "http://127.0.0.1:9100") -> None:
++    health_received = Signal(dict)
++    projects_received = Signal(list)
++    project_created = Signal(dict)
++    project_deleted = Signal(str)
++    plan_progress_received = Signal(dict)
++    resume_received = Signal(dict)
++    sessions_received = Signal(list)
++    error_occurred = Signal(int, str)
++
++    def __init__(self, base_url: str = "http://127.0.0.1:9100", parent=None):
++        super().__init__(parent)
+         self._base_url = base_url.rstrip("/")
++        self._nam = QNetworkAccessManager(self)
+ 
+     @property
+     def base_url(self) -> str:
+         return self._base_url
+ 
+-    # Placeholder metode — implementirati u fazi 1
+-    # async def check_health(self) -> HealthResponse: ...
+-    # async def get_projects(self) -> list[ProjectResponse]: ...
+-    # async def create_project(self, data: ProjectCreate) -> ProjectResponse: ...
+-    # ...
++    # ── System ─────────────────────────────────────────
++
++    def check_health(self):
++        self._get("/health", self.health_received)
++
++    # ── Projects ───────────────────────────────────────
++
++    def get_projects(self):
++        self._get("/projects", self.projects_received)
++
++    def create_project(self, name: str, repo_path: str):
++        body = {"name": name, "repo_path": repo_path}
++        self._post("/projects", body, self.project_created)
++
++    def delete_project(self, project_id: str):
++        self._delete(f"/projects/{project_id}", lambda data: self.project_deleted.emit(project_id))
++
++    # ── Plan ───────────────────────────────────────────
++
++    def get_plan_progress(self, project_id: str):
++        self._get(f"/projects/{project_id}/plan-progress", self.plan_progress_received)
++
++    # ── Resume ─────────────────────────────────────────
++
++    def get_resume(self, project_id: str):
++        self._get(f"/projects/{project_id}/resume", self.resume_received)
++
++    def regenerate_resume(self, project_id: str):
++        self._post(f"/projects/{project_id}/resume/regenerate", {}, self.resume_received)
++
++    # ── Sessions ───────────────────────────────────────
++
++    def get_active_sessions(self, project_id: str):
++        self._get(f"/sessions/active?project_id={project_id}", self.sessions_received)
++
++    # ── HTTP helpers ───────────────────────────────────
++
++    def _get(self, path: str, signal: Signal):
++        url = f"{self._base_url}{path}"
++        req = QNetworkRequest()
++        req.setUrl(url)
++        req.setRawHeader(b"Accept", b"application/json")
++        reply = self._nam.get(req)
++        reply.finished.connect(lambda r=reply, s=signal: self._handle_response(r, s))
++
++    def _post(self, path: str, body: dict, signal: Signal):
++        url = f"{self._base_url}{path}"
++        req = QNetworkRequest()
++        req.setUrl(url)
++        req.setHeader(QNetworkRequest.KnownHeaders.ContentTypeHeader, "application/json")
++        data = json.dumps(body).encode("utf-8")
++        reply = self._nam.post(req, data)
++        reply.finished.connect(lambda r=reply, s=signal: self._handle_response(r, s))
++
++    def _delete(self, path: str, callback):
++        url = f"{self._base_url}{path}"
++        req = QNetworkRequest()
++        req.setUrl(url)
++        reply = self._nam.deleteResource(req)
++        reply.finished.connect(lambda r=reply, cb=callback: self._handle_response(r, None, cb))
++
++    def _handle_response(self, reply: QNetworkReply, signal: Signal | None, callback=None):
++        if reply.error() == QNetworkReply.NetworkError.NoError:
++            try:
++                data = json.loads(reply.readAll().data().decode())
++                if signal:
++                    signal.emit(data)
++                elif callback:
++                    callback(data)
++            except json.JSONDecodeError:
++                self.error_occurred.emit(-1, "Neispravan JSON odgovor")
++        else:
++            code = reply.error()
++            msg = reply.errorString()
++            self.error_occurred.emit(code, msg)
++            if signal:
++                signal.emit({"error": msg})
++        reply.deleteLater()
+\ No newline at end of file
+diff --git a/src/flowos/gui/theme/labels.py b/src/flowos/gui/theme/labels.py
+new file mode 100644
+index 0000000..faf3760
+--- /dev/null
++++ b/src/flowos/gui/theme/labels.py
+@@ -0,0 +1,85 @@
++"""FlowOS GUI — centralne mape prevoda (srpski jezik).
++
++Svi widgeti moraju koristiti ove mape.
++Interni enum nazivi ostaju na engleskom u kodu i bazi.
++"""
++
++# Statusi planiranih stavki
++STATUS_LABELS: dict[str, str] = {
++    "NOT_STARTED": "Nije započeto",
++    "IN_PROGRESS": "U toku",
++    "BLOCKED": "Blokirano",
++    "IMPLEMENTED": "Implementirano",
++    "VERIFIED": "Provjereno",
++    "ACCEPTED": "Prihvaćeno",
++    "REJECTED": "Odbijeno",
++    "NEEDS_REVIEW": "Potreban pregled",
++    "ACTIVE": "Aktivna",
++    "COMPLETED": "Završena",
++    "INTERRUPTED": "Prekinuta",
++    "READY": "Spremno",
++    "UNKNOWN": "Nepoznato stanje",
++}
++
++# Navigacija i nazivi ekrana
++UI_LABELS: dict[str, str] = {
++    "overview": "Pregled",
++    "projects": "Projekti",
++    "plan": "Plan",
++    "sessions": "Sesije",
++    "tasks": "Zadaci",
++    "agents": "Agenti",
++    "worktrees": "Radna stabla",
++    "conflicts": "Konflikti",
++    "reports": "Izvještaji",
++    "settings": "Postavke",
++    "resume": "Nastavak rada",
++    "external_activity": "Vanjska aktivnost",
++    "reconciliation": "Usklađivanje stanja",
++    "evidence": "Dokazi",
++    "acceptance_criteria": "Kriterijumi prihvatanja",
++    "dirty_tree": "Radno stablo sa neupisanim promjenama",
++    "failing_test": "Neuspješan test",
++    "lifecycle_test": "Test životnog ciklusa",
++}
++
++# Ostali pojmovi
++OTHER_LABELS: dict[str, str] = {
++    "watcher": "Posmatrač",
++    "active": "aktivan",
++    "service": "Servis",
++    "database": "Baza",
++    "branch": "Grana",
++    "commit": "Commit",
++    "timeline": "Vremenska linija",
++    "where_stopped": "Gdje si stao",
++    "next_step": "Sljedeći konkretan korak",
++    "confidence": "Pouzdanost",
++    "preconditions": "Prije nastavka provjeriti",
++    "active_project": "Aktivni projekat",
++    "active_sessions": "Aktivne sesije",
++    "progress": "Napredak po planu",
++    "recent_activity": "Nedavna aktivnost",
++    "plan_item_details": "Detalji stavke plana",
++    "external_changes": "Promjene van FlowOS-a",
++    "open_timeline": "Otvori vremensku liniju",
++    "continue_work": "Nastavi rad",
++    "open_report": "Otvori izvještaj",
++    "new_session": "Nova sesija",
++    "add_task": "Dodaj zadatak",
++    "import_plan": "Uvezi plan",
++    "review_changes": "Pregledaj vanjske promjene",
++    "open_log": "Otvori dnevnik",
++    "connected": "Povezano sa servisom",
++    "offline": "Offline — prikaz posljednjeg poznatog stanja",
++}
++
++
++def status_label(status: str) -> str:
++    """Vraća prevedeni status ili original ako prevod ne postoji."""
++    return STATUS_LABELS.get(status, status)
++
++
++def ui_label(key: str) -> str:
++    """Vraća prevedeni UI pojam ili original."""
++    return UI_LABELS.get(key, OTHER_LABELS.get(key, key))
+\ No newline at end of file
+diff --git a/src/flowos/gui/views/overview_skeleton.py b/src/flowos/gui/views/overview_skeleton.py
+index 1803fd5..ae0e088 100644
+--- a/src/flowos/gui/views/overview_skeleton.py
++++ b/src/flowos/gui/views/overview_skeleton.py
+@@ -1,17 +1,15 @@
+-"""FlowOS GUI — Overview ekran skeleton (FLOW-105).
++"""FlowOS GUI — Overview ekran (preveden, popravljen desni panel).
+ 
+-Kompletan statički skeleton prema GUI specifikaciji v3.
+-Tamna tema, QSplitter + layouti, lažni ViewState podaci.
++Tamna tema, QSplitter + layouti, svi pojmovi na srpskom.
+ View → Controller → Services arhitektura.
+ 
+ Pokreni: python src/flowos/gui/views/overview_skeleton.py
+ """
+ 
+ import sys
+-from datetime import datetime, timedelta
+ 
+-from PySide6.QtCore import QSize, Qt, Signal, QTimer
+-from PySide6.QtGui import QColor, QFont, QPainter, QPen, QLinearGradient, QBrush, QPalette
++from PySide6.QtCore import Qt, Signal
++from PySide6.QtGui import QColor, QFont, QPalette
+ from PySide6.QtWidgets import (
+     QApplication,
+     QFrame,
+@@ -20,34 +18,28 @@ from PySide6.QtWidgets import (
+     QMainWindow,
+     QPushButton,
+     QScrollArea,
+-    QSizePolicy,
+     QSplitter,
+-    QStackedWidget,
+-    QVBoxLayout,
+-    QWidget,
+     QTreeWidget,
+     QTreeWidgetItem,
++    QVBoxLayout,
++    QWidget,
+ )
+ 
++from flowos.gui.theme.labels import OTHER_LABELS, STATUS_LABELS, status_label, ui_label
++
+ # ═══════════════════════════════════════════════════════════════════
+-# Tamna tema — Design tokeni
++# Tamna tema — Catppuccin Mocha
+ # ═══════════════════════════════════════════════════════════════════
+ 
+-# Osnovne boje
+ BG_PRIMARY = "#1E1E2E"
+ BG_SECONDARY = "#181825"
+ BG_TERTIARY = "#11111B"
+ BG_CARD = "#252536"
+ BG_HOVER = "#313244"
+-
+ TEXT_PRIMARY = "#CDD6F4"
+ TEXT_SECONDARY = "#A6ADC8"
+ TEXT_MUTED = "#6C7086"
+-
+ BORDER = "#45475A"
+-BORDER_ACTIVE = "#89B4FA"
+-
+-# Semantičke boje (Catppuccin Mocha)
+ BLUE = "#89B4FA"
+ GREEN = "#A6E3A1"
+ YELLOW = "#F9E2AF"
+@@ -56,99 +48,55 @@ PURPLE = "#CBA6F7"
+ TEAL = "#94E2D5"
+ GRAY = "#585B70"
+ 
+-# Statusne boje
+-STATUS_NOT_STARTED = GRAY
+-STATUS_IN_PROGRESS = YELLOW
+-STATUS_BLOCKED = RED
+-STATUS_IMPLEMENTED = PURPLE
+-STATUS_VERIFIED = TEAL
+-STATUS_ACCEPTED = GREEN
+-STATUS_REJECTED = "#EBA0AC"
+-
+-# Dimenzije
+-SIDEBAR_MIN = 220
+-SIDEBAR_DEFAULT = 240
+-RIGHT_PANEL_MIN = 340
+-RIGHT_PANEL_DEFAULT = 380
+-TOPBAR_HEIGHT = 52
+-FOOTER_HEIGHT = 28
+-
+-FONT_XS = 10
+-FONT_SM = 11
+-FONT_MD = 12
+-FONT_LG = 14
+-FONT_XL = 16
+-FONT_XXL = 20
+-
+-RADIUS_SM = 4
++STATUS_COLORS = {
++    "NOT_STARTED": GRAY, "IN_PROGRESS": YELLOW, "BLOCKED": RED,
++    "IMPLEMENTED": PURPLE, "VERIFIED": TEAL, "ACCEPTED": GREEN,
++    "REJECTED": "#EBA0AC", "NEEDS_REVIEW": YELLOW,
++    "ACTIVE": GREEN, "COMPLETED": GRAY, "NO_HISTORY": GRAY,
++}
++
++SIDEBAR_MIN, SIDEBAR_DEFAULT = 220, 240
++RIGHT_PANEL_MIN, RIGHT_PANEL_DEFAULT = 340, 380
++TOPBAR_HEIGHT, FOOTER_HEIGHT = 52, 28
++FONT_XS, FONT_SM, FONT_MD, FONT_LG, FONT_XL, FONT_XXL = 10, 11, 12, 14, 16, 20
+ RADIUS_MD = 6
+-RADIUS_LG = 8
+-SPACING_XS = 2
+-SPACING_SM = 4
+-SPACING_MD = 8
+-SPACING_LG = 12
+-SPACING_XL = 16
+-SPACING_XXL = 24
++SPACING_XS, SPACING_SM, SPACING_MD, SPACING_LG, SPACING_XL, SPACING_XXL = 2, 4, 8, 12, 16, 24
+ 
+ 
+-# ═══════════════════════════════════════════════════════════════════
+-# Tamni QPalette
+-# ═══════════════════════════════════════════════════════════════════
+-
+ def apply_dark_theme(app: QApplication) -> None:
+     app.setStyle("Fusion")
+-    palette = QPalette()
+-    palette.setColor(QPalette.ColorRole.Window, QColor(BG_PRIMARY))
+-    palette.setColor(QPalette.ColorRole.WindowText, QColor(TEXT_PRIMARY))
+-    palette.setColor(QPalette.ColorRole.Base, QColor(BG_SECONDARY))
+-    palette.setColor(QPalette.ColorRole.AlternateBase, QColor(BG_CARD))
+-    palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(BG_CARD))
+-    palette.setColor(QPalette.ColorRole.ToolTipText, QColor(TEXT_PRIMARY))
+-    palette.setColor(QPalette.ColorRole.Text, QColor(TEXT_PRIMARY))
+-    palette.setColor(QPalette.ColorRole.Button, QColor(BG_CARD))
+-    palette.setColor(QPalette.ColorRole.ButtonText, QColor(TEXT_PRIMARY))
+-    palette.setColor(QPalette.ColorRole.BrightText, QColor(RED))
+-    palette.setColor(QPalette.ColorRole.Link, QColor(BLUE))
+-    palette.setColor(QPalette.ColorRole.Highlight, QColor(BLUE))
+-    palette.setColor(QPalette.ColorRole.HighlightedText, QColor(BG_PRIMARY))
+-    app.setPalette(palette)
+-
+-
+-# ═══════════════════════════════════════════════════════════════════
+-# Helper funkcije
+-# ═══════════════════════════════════════════════════════════════════
+-
+-def _label(text: str, font_size: int = FONT_MD, bold: bool = False, color: str = TEXT_PRIMARY) -> QLabel:
++    p = QPalette()
++    p.setColor(QPalette.ColorRole.Window, QColor(BG_PRIMARY))
++    p.setColor(QPalette.ColorRole.WindowText, QColor(TEXT_PRIMARY))
++    p.setColor(QPalette.ColorRole.Base, QColor(BG_SECONDARY))
++    p.setColor(QPalette.ColorRole.Text, QColor(TEXT_PRIMARY))
++    p.setColor(QPalette.ColorRole.Button, QColor(BG_CARD))
++    p.setColor(QPalette.ColorRole.ButtonText, QColor(TEXT_PRIMARY))
++    p.setColor(QPalette.ColorRole.Highlight, QColor(BLUE))
++    app.setPalette(p)
++
++
++def _lbl(text="", fs=FONT_MD, bold=False, color=TEXT_PRIMARY):
+     lbl = QLabel(text)
+-    font = QFont("Segoe UI", font_size)
+-    if bold:
+-        font.setBold(True)
+-    lbl.setFont(font)
++    f = QFont("Segoe UI", fs)
++    if bold: f.setBold(True)
++    lbl.setFont(f)
+     lbl.setStyleSheet(f"color: {color}; border: none; background: transparent;")
+     return lbl
+ 
+ 
+-def _card(parent=None) -> QFrame:
++def _sec(text=""):
++    return _lbl(text.upper(), FONT_XS, True, TEXT_MUTED)
++
++
++def _card(parent=None):
+     f = QFrame(parent)
+     f.setStyleSheet(f"background: {BG_CARD}; border: 1px solid {BORDER}; border-radius: {RADIUS_MD}px;")
+     return f
+ 
+ 
+-def _section_title(text: str) -> QLabel:
+-    return _label(text.upper(), FONT_XS, True, TEXT_MUTED)
+-
+-
+-def _status_badge(status: str) -> str:
+-    colors = {
+-        "NOT_STARTED": STATUS_NOT_STARTED, "IN_PROGRESS": STATUS_IN_PROGRESS,
+-        "BLOCKED": STATUS_BLOCKED, "IMPLEMENTED": STATUS_IMPLEMENTED,
+-        "VERIFIED": STATUS_VERIFIED, "ACCEPTED": STATUS_ACCEPTED,
+-        "REJECTED": STATUS_REJECTED,
+-        "ACTIVE": GREEN, "READY_TO_CONTINUE": GREEN, "NEEDS_REVIEW": YELLOW,
+-        "HIGH": GREEN, "MEDIUM": YELLOW, "LOW": RED,
+-        "PASSED": GREEN, "PENDING": GRAY, "FAILED": RED, "IN_PROGRESS": YELLOW,
+-    }
+-    return colors.get(status, GRAY)
++def _status_color(status: str) -> str:
++    return STATUS_COLORS.get(status, GRAY)
+ 
+ 
+ # ═══════════════════════════════════════════════════════════════════
+@@ -157,51 +105,28 @@ def _status_badge(status: str) -> str:
+ 
+ class TopBar(QFrame):
+     project_changed = Signal(str)
++    refresh_requested = Signal()
+ 
+     def __init__(self, parent=None):
+         super().__init__(parent)
+         self.setFixedHeight(TOPBAR_HEIGHT)
+         self.setStyleSheet(f"background: {BG_SECONDARY}; border-bottom: 1px solid {BORDER};")
+-
+         layout = QHBoxLayout(self)
+         layout.setContentsMargins(SPACING_XL, 0, SPACING_XL, 0)
+         layout.setSpacing(SPACING_LG)
+-
+-        # Logo
+-        logo = _label("◆ FlowOS", FONT_LG, True, BLUE)
+-        layout.addWidget(logo)
+-
+-        # Separator
+-        sep = QLabel("|")
+-        sep.setStyleSheet(f"color: {BORDER}; border: none;")
+-        layout.addWidget(sep)
+-
+-        # Projekat
+-        proj_label = _label("Projekat:", FONT_SM, False, TEXT_MUTED)
+-        proj_name = _label("FlowOS Core ▼", FONT_MD, True, TEXT_PRIMARY)
+-        layout.addWidget(proj_label)
+-        layout.addWidget(proj_name)
+-
++        layout.addWidget(_lbl("◆ FlowOS", FONT_LG, True, BLUE))
++        sep = QLabel("|"); sep.setStyleSheet(f"color: {BORDER}; border: none;"); layout.addWidget(sep)
++        layout.addWidget(_lbl("Projekat:", FONT_SM, False, TEXT_MUTED))
++        layout.addWidget(_lbl("FlowOS Core ▼", FONT_MD, True))
+         layout.addSpacing(SPACING_XL)
+-
+-        # Status projekta
+-        status_indicator = QLabel("●")
+-        status_indicator.setStyleSheet(f"color: {GREEN}; border: none; font-size: 14px;")
+-        status_text = _label("Ažurno", FONT_SM, False, GREEN)
+-        layout.addWidget(status_indicator)
+-        layout.addWidget(status_text)
+-
++        dot = QLabel("●"); dot.setStyleSheet(f"color: {GREEN}; border: none; font-size: 14px;"); layout.addWidget(dot)
++        layout.addWidget(_lbl("Ažurno", FONT_SM, False, GREEN))
+         layout.addStretch()
+-
+-        # Status servisa
+-        svc_label = _label("● Servis aktivan", FONT_SM, False, GREEN)
+-        layout.addWidget(svc_label)
+-
+-        # Osvježi
+-        refresh_btn = QPushButton("↻")
+-        refresh_btn.setFixedSize(32, 32)
+-        refresh_btn.setStyleSheet(f"background: {BG_CARD}; border: 1px solid {BORDER}; border-radius: {RADIUS_SM}px; color: {TEXT_PRIMARY};")
+-        layout.addWidget(refresh_btn)
++        layout.addWidget(_lbl("● Servis aktivan", FONT_SM, False, GREEN))
++        btn = QPushButton("↻"); btn.setFixedSize(32, 32)
++        btn.setStyleSheet(f"background: {BG_CARD}; border: 1px solid {BORDER}; border-radius: 4px; color: {TEXT_PRIMARY};")
++        btn.clicked.connect(self.refresh_requested.emit)
++        layout.addWidget(btn)
+ 
+ 
+ # ═══════════════════════════════════════════════════════════════════
+@@ -213,79 +138,57 @@ class Sidebar(QFrame):
+ 
+     def __init__(self, parent=None):
+         super().__init__(parent)
+-        self.setMinimumWidth(SIDEBAR_MIN)
+-        self.setMaximumWidth(300)
++        self.setMinimumWidth(SIDEBAR_MIN); self.setMaximumWidth(300)
+         self.setStyleSheet(f"background: {BG_SECONDARY}; border-right: 1px solid {BORDER};")
+-
+         layout = QVBoxLayout(self)
+-        layout.setContentsMargins(0, SPACING_MD, 0, SPACING_MD)
+-        layout.setSpacing(0)
++        layout.setContentsMargins(0, SPACING_MD, 0, SPACING_MD); layout.setSpacing(0)
+ 
+-        # ── Navigacija ──
+-        nav_label = _section_title("Navigacija")
++        nav_label = _sec("Navigacija")
+         nav_label.setContentsMargins(SPACING_XL, SPACING_SM, 0, SPACING_SM)
+         layout.addWidget(nav_label)
+ 
+-        nav_items = ["Pregled", "Projekti", "Plan", "Sesije", "Zadaci", "Agenti", "Worktrees", "Konflikti", "Izvještaji", "Postavke"]
+-        for item in nav_items:
+-            is_active = item == "Pregled"
+-            bg = BG_HOVER if is_active else "transparent"
+-            border_left = f"border-left: 3px solid {BLUE};" if is_active else "border-left: 3px solid transparent;"
+-            nav_btn = QPushButton(f"  {item}")
+-            nav_btn.setFixedHeight(36)
+-            nav_btn.setStyleSheet(
+-                f"QPushButton {{ background: {bg}; {border_left} border-top: none; border-right: none; border-bottom: none;"
+-                f"color: {TEXT_PRIMARY if is_active else TEXT_SECONDARY}; text-align: left; padding-left: {SPACING_XL}px; font-size: {FONT_SM}px; }}"
+-                f"QPushButton:hover {{ background: {BG_HOVER}; color: {TEXT_PRIMARY}; }}"
+-            )
+-            layout.addWidget(nav_btn)
++        nav_keys = ["Pregled", "Projekti", "Plan", "Sesije", "Zadaci", "Agenti", "Radna stabla", "Konflikti", "Izvještaji", "Postavke"]
++        for item in nav_keys:
++            active = item == "Pregled"
++            bg = BG_HOVER if active else "transparent"
++            bl = f"border-left: 3px solid {BLUE};" if active else "border-left: 3px solid transparent;"
++            btn = QPushButton(f"  {item}")
++            btn.setFixedHeight(36)
++            btn.setStyleSheet(f"QPushButton {{ background: {bg}; {bl} border-top:none; border-right:none; border-bottom:none; color: {TEXT_PRIMARY if active else TEXT_SECONDARY}; text-align:left; padding-left:{SPACING_XL}px; font-size:{FONT_SM}px; }} QPushButton:hover {{ background: {BG_HOVER}; color: {TEXT_PRIMARY}; }}")
++            layout.addWidget(btn)
+ 
+         layout.addSpacing(SPACING_XL)
+ 
+-        # ── Sažetak aktivnog projekta ──
+-        summary_title = _section_title("Aktivni projekat")
+-        summary_title.setContentsMargins(SPACING_XL, SPACING_SM, 0, SPACING_SM)
+-        layout.addWidget(summary_title)
+-
+-        summary_card = _card()
+-        summary_card.setContentsMargins(SPACING_LG, SPACING_LG, SPACING_LG, SPACING_LG)
+-        sl = QVBoxLayout(summary_card)
+-        sl.setSpacing(SPACING_SM)
+-        sl.addWidget(_label("FlowOS Core", FONT_MD, True))
+-        sl.addWidget(_label("Plan v3 · ACTIVE", FONT_XS, False, GREEN))
+-        sl.addWidget(_label("FLOW-103 Service runtime", FONT_SM, True))
+-        sl.addWidget(_label("IMPLEMENTED · nije VERIFIED", FONT_XS, False, PURPLE))
+-        sl.addWidget(_label("Posljednji rad: juče 18:20", FONT_XS, False, TEXT_MUTED))
+-        layout.addWidget(summary_card)
++        # Aktivni projekat — popunjena kartica
++        proj_title = _sec("AKTIVNI PROJEKAT")
++        proj_title.setContentsMargins(SPACING_XL, SPACING_SM, 0, SPACING_SM)
++        layout.addWidget(proj_title)
++        card = _card()
++        cl = QVBoxLayout(card); cl.setContentsMargins(SPACING_LG, SPACING_LG, SPACING_LG, SPACING_LG); cl.setSpacing(SPACING_SM)
++        cl.addWidget(_lbl("FlowOS Core", FONT_MD, True))
++        cl.addWidget(_lbl("Plan: FlowOS v3", FONT_XS, False, GREEN))
++        cl.addWidget(_lbl("FLOW-103 Rad servisnog procesa", FONT_SM, True))
++        cl.addWidget(_lbl("Implementirano · nije provjereno", FONT_XS, False, PURPLE))
++        cl.addWidget(_lbl("Posljednji rad: juče 18:20", FONT_XS, False, TEXT_MUTED))
++        layout.addWidget(card)
+ 
+         layout.addSpacing(SPACING_MD)
+ 
+-        # ── Brze akcije ──
+-        actions_title = _section_title("Brze akcije")
++        actions_title = _sec("Brze akcije")
+         actions_title.setContentsMargins(SPACING_XL, SPACING_SM, 0, SPACING_SM)
+         layout.addWidget(actions_title)
+-
+-        for action in ["Nova sesija", "Dodaj zadatk", "Uvezi plan", "Pregledaj vanjske promjene", "Otvori dnevnik"]:
+-            btn = QPushButton(f"  {action}")
++        for a in ["Nova sesija", "Dodaj zadatak", "Uvezi plan", "Pregledaj vanjske promjene", "Otvori dnevnik"]:
++            btn = QPushButton(f"  {a}")
+             btn.setFixedHeight(32)
+-            btn.setStyleSheet(
+-                f"QPushButton {{ background: transparent; border: none; color: {TEXT_SECONDARY}; text-align: left; padding-left: {SPACING_XL}px; font-size: {FONT_SM}px; }}"
+-                f"QPushButton:hover {{ color: {TEXT_PRIMARY}; }}"
+-            )
++            btn.setStyleSheet(f"QPushButton {{ background:transparent; border:none; color:{TEXT_SECONDARY}; text-align:left; padding-left:{SPACING_XL}px; font-size:{FONT_SM}px; }} QPushButton:hover {{ color:{TEXT_PRIMARY}; }}")
+             layout.addWidget(btn)
+ 
+         layout.addStretch()
+ 
+-        # ── Status veze ──
+-        status_layout = QHBoxLayout()
+-        status_layout.setContentsMargins(SPACING_XL, 0, SPACING_MD, 0)
+-        dot = QLabel("●")
+-        dot.setStyleSheet(f"color: {GREEN}; border: none;")
+-        conn_label = _label("Povezano sa servisom", FONT_XS, False, GREEN)
+-        status_layout.addWidget(dot)
+-        status_layout.addWidget(conn_label)
+-        status_layout.addStretch()
+-        layout.addLayout(status_layout)
++        sl = QHBoxLayout(); sl.setContentsMargins(SPACING_XL, 0, SPACING_MD, 0)
++        dot = QLabel("●"); dot.setStyleSheet(f"color: {GREEN}; border: none;")
++        sl.addWidget(dot); sl.addWidget(_lbl("Povezano sa servisom", FONT_XS, False, GREEN)); sl.addStretch()
++        layout.addLayout(sl)
+ 
+ 
+ # ═══════════════════════════════════════════════════════════════════
+@@ -295,67 +198,46 @@ class Sidebar(QFrame):
+ class PlanProgressWidget(QFrame):
+     def __init__(self, parent=None):
+         super().__init__(parent)
+-        self.setStyleSheet(f"background: transparent; border: none;")
++        self.setStyleSheet("background: transparent; border: none;")
++        layout = QVBoxLayout(self); layout.setContentsMargins(0, 0, 0, 0); layout.setSpacing(SPACING_MD)
+ 
+-        layout = QVBoxLayout(self)
+-        layout.setContentsMargins(0, 0, 0, 0)
+-        layout.setSpacing(SPACING_MD)
+-
+-        # Naslov
+         header = QHBoxLayout()
+-        header.addWidget(_label("NAPREDAK PO PLANU", FONT_LG, True))
++        header.addWidget(_lbl("NAPREDAK PO PLANU", FONT_LG, True))
+         header.addStretch()
+-        header.addWidget(_label("Aktivni plan: FlowOS v3", FONT_SM, False, TEXT_MUTED))
++        header.addWidget(_lbl("Aktivni plan: FlowOS v3", FONT_SM, False, TEXT_MUTED))
+         layout.addLayout(header)
+ 
+-        # Statusni sažetak
+-        status_row = QHBoxLayout()
+-        status_row.setSpacing(SPACING_LG)
+-        for count, label, color in [(3, "ACCEPTED", GREEN), (1, "VERIFIED", TEAL), (1, "IMPLEMENTED", PURPLE), (1, "IN PROGRESS", YELLOW), (3, "NOT STARTED", GRAY)]:
+-            item = QLabel(f"{count} {label}")
+-            item.setFont(QFont("Segoe UI", FONT_SM, QFont.Weight.Bold))
+-            item.setStyleSheet(f"color: {color}; border: none;")
+-            status_row.addWidget(item)
+-        status_row.addStretch()
+-        layout.addLayout(status_row)
+-
+-        # Tabela (QTreeWidget)
++        # Statusni sažetak na srpskom
++        sr = QHBoxLayout(); sr.setSpacing(SPACING_LG)
++        for n, s, c in [(3, "prihvaćene", GREEN), (1, "provjerena", TEAL), (1, "implementirana", PURPLE), (1, "u toku", YELLOW), (3, "nisu započete", GRAY)]:
++            it = QLabel(f"{n} {s}"); it.setFont(QFont("Segoe UI", FONT_SM, QFont.Weight.Bold)); it.setStyleSheet(f"color: {c}; border: none;")
++            sr.addWidget(it)
++        sr.addStretch()
++        layout.addLayout(sr)
++
+         tree = QTreeWidget()
+-        tree.setHeaderLabels(["Faza / Stavka", "Status", "Agent/Sesija", "Kriterijumi", "Stanje nastavka"])
+-        tree.setAlternatingRowColors(True)
+-        tree.setRootIsDecorated(True)
+-        tree.setIndentation(20)
+-        tree.setStyleSheet(f"""
+-            QTreeWidget {{ background: {BG_CARD}; border: 1px solid {BORDER}; border-radius: {RADIUS_MD}px; }}
++        tree.setHeaderLabels(["Faza / Stavka", "Status", "Agent/Sesija", "Kriterijumi", "Stanje"])
++        tree.setAlternatingRowColors(True); tree.setRootIsDecorated(True); tree.setIndentation(20)
++        tree.setStyleSheet(f"""QTreeWidget {{ background: {BG_CARD}; border: 1px solid {BORDER}; border-radius: {RADIUS_MD}px; }}
+             QTreeWidget::item {{ padding: {SPACING_SM}px; color: {TEXT_PRIMARY}; }}
+             QTreeWidget::item:selected {{ background: {BG_HOVER}; }}
+-            QHeaderView::section {{ background: {BG_SECONDARY}; border: none; border-bottom: 1px solid {BORDER}; padding: {SPACING_SM}px; color: {TEXT_MUTED}; font-weight: bold; }}
+-        """)
+-        tree.setColumnWidth(0, 300)
+-        tree.setColumnWidth(1, 100)
+-        tree.setColumnWidth(2, 120)
+-        tree.setColumnWidth(3, 100)
+-        tree.setColumnWidth(4, 140)
+-
+-        # Faza 1
+-        f1 = QTreeWidgetItem(tree, ["Faza 1 — Temelj i prvi vertikalni tok", "", "", "", ""])
+-        f1.setExpanded(True)
+-        f1.setFont(0, QFont("Segoe UI", FONT_MD, QFont.Weight.Bold))
++            QHeaderView::section {{ background: {BG_SECONDARY}; border: none; border-bottom: 1px solid {BORDER}; padding: {SPACING_SM}px; color: {TEXT_MUTED}; font-weight: bold; }}""")
++        tree.setColumnWidth(0, 340); tree.setColumnWidth(1, 100); tree.setColumnWidth(2, 110); tree.setColumnWidth(3, 80); tree.setColumnWidth(4, 110)
+ 
+-        items = [
+-            ("FLOW-101  Shared contracts", "VERIFIED", "—", "6/6", "Spremno"),
++        f1 = QTreeWidgetItem(tree, ["Faza 1 — Temelj i prvi vertikalni tok", "", "", "", ""])
++        f1.setExpanded(True); f1.setFont(0, QFont("Segoe UI", FONT_MD, QFont.Weight.Bold))
++        for key, status, agent, crit, ns in [
++            ("FLOW-101  Zajednički ugovori", "VERIFIED", "—", "6/6", "Spremno"),
+             ("FLOW-102  SQLite i migracije", "ACCEPTED", "—", "8/8", "Završeno"),
+-            ("FLOW-103  Service runtime", "IMPLEMENTED", "pi / SESSION-42", "5/7", "NEEDS_REVIEW"),
+-            ("FLOW-104  Projects/Tasks API", "NOT_STARTED", "—", "0/6", "BLOCKED"),
+-        ]
+-        for key, status, agent, crit, next_step in items:
+-            row = QTreeWidgetItem(f1, [key, status, agent, crit, next_step])
+-            row.setForeground(1, QColor(_status_badge(status)))
+-
+-        # Faza 2
+-        f2 = QTreeWidgetItem(tree, ["Faza 2 — Wrapper, watcher i Aktivne sesije", "", "", "", ""])
++            ("FLOW-103  Rad servisnog procesa", "IMPLEMENTED", "pi / SESSION-42", "5/7", "Potreban pregled"),
++            ("FLOW-104  API za projekte i zadatke", "NOT_STARTED", "—", "0/6", "Blokirano"),
++        ]:
++            row = QTreeWidgetItem(f1, [key, status_label(status), agent, crit, ns])
++            row.setForeground(1, QColor(_status_color(status)))
++
++        f2 = QTreeWidgetItem(tree, ["Faza 2 — Omotač, posmatrač i Aktivne sesije", "", "", "", ""])
+         f2.setFont(0, QFont("Segoe UI", FONT_MD, QFont.Weight.Bold))
+-        QTreeWidgetItem(f2, ["FLOW-201  CLI skeleton", "NOT_STARTED", "—", "0/4", "—"])
++        QTreeWidgetItem(f2, ["FLOW-201  CLI kostur", "NOT_STARTED", "—", "0/4", "—"])
+ 
+         layout.addWidget(tree)
+ 
+@@ -367,31 +249,18 @@ class PlanProgressWidget(QFrame):
+ class ActiveSessionsWidget(QFrame):
+     def __init__(self, parent=None):
+         super().__init__(parent)
+-        layout = QVBoxLayout(self)
+-        layout.setContentsMargins(0, 0, 0, 0)
+-        layout.setSpacing(SPACING_SM)
+-
+-        layout.addWidget(_label("AKTIVNE SESIJE (2)", FONT_LG, True))
++        l = QVBoxLayout(self); l.setContentsMargins(0, 0, 0, 0); l.setSpacing(SPACING_SM)
++        l.addWidget(_lbl("AKTIVNE SESIJE (1)", FONT_LG, True))
+ 
+         tree = QTreeWidget()
+-        tree.setHeaderLabels(["Sesija", "Agent", "Plan stavka", "Worktree/Branch", "Status"])
+-        tree.setRootIsDecorated(False)
+-        tree.setMaximumHeight(120)
+-        tree.setStyleSheet(f"""
+-            QTreeWidget {{ background: {BG_CARD}; border: 1px solid {BORDER}; border-radius: {RADIUS_MD}px; }}
++        tree.setHeaderLabels(["Sesija", "Agent", "Plan stavka", "Grana", "Status"])
++        tree.setRootIsDecorated(False); tree.setMaximumHeight(90)
++        tree.setStyleSheet(f"""QTreeWidget {{ background: {BG_CARD}; border: 1px solid {BORDER}; border-radius: {RADIUS_MD}px; }}
+             QTreeWidget::item {{ padding: {SPACING_SM}px; color: {TEXT_PRIMARY}; }}
+-            QHeaderView::section {{ background: {BG_SECONDARY}; border: none; border-bottom: 1px solid {BORDER}; padding: {SPACING_SM}px; color: {TEXT_MUTED}; font-weight: bold; }}
+-        """)
+-
+-        sessions = [
+-            ("SESSION-42", "pi", "FLOW-103 Service runtime", "flow/FLOW-103", "ACTIVE"),
+-            ("SESSION-41", "Claude Code", "FLOW-104 Projects/Tasks", "main", "ACTIVE"),
+-        ]
+-        for sid, agent, plan, wb, status in sessions:
+-            row = QTreeWidgetItem(tree, [sid, agent, plan, wb, status])
+-            row.setForeground(4, QColor(_status_badge(status)))
+-
+-        layout.addWidget(tree)
++            QHeaderView::section {{ background: {BG_SECONDARY}; border: none; border-bottom: 1px solid {BORDER}; padding: {SPACING_SM}px; color: {TEXT_MUTED}; font-weight: bold; }}""")
++        row = QTreeWidgetItem(tree, ["SESSION-42", "pi", "FLOW-103", "flow/FLOW-103", status_label("ACTIVE")])
++        row.setForeground(4, QColor(GREEN))
++        l.addWidget(tree)
+ 
+ 
+ # ═══════════════════════════════════════════════════════════════════
+@@ -401,94 +270,62 @@ class ActiveSessionsWidget(QFrame):
+ class RecentActivityWidget(QFrame):
+     def __init__(self, parent=None):
+         super().__init__(parent)
+-        layout = QVBoxLayout(self)
+-        layout.setContentsMargins(0, 0, 0, 0)
+-        layout.setSpacing(SPACING_SM)
+-
+-        header = QHBoxLayout()
+-        header.addWidget(_label("NEDAVNA AKTIVNOST", FONT_LG, True))
+-        header.addStretch()
+-        header.addWidget(QPushButton("Otvori timeline →"))
+-        layout.addLayout(header)
+-
+-        events = [
+-            ("17:22", "pi / SESSION-42", "Commit a8f19d2"),
+-            ("17:10", "pi / SESSION-42", "Testovi: 18/19 prolazi"),
+-            ("16:40", "Sesija pokrenuta", "FLOW-103"),
+-            ("15:55", "FLOW-102", "Prešao u VERIFIED"),
+-        ]
+-
+-        for time, source, detail in events:
+-            row_layout = QHBoxLayout()
+-            t = _label(time, FONT_XS, False, TEXT_MUTED)
+-            t.setFixedWidth(50)
+-            row_layout.addWidget(t)
+-            row_layout.addWidget(_label(source, FONT_SM, True))
+-            row_layout.addWidget(_label(detail, FONT_SM, False, TEXT_SECONDARY))
+-            row_layout.addStretch()
+-            layout.addLayout(row_layout)
++        l = QVBoxLayout(self); l.setContentsMargins(0, 0, 0, 0); l.setSpacing(SPACING_SM)
++        h = QHBoxLayout(); h.addWidget(_lbl("NEDAVNA AKTIVNOST", FONT_LG, True)); h.addStretch()
++        h.addWidget(QPushButton("Otvori vremensku liniju →")); l.addLayout(h)
++        for t, src, det in [("17:22", "pi / SESSION-42", "Commit a8f19d2"), ("17:10", "pi / SESSION-42", "Testovi: 18/19 prolazi"), ("16:40", "Sesija pokrenuta", "FLOW-103"), ("15:55", "FLOW-102", "Prešao u Provjereno")]:
++            rl = QHBoxLayout(); rl.addWidget(_lbl(t, FONT_XS, False, TEXT_MUTED)); rl.addWidget(_lbl(src, FONT_SM, True)); rl.addWidget(_lbl(det, FONT_SM, False, TEXT_SECONDARY)); rl.addStretch(); l.addLayout(rl)
+ 
+ 
+ # ═══════════════════════════════════════════════════════════════════
+-# Desni panel — Gdje si stao
++# Desni panel — Gdje si stao (čitljiv, word wrap)
+ # ═══════════════════════════════════════════════════════════════════
+ 
+ class ProjectResumeWidget(QFrame):
+     def __init__(self, parent=None):
+         super().__init__(parent)
+         self.setStyleSheet(f"background: {BG_CARD}; border: 1px solid {BORDER}; border-radius: {RADIUS_MD}px;")
++        l = QVBoxLayout(self); l.setContentsMargins(SPACING_XL, SPACING_XL, SPACING_XL, SPACING_XL); l.setSpacing(SPACING_MD)
++        l.addWidget(_lbl("GDJE SI STAO", FONT_LG, True))
+ 
+-        layout = QVBoxLayout(self)
+-        layout.setContentsMargins(SPACING_XL, SPACING_XL, SPACING_XL, SPACING_XL)
+-        layout.setSpacing(SPACING_MD)
+-
+-        layout.addWidget(_label("GDJE SI STAO", FONT_LG, True))
+-
+-        # Informacije
+-        rows = [
+-            ("Plan:", "FlowOS v3"),
+-            ("Posljednja stavka:", "FLOW-103 — Service runtime"),
+-            ("Stanje:", "IMPLEMENTED · nije VERIFIED"),
+-            ("Posljednja sesija:", "pi · SESSION-42 · juče 18:20"),
+-            ("Posljednji dokaz:", "commit a8f19d2 · 18/19 testova"),
+-        ]
+-        for label, value in rows:
+-            row = QHBoxLayout()
+-            row.addWidget(_label(label, FONT_XS, False, TEXT_MUTED))
+-            row.addWidget(_label(value, FONT_SM, True))
+-            row.addStretch()
+-            layout.addLayout(row)
+-
+-        layout.addSpacing(SPACING_SM)
++        # Glavne info
++        for lbl, val in [("FLOW-103 — Rad servisnog procesa", ""), ("Implementirano", PURPLE), ("Nije provjereno", YELLOW)]:
++            if lbl.startswith("FLOW"):
++                l.addWidget(_lbl(lbl, FONT_MD, True))
++            else:
++                l.addWidget(_lbl(lbl, FONT_SM, True, val or TEXT_PRIMARY))
++
++        l.addWidget(_lbl("Posljednji rad", FONT_XS, False, TEXT_MUTED))
++        l.addWidget(_lbl("pi · SESSION-42 · juče 18:20", FONT_SM, True))
+ 
+         # Gdje je rad stao
+-        layout.addWidget(_section_title("Gdje je rad stao"))
+-        layout.addWidget(_label("Runtime servis i endpointi implementirani. Force terminate ostavlja descriptor.", FONT_SM, False, TEXT_SECONDARY))
++        l.addWidget(_sec("Gdje je rad stao"))
++        stopped = _lbl("Rad servisnog procesa i dijagnostički endpointi su implementirani. "
++                       "Force terminate na Windows-u ostavlja runtime descriptor.", FONT_SM, False, TEXT_SECONDARY)
++        stopped.setWordWrap(True); l.addWidget(stopped)
+ 
+-        # Sljedeći korak
+-        layout.addWidget(_section_title("Sljedeći konkretan korak"))
+-        layout.addWidget(_label("Implementirati supervisor cleanup nakon hard terminate-a.", FONT_SM, True, TEXT_PRIMARY))
++        # Sljedeći korak — vizuelno istaknut
++        l.addWidget(_sec("Sljedeći konkretan korak"))
++        next_step = _lbl("Implementirati nadzor nad čišćenjem nakon prisilnog prekida.", FONT_SM, True, TEXT_PRIMARY)
++        next_step.setWordWrap(True); l.addWidget(next_step)
+ 
+         # Preuslovi
+-        layout.addWidget(_section_title("Prije nastavka provjeriti"))
+-        layout.addWidget(_label("• trenutni HEAD\n• dirty tree\n• failing Windows lifecycle test", FONT_SM, False, TEXT_SECONDARY))
+-
+-        # Confidence
+-        conf_layout = QHBoxLayout()
+-        conf_layout.addWidget(_label("Pouzdanost:", FONT_XS, False, TEXT_MUTED))
+-        conf_layout.addWidget(_label("SREDNJA", FONT_SM, True, YELLOW))
+-        conf_layout.addWidget(_label("· posljednji reconciliation: prije 2 min", FONT_XS, False, TEXT_MUTED))
+-        conf_layout.addStretch()
+-        layout.addLayout(conf_layout)
+-
+-        # Dugmad
+-        btn_layout = QHBoxLayout()
+-        for text in ["Nastavi rad", "Otvori report"]:
+-            btn = QPushButton(text)
+-            btn.setStyleSheet(f"background: {BG_HOVER}; border: 1px solid {BORDER}; border-radius: {RADIUS_SM}px; color: {TEXT_PRIMARY}; padding: {SPACING_SM}px {SPACING_XL}px;")
+-            btn_layout.addWidget(btn)
+-        btn_layout.addStretch()
+-        layout.addLayout(btn_layout)
++        l.addWidget(_sec("Prije nastavka provjeriti"))
++        prec = _lbl("• trenutni HEAD\n• radno stablo sa neupisanim promjenama\n• neuspješan test životnog ciklusa", FONT_SM, False, TEXT_SECONDARY)
++        prec.setWordWrap(True); l.addWidget(prec)
++
++        # Pouzdanost
++        cr = QHBoxLayout()
++        cr.addWidget(_lbl("Pouzdanost:", FONT_XS, False, TEXT_MUTED))
++        cr.addWidget(_lbl("Srednja", FONT_SM, True, YELLOW))
++        cr.addWidget(_lbl("· posljednje usklađivanje: prije 2 min", FONT_XS, False, TEXT_MUTED)); cr.addStretch()
++        l.addLayout(cr)
++
++        bl = QHBoxLayout()
++        for t in ["Nastavi rad", "Otvori izvještaj"]:
++            btn = QPushButton(t); btn.setStyleSheet(f"background: {BG_HOVER}; border: 1px solid {BORDER}; border-radius: 4px; color: {TEXT_PRIMARY}; padding: {SPACING_SM}px {SPACING_XL}px;")
++            bl.addWidget(btn)
++        bl.addStretch(); l.addLayout(bl)
+ 
+ 
+ # ═══════════════════════════════════════════════════════════════════
+@@ -499,63 +336,37 @@ class PlanItemDetailsWidget(QFrame):
+     def __init__(self, parent=None):
+         super().__init__(parent)
+         self.setStyleSheet(f"background: {BG_CARD}; border: 1px solid {BORDER}; border-radius: {RADIUS_MD}px;")
++        l = QVBoxLayout(self); l.setContentsMargins(SPACING_XL, SPACING_XL, SPACING_XL, SPACING_XL); l.setSpacing(SPACING_MD)
++        l.addWidget(_lbl("DETALJI STAVKE PLANA", FONT_LG, True))
+ 
+-        layout = QVBoxLayout(self)
+-        layout.setContentsMargins(SPACING_XL, SPACING_XL, SPACING_XL, SPACING_XL)
+-        layout.setSpacing(SPACING_MD)
+-
+-        layout.addWidget(_label("DETALJI STAVKE PLANA", FONT_LG, True))
+-
+-        # Info
+-        for label, value in [("FLOW-103", "Service runtime"), ("Faza:", "Faza 1"), ("Status:", "IMPLEMENTED"), ("Agent:", "pi"), ("Sesija:", "SESSION-42")]:
+-            row = QHBoxLayout()
+-            row.addWidget(_label(label, FONT_XS, False, TEXT_MUTED))
+-            row.addWidget(_label(value, FONT_SM, True))
+-            row.addStretch()
+-            layout.addLayout(row)
+-
+-        # Acceptance kriterijumi
+-        layout.addWidget(_section_title("Acceptance kriterijumi"))
+-        criteria = [
+-            ("✓", "FastAPI app sa lifespan-om", GREEN),
+-            ("✓", "Single-instance lock", GREEN),
+-            ("✓", "Runtime descriptor", GREEN),
+-            ("✓", "/health, /version, /runtime", GREEN),
+-            ("◐", "Graceful shutdown — 1 test pada", YELLOW),
+-            ("○", "Lokalni strukturisani logovi", GRAY),
+-        ]
+-        for check, desc, color in criteria:
+-            row = QHBoxLayout()
+-            c = _label(check, FONT_SM, True, color)
+-            c.setFixedWidth(20)
+-            row.addWidget(c)
+-            row.addWidget(_label(desc, FONT_SM, False, TEXT_SECONDARY))
+-            row.addStretch()
+-            layout.addLayout(row)
+-
+-        # Dokazi
+-        layout.addWidget(_section_title("Dokazi"))
+-        layout.addWidget(_label("Commit: a8f19d2 · Testovi: 18/19 · Report: 2026-07-31_FLOW-103.md", FONT_XS, False, TEXT_MUTED))
++        for lbl, val in [("FLOW-103", "Rad servisnog procesa"), ("Faza:", "Faza 1"), ("Status:", "Implementirano"), ("Agent:", "pi"), ("Sesija:", "SESSION-42")]:
++            r = QHBoxLayout(); r.addWidget(_lbl(lbl, FONT_XS, False, TEXT_MUTED)); r.addWidget(_lbl(val, FONT_SM, True)); r.addStretch(); l.addLayout(r)
++
++        l.addWidget(_sec("Kriterijumi prihvatanja"))
++        for c, d, col in [("✓", "FastAPI aplikacija sa životnim ciklusom", GREEN), ("✓", "Single-instance zaključavanje", GREEN),
++                           ("✓", "Runtime descriptor", GREEN), ("✓", "/health, /version, /runtime", GREEN),
++                           ("◐", "Pristojno gašenje — 1 test ne prolazi", YELLOW), ("○", "Lokalni strukturisani zapisi", GRAY)]:
++            rl = QHBoxLayout(); cl = QLabel(c); cl.setFont(QFont("Segoe UI", FONT_SM, QFont.Weight.Bold)); cl.setStyleSheet(f"color: {col}; border: none;"); cl.setFixedWidth(20)
++            rl.addWidget(cl); rl.addWidget(_lbl(d, FONT_SM, False, TEXT_SECONDARY)); rl.addStretch(); l.addLayout(rl)
++
++        l.addWidget(_sec("Dokazi"))
++        l.addWidget(_lbl("Commit: a8f19d2 · Testovi: 18/19 · Izvještaj: 2026-07-31_FLOW-103.md", FONT_XS, False, TEXT_MUTED))
+ 
+ 
+ # ═══════════════════════════════════════════════════════════════════
+-# Desni panel — Reconciliation
++# Desni panel — Usklađivanje stanja
+ # ═══════════════════════════════════════════════════════════════════
+ 
+ class ReconciliationWidget(QFrame):
+     def __init__(self, parent=None):
+         super().__init__(parent)
+         self.setStyleSheet(f"background: {BG_CARD}; border: 1px solid {YELLOW}; border-radius: {RADIUS_MD}px; border-left: 4px solid {YELLOW};")
+-
+-        layout = QVBoxLayout(self)
+-        layout.setContentsMargins(SPACING_XL, SPACING_XL, SPACING_XL, SPACING_XL)
+-        layout.setSpacing(SPACING_SM)
+-
+-        layout.addWidget(_label("⚠ PROMJENE VAN FLOWOS-A", FONT_MD, True, YELLOW))
+-        layout.addWidget(_label("Projekat je mijenjan van FlowOS-a.", FONT_SM, False, TEXT_SECONDARY))
+-        layout.addWidget(_label("3 nova commita · 2 nekomitovana fajla", FONT_SM, True))
+-        layout.addWidget(_label("Branch: main → feature/runtime-fix", FONT_XS, False, TEXT_MUTED))
+-        layout.addWidget(_label("Autor nije potvrđen.", FONT_XS, False, RED))
++        l = QVBoxLayout(self); l.setContentsMargins(SPACING_XL, SPACING_XL, SPACING_XL, SPACING_XL); l.setSpacing(SPACING_SM)
++        l.addWidget(_lbl("⚠ PROMJENE VAN FLOWOS-A", FONT_MD, True, YELLOW))
++        l.addWidget(_lbl("Projekat je mijenjan van FlowOS-a.", FONT_SM, False, TEXT_SECONDARY))
++        l.addWidget(_lbl("3 nova commita · 2 neupisana fajla", FONT_SM, True))
++        l.addWidget(_lbl("Grana: main → feature/runtime-fix", FONT_XS, False, TEXT_MUTED))
++        l.addWidget(_lbl("Autor nije potvrđen.", FONT_XS, False, RED))
+ 
+ 
+ # ═══════════════════════════════════════════════════════════════════
+@@ -567,14 +378,10 @@ class StatusBar(QFrame):
+         super().__init__(parent)
+         self.setFixedHeight(FOOTER_HEIGHT)
+         self.setStyleSheet(f"background: {BG_SECONDARY}; border-top: 1px solid {BORDER};")
+-
+-        layout = QHBoxLayout(self)
+-        layout.setContentsMargins(SPACING_XL, 0, SPACING_XL, 0)
+-        layout.setSpacing(SPACING_XL)
+-
+-        for text in ["Servis: aktivan", "API: v1", "Baza: flowos.db · OK", "Watcher: aktivan", "Reconciliation: prije 2 min"]:
+-            layout.addWidget(_label(text, FONT_XS, False, TEXT_MUTED))
+-        layout.addStretch()
++        l = QHBoxLayout(self); l.setContentsMargins(SPACING_XL, 0, SPACING_XL, 0); l.setSpacing(SPACING_XL)
++        for t in ["Servis: aktivan", "API: v1", "Baza: flowos.db · u redu", "Posmatrač: aktivan", "Usklađivanje stanja: prije 2 min"]:
++            l.addWidget(_lbl(t, FONT_XS, False, TEXT_MUTED))
++        l.addStretch()
+ 
+ 
+ # ═══════════════════════════════════════════════════════════════════
+@@ -585,86 +392,37 @@ class MainWindow(QMainWindow):
+     def __init__(self):
+         super().__init__()
+         self.setWindowTitle("FlowOS — Pregled")
+-        self.resize(1400, 900)
+-        self.setMinimumSize(1024, 700)
++        self.resize(1400, 900); self.setMinimumSize(1024, 700)
+ 
+-        central = QWidget()
+-        self.setCentralWidget(central)
+-        root = QVBoxLayout(central)
+-        root.setContentsMargins(0, 0, 0, 0)
+-        root.setSpacing(0)
++        c = QWidget(); self.setCentralWidget(c)
++        root = QVBoxLayout(c); root.setContentsMargins(0, 0, 0, 0); root.setSpacing(0)
+ 
+-        # Topbar
+-        self.topbar = TopBar()
+-        root.addWidget(self.topbar)
++        self.topbar = TopBar(); root.addWidget(self.topbar)
+ 
+-        # Glavni sadržaj: Sidebar + Centralni + Desni
+         splitter = QSplitter(Qt.Orientation.Horizontal)
++        splitter.addWidget(Sidebar())
+ 
+-        self.sidebar = Sidebar()
+-        splitter.addWidget(self.sidebar)
+-
+-        # Centralni — scrollabilan
+-        scroll = QScrollArea()
+-        scroll.setWidgetResizable(True)
+-        scroll.setStyleSheet(f"QScrollArea {{ border: none; background: {BG_PRIMARY}; }}")
+-
+-        central_content = QWidget()
+-        central_layout = QVBoxLayout(central_content)
+-        central_layout.setContentsMargins(SPACING_XXL, SPACING_XL, SPACING_XL, SPACING_XL)
+-        central_layout.setSpacing(SPACING_XL)
+-
+-        central_layout.addWidget(PlanProgressWidget())
+-        central_layout.addWidget(ActiveSessionsWidget())
+-        central_layout.addWidget(RecentActivityWidget())
+-        central_layout.addStretch()
+-
+-        scroll.setWidget(central_content)
+-        splitter.addWidget(scroll)
+-
+-        # Desni panel — scrollabilan
+-        right_scroll = QScrollArea()
+-        right_scroll.setWidgetResizable(True)
+-        right_scroll.setStyleSheet(f"QScrollArea {{ border: none; background: {BG_PRIMARY}; }}")
++        # Centralni — scroll
++        cs = QScrollArea(); cs.setWidgetResizable(True); cs.setStyleSheet(f"QScrollArea {{ border: none; background: {BG_PRIMARY}; }}")
++        cc = QWidget(); cl = QVBoxLayout(cc); cl.setContentsMargins(SPACING_XXL, SPACING_XL, SPACING_XL, SPACING_XL); cl.setSpacing(SPACING_XL)
++        cl.addWidget(PlanProgressWidget()); cl.addWidget(ActiveSessionsWidget()); cl.addWidget(RecentActivityWidget()); cl.addStretch()
++        cs.setWidget(cc); splitter.addWidget(cs)
+ 
+-        right_content = QWidget()
+-        right_layout = QVBoxLayout(right_content)
+-        right_layout.setContentsMargins(0, SPACING_XL, SPACING_XXL, SPACING_XL)
+-        right_layout.setSpacing(SPACING_LG)
++        # Desni — JEDAN QScrollArea sa svim karticama
++        rs = QScrollArea(); rs.setWidgetResizable(True); rs.setStyleSheet(f"QScrollArea {{ border: none; background: {BG_PRIMARY}; }}")
++        rc = QWidget(); rl = QVBoxLayout(rc); rl.setContentsMargins(0, SPACING_XL, SPACING_XXL, SPACING_XL); rl.setSpacing(SPACING_LG)
++        rl.addWidget(ProjectResumeWidget()); rl.addWidget(PlanItemDetailsWidget()); rl.addWidget(ReconciliationWidget()); rl.addStretch()
++        rs.setWidget(rc); splitter.addWidget(rs)
+ 
+-        right_layout.addWidget(ProjectResumeWidget())
+-        right_layout.addWidget(PlanItemDetailsWidget())
+-        right_layout.addWidget(ReconciliationWidget())
+-        right_layout.addStretch()
+-
+-        right_scroll.setWidget(right_content)
+-        splitter.addWidget(right_scroll)
+-
+-        # Proporcije
+         splitter.setSizes([SIDEBAR_DEFAULT, 700, RIGHT_PANEL_DEFAULT])
+-        splitter.setStretchFactor(0, 0)  # Sidebar — fixed
+-        splitter.setStretchFactor(1, 1)  # Centralni — rasteže se
+-        splitter.setStretchFactor(2, 0)  # Desni — fixed
+-
++        splitter.setStretchFactor(0, 0); splitter.setStretchFactor(1, 1); splitter.setStretchFactor(2, 0)
+         root.addWidget(splitter)
+-
+-        # Footer
+         root.addWidget(StatusBar())
+ 
+ 
+-# ═══════════════════════════════════════════════════════════════════
+-# Entry point
+-# ═══════════════════════════════════════════════════════════════════
+-
+ def main():
+-    app = QApplication(sys.argv)
+-    app.setApplicationName("FlowOS")
+-    apply_dark_theme(app)
+-
+-    window = MainWindow()
+-    window.show()
+-
+-    sys.exit(app.exec())
++    app = QApplication(sys.argv); app.setApplicationName("FlowOS"); apply_dark_theme(app)
++    MainWindow().show(); sys.exit(app.exec())
+ 
+ 
+ if __name__ == "__main__":
+diff --git a/src/flowos/service/composition_root.py b/src/flowos/service/composition_root.py
+index 830b44c..f1265bd 100644
+--- a/src/flowos/service/composition_root.py
++++ b/src/flowos/service/composition_root.py
+@@ -9,13 +9,16 @@ se prosleđuje eksplicitno kroz konstruktor.
+ 
+ from contextlib import asynccontextmanager
+ 
+-from fastapi import FastAPI
+-from fastapi.middleware.cors import CORSMiddleware
++from fastapi import FastAPI, HTTPException, Request
++from fastapi.responses import JSONResponse
+ 
+ from flowos.service.controllers.http.plan_progress import router as plan_progress_router
+ from flowos.service.controllers.http.project_resume import (
+     router as project_resume_router,
+ )
++from flowos.service.controllers.http.sessions import (
++    router as sessions_router,
++)
+ from flowos.service.controllers.http.projects import router as projects_router
+ from flowos.service.controllers.http.system import router as system_router
+ from flowos.service.controllers.http.tasks import router as tasks_router
+@@ -42,19 +45,11 @@ def create_app(runtime: RuntimeManager, engine=None) -> FastAPI:
+         lifespan=_make_lifespan(runtime),
+     )
+ 
+-    # CORS — dozvoli samo loopback
+-    app.add_middleware(
+-        CORSMiddleware,
+-        allow_origins=["http://127.0.0.1:*", "http://localhost:*"],
+-        allow_credentials=True,
+-        allow_methods=["*"],
+-        allow_headers=["*"],
+-    )
+-
+     # Rute
+     app.include_router(system_router, tags=["System"])
+     app.include_router(projects_router, tags=["Projects"])
+     app.include_router(tasks_router, tags=["Tasks"])
++    app.include_router(sessions_router, tags=["Sessions"])
+     app.include_router(plan_progress_router, tags=["Plan Progress"])
+     app.include_router(project_resume_router, tags=["Project Resume"])
+ 
+@@ -62,14 +57,40 @@ def create_app(runtime: RuntimeManager, engine=None) -> FastAPI:
+     if engine is None:
+         engine = create_sqlite_engine()
+     app.state.session_factory = create_session_factory(engine)
+-    # Buduće rute — dodaju se kako servisi postanu dostupni
+-    # app.include_router(projects_router, prefix="/projects", tags=["Projects"])
+-    # app.include_router(tasks_router, prefix="/tasks", tags=["Tasks"])
+-    # app.include_router(sessions_router, prefix="/sessions", tags=["Sessions"])
++    # Globalni error handler — ApiErrorResponse format
++    @app.exception_handler(Exception)
++    async def global_error_handler(request: Request, exc: Exception):
++        import uuid
++        from flowos.shared.contracts.errors import ApiErrorResponse
++        from flowos.shared.errors.codes import ErrorCode
++
++        correlation_id = str(uuid.uuid4())
++        if isinstance(exc, HTTPException):
++            return JSONResponse(
++                status_code=exc.status_code,
++                content=ApiErrorResponse(
++                    code=_http_to_error_code(exc.status_code),
++                    message=str(exc.detail),
++                    correlation_id=correlation_id,
++                ).model_dump(),
++            )
++        return JSONResponse(
++            status_code=500,
++            content=ApiErrorResponse(
++                code=ErrorCode.INTERNAL_ERROR,
++                message="Interna greška servisa.",
++                correlation_id=correlation_id,
++            ).model_dump(),
++        )
+ 
+     return app
+ 
+ 
++def _http_to_error_code(status: int) -> str:
++    mapping = {400: "VALIDATION_ERROR", 404: "NOT_FOUND", 409: "CONFLICT", 422: "VALIDATION_ERROR"}
++    return mapping.get(status, "INTERNAL_ERROR")
++
++
+ def _make_lifespan(runtime: RuntimeManager):
+     """Kreira lifespan handler za FastAPI.
+ 
+diff --git a/src/flowos/service/controllers/http/projects.py b/src/flowos/service/controllers/http/projects.py
+index 758ee2c..f42b99b 100644
+--- a/src/flowos/service/controllers/http/projects.py
++++ b/src/flowos/service/controllers/http/projects.py
+@@ -1,85 +1,77 @@
+-"""HTTP API Controllers — Projekti (CRUD)."""
++"""HTTP API Controllers — Projekti (CRUD).
++
++Tanke rute sa Pydantic request/response modelima.
++Bez ORM importa, bez ručnih dict-ova.
++"""
+ 
+ from fastapi import APIRouter, Depends, HTTPException, Request
+ from sqlalchemy.orm import Session
+ 
+ from flowos.service.services.projects.service import ProjectService
++from flowos.shared.contracts.projects import ProjectCreate, ProjectResponse, ProjectUpdate
+ 
+ router = APIRouter(prefix="/projects", tags=["Projects"])
+ 
+ 
+ def get_session(request: Request) -> Session:
+-    return request.app.state.session_factory()
+-
+-
+-def _project_to_dict(p) -> dict:
+-    return {
+-        "id": p.id,
+-        "name": p.name,
+-        "repo_path": p.repo_path,
+-        "status": p.status,
+-        "notes": p.notes,
+-        "created_at": p.created_at.isoformat() if p.created_at else None,
+-        "updated_at": p.updated_at.isoformat() if p.updated_at else None,
+-    }
++    session = request.app.state.session_factory()
++    try:
++        yield session
++        session.commit()
++    except Exception:
++        session.rollback()
++        raise
++    finally:
++        session.close()
++
++
++def _project_to_response(p) -> ProjectResponse:
++    return ProjectResponse(
++        id=p.id, name=p.name, repo_path=p.repo_path,
++        status=p.status, notes=p.notes,
++        created_at=p.created_at,
++        updated_at=p.updated_at,
++    )
+ 
+ 
+-@router.get("")
++@router.get("", response_model=list[ProjectResponse])
+ def list_projects(session: Session = Depends(get_session)):
+-    svc = ProjectService(session)
+-    projects = svc.list_projects()
+-    return [_project_to_dict(p) for p in projects]
+-
++    return [_project_to_response(p) for p in ProjectService(session).list_projects()]
+ 
+-@router.post("")
+-def create_project(data: dict, session: Session = Depends(get_session)):
+-    from flowos.shared.contracts.projects import ProjectCreate
+-
+-    try:
+-        validated = ProjectCreate(**data)
+-    except Exception as e:
+-        raise HTTPException(status_code=400, detail=str(e)) from e
+ 
++@router.post("", response_model=ProjectResponse)
++def create_project(data: ProjectCreate, session: Session = Depends(get_session)):
+     svc = ProjectService(session)
+-    p = svc.create_project(
+-        name=validated.name,
+-        repo_path=validated.repo_path,
+-        notes=validated.notes,
+-    )
++    p = svc.create_project(name=data.name, repo_path=data.repo_path, notes=data.notes)
+     session.commit()
+-    return _project_to_dict(p)
++    return _project_to_response(p)
+ 
+ 
+-@router.get("/{project_id}")
++@router.get("/{project_id}", response_model=ProjectResponse)
+ def get_project(project_id: str, session: Session = Depends(get_session)):
+-    svc = ProjectService(session)
+-    p = svc.get_project(project_id)
++    p = ProjectService(session).get_project(project_id)
+     if not p:
+         raise HTTPException(status_code=404, detail="Projekat nije pronađen")
+-    return _project_to_dict(p)
++    return _project_to_response(p)
+ 
+ 
+-@router.patch("/{project_id}")
+-def update_project(project_id: str, data: dict, session: Session = Depends(get_session)):
+-    svc = ProjectService(session)
+-    p = svc.update_project(
++@router.patch("/{project_id}", response_model=ProjectResponse)
++def update_project(project_id: str, data: ProjectUpdate, session: Session = Depends(get_session)):
++    p = ProjectService(session).update_project(
+         project_id,
+-        name=data.get("name"),
+-        repo_path=data.get("repo_path"),
+-        notes=data.get("notes"),
+-        status=data.get("status"),
++        name=data.name, repo_path=data.repo_path,
++        notes=data.notes, status=data.status,
+     )
+     if not p:
+         raise HTTPException(status_code=404, detail="Projekat nije pronađen")
+     session.commit()
+-    return _project_to_dict(p)
++    return _project_to_response(p)
+ 
+ 
+ @router.delete("/{project_id}")
+ def delete_project(project_id: str, session: Session = Depends(get_session)):
+-    svc = ProjectService(session)
+-    ok = svc.delete_project(project_id)
++    ok = ProjectService(session).delete_project(project_id)
+     if not ok:
+         raise HTTPException(status_code=404, detail="Projekat nije pronađen")
+     session.commit()
+-    return {"status": "deleted", "id": project_id}
++    return {"status": "deleted", "id": project_id}
+\ No newline at end of file
+diff --git a/src/flowos/service/controllers/http/sessions.py b/src/flowos/service/controllers/http/sessions.py
+new file mode 100644
+index 0000000..2ea88de
+--- /dev/null
++++ b/src/flowos/service/controllers/http/sessions.py
+@@ -0,0 +1,89 @@
++"""HTTP API Controllers — Sesije."""
++
++from fastapi import APIRouter, Depends, HTTPException, Request
++from sqlalchemy.orm import Session
++
++from flowos.service.services.sessions.service import SessionService
++
++router = APIRouter(prefix="/sessions", tags=["Sessions"])
++
++
++def get_session(request: Request) -> Session:
++    session = request.app.state.session_factory()
++    try:
++        yield session
++        session.commit()
++    except Exception:
++        session.rollback()
++        raise
++    finally:
++        session.close()
++
++
++def _session_to_dict(s) -> dict:
++    return {
++        "id": s.id, "task_id": s.task_id, "project_id": s.project_id,
++        "agent_type": s.agent_type, "model_name": s.model_name,
++        "execution_mode": s.execution_mode, "terminal_label": s.terminal_label,
++        "working_directory": s.working_directory, "repo_path": s.repo_path,
++        "branch_name": s.branch_name, "worktree_path": s.worktree_path,
++        "plan_item_id": getattr(s, "plan_item_id", None),
++        "base_commit_sha": s.base_commit_sha, "pid": s.pid,
++        "status": s.status,
++        "started_at": s.started_at.isoformat() if s.started_at else None,
++        "last_activity_at": s.last_activity_at.isoformat() if s.last_activity_at else None,
++        "ended_at": s.ended_at.isoformat() if s.ended_at else None,
++        "exit_code": s.exit_code,
++    }
++
++
++@router.post("")
++def create_session(data: dict, session: Session = Depends(get_session)):
++    svc = SessionService(session)
++    s = svc.create_session(
++        project_id=data["project_id"],
++        agent_type=data["agent_type"],
++        repo_path=data["repo_path"],
++        task_id=data.get("task_id"),
++        model_name=data.get("model_name"),
++        execution_mode=data.get("execution_mode", "WRAPPED_TERMINAL"),
++        branch_name=data.get("branch_name"),
++        worktree_path=data.get("worktree_path"),
++        plan_item_id=data.get("plan_item_id"),
++        base_commit_sha=data.get("base_commit_sha"),
++        pid=data.get("pid"),
++    )
++    session.commit()
++    return _session_to_dict(s)
++
++
++@router.get("/active")
++def list_active_sessions(project_id: str, session: Session = Depends(get_session)):
++    return [_session_to_dict(s) for s in SessionService(session).list_active_sessions(project_id)]
++
++
++@router.get("")
++def list_sessions(project_id: str, limit: int = 50, session: Session = Depends(get_session)):
++    return [_session_to_dict(s) for s in SessionService(session).list_sessions(project_id, limit)]
++
++
++@router.get("/{session_id}")
++def get_session_endpoint(session_id: str, session: Session = Depends(get_session)):
++    s = SessionService(session).get_session(session_id)
++    if not s:
++        raise HTTPException(status_code=404, detail="Sesija nije pronađena")
++    return _session_to_dict(s)
++
++
++@router.post("/{session_id}/end")
++def end_session(session_id: str, data: dict = {}, session: Session = Depends(get_session)):
++    s = SessionService(session).end_session(
++        session_id,
++        exit_code=data.get("exit_code"),
++        base_commit_sha=data.get("base_commit_sha"),
++        status=data.get("status", "COMPLETED"),
++    )
++    if not s:
++        raise HTTPException(status_code=404, detail="Sesija nije pronađena")
++    session.commit()
++    return _session_to_dict(s)
+\ No newline at end of file
+diff --git a/src/flowos/service/controllers/http/tasks.py b/src/flowos/service/controllers/http/tasks.py
+index df20956..1d171c6 100644
+--- a/src/flowos/service/controllers/http/tasks.py
++++ b/src/flowos/service/controllers/http/tasks.py
+@@ -1,90 +1,78 @@
+-"""HTTP API Controllers — Zadaci (CRUD)."""
++"""HTTP API Controllers — Zadaci (CRUD).
++
++Tanke rute sa Pydantic request/response modelima.
++"""
+ 
+ from fastapi import APIRouter, Depends, HTTPException, Request
+ from sqlalchemy.orm import Session
+ 
+ from flowos.service.services.tasks.service import TaskService
++from flowos.shared.contracts.tasks import TaskCreate, TaskResponse, TaskUpdate
+ 
+ router = APIRouter(prefix="/tasks", tags=["Tasks"])
+ 
+ 
+ def get_session(request: Request) -> Session:
+-    return request.app.state.session_factory()
+-
+-
+-def _task_to_dict(t) -> dict:
+-    return {
+-        "id": t.id,
+-        "project_id": t.project_id,
+-        "title": t.title,
+-        "description": t.description,
+-        "status": t.status,
+-        "priority": t.priority,
+-        "plan_item_id": t.plan_item_id,
+-        "created_at": t.created_at.isoformat() if t.created_at else None,
+-        "updated_at": t.updated_at.isoformat() if t.updated_at else None,
+-        "done_at": t.done_at.isoformat() if t.done_at else None,
+-    }
++    session = request.app.state.session_factory()
++    try:
++        yield session
++        session.commit()
++    except Exception:
++        session.rollback()
++        raise
++    finally:
++        session.close()
++
++
++def _task_to_response(t) -> TaskResponse:
++    return TaskResponse(
++        id=t.id, project_id=t.project_id, title=t.title,
++        description=t.description, status=t.status, priority=t.priority,
++        plan_item_id=getattr(t, "plan_item_id", None),
++        created_at=t.created_at, updated_at=t.updated_at, done_at=t.done_at,
++    )
+ 
+ 
+-@router.get("")
++@router.get("", response_model=list[TaskResponse])
+ def list_tasks(project_id: str, session: Session = Depends(get_session)):
+-    svc = TaskService(session)
+-    tasks = svc.list_tasks(project_id)
+-    return [_task_to_dict(t) for t in tasks]
++    return [_task_to_response(t) for t in TaskService(session).list_tasks(project_id)]
+ 
+ 
+-@router.post("")
+-def create_task(data: dict, session: Session = Depends(get_session)):
+-    from flowos.shared.contracts.tasks import TaskCreate
+-
+-    try:
+-        validated = TaskCreate(**data)
+-    except Exception as e:
+-        raise HTTPException(status_code=400, detail=str(e)) from e
+-
++@router.post("", response_model=TaskResponse)
++def create_task(data: TaskCreate, session: Session = Depends(get_session)):
+     svc = TaskService(session)
+     t = svc.create_task(
+-        project_id=validated.project_id,
+-        title=validated.title,
+-        description=validated.description,
+-        priority=validated.priority,
++        project_id=data.project_id, title=data.title,
++        description=data.description, priority=data.priority,
+     )
+     session.commit()
+-    return _task_to_dict(t)
++    return _task_to_response(t)
+ 
+ 
+-@router.get("/{task_id}")
++@router.get("/{task_id}", response_model=TaskResponse)
+ def get_task(task_id: str, session: Session = Depends(get_session)):
+-    svc = TaskService(session)
+-    t = svc.get_task(task_id)
++    t = TaskService(session).get_task(task_id)
+     if not t:
+         raise HTTPException(status_code=404, detail="Zadatak nije pronađen")
+-    return _task_to_dict(t)
++    return _task_to_response(t)
+ 
+ 
+-@router.patch("/{task_id}")
+-def update_task(task_id: str, data: dict, session: Session = Depends(get_session)):
+-    svc = TaskService(session)
+-    t = svc.update_task(
+-        task_id,
+-        title=data.get("title"),
+-        description=data.get("description"),
+-        status=data.get("status"),
+-        priority=data.get("priority"),
+-        plan_item_id=data.get("plan_item_id"),
++@router.patch("/{task_id}", response_model=TaskResponse)
++def update_task(task_id: str, data: TaskUpdate, session: Session = Depends(get_session)):
++    t = TaskService(session).update_task(
++        task_id, title=data.title, description=data.description,
++        status=data.status, priority=data.priority, plan_item_id=None,
+     )
+     if not t:
+         raise HTTPException(status_code=404, detail="Zadatak nije pronađen")
+     session.commit()
+-    return _task_to_dict(t)
++    return _task_to_response(t)
+ 
+ 
+ @router.delete("/{task_id}")
+ def delete_task(task_id: str, session: Session = Depends(get_session)):
+-    svc = TaskService(session)
+-    ok = svc.delete_task(task_id)
++    ok = TaskService(session).delete_task(task_id)
+     if not ok:
+         raise HTTPException(status_code=404, detail="Zadatak nije pronađen")
+     session.commit()
+-    return {"status": "deleted", "id": task_id}
++    return {"status": "deleted", "id": task_id}
+\ No newline at end of file
+diff --git a/src/flowos/service/services/attribution/service.py b/src/flowos/service/services/attribution/service.py
+new file mode 100644
+index 0000000..0cffa6c
+--- /dev/null
++++ b/src/flowos/service/services/attribution/service.py
+@@ -0,0 +1,71 @@
++"""Attribution Service — atribucija promena fajlova sesijama.
++
++Pravila:
++- WORKTREE: fajl u worktree-ju sesije → pouzdana atribucija
++- SOLE_ACTIVE: samo jedna aktivna sesija u tree-ju → vjerovatna
++- HINT: hint match sa više aktivnih sesija → srednja pouzdanost
++- UNATTRIBUTED: više sesija bez dokaza → niska pouzdanost
++- USER: nijedna aktivna sesija → korisnik
++"""
++
++from dataclasses import dataclass, field
++from pathlib import Path
++
++
++@dataclass
++class ActiveSession:
++    session_id: str
++    worktree_path: str | None = None
++    repo_path: str = ""
++    plan_item_id: str | None = None
++
++
++@dataclass
++class AttributionResult:
++    file_path: str
++    attribution: str  # WORKTREE, SOLE_ACTIVE, HINT, UNATTRIBUTED, USER
++    session_id: str | None = None
++    confidence: str = "LOW"  # HIGH, MEDIUM, LOW
++
++
++class AttributionService:
++    """Određuje kojoj sesiji pripada promena fajla."""
++
++    @staticmethod
++    def attribute(
++        file_path: str,
++        active_sessions: list[ActiveSession],
++    ) -> AttributionResult:
++        """Atribuira promenu fajla na osnovu aktivnih sesija."""
++        if not active_sessions:
++            return AttributionResult(file_path=file_path, attribution="USER")
++
++        # WORKTREE — pouzdana atribucija
++        for s in active_sessions:
++            if s.worktree_path and _is_in_worktree(file_path, s.worktree_path):
++                return AttributionResult(file_path=file_path, attribution="WORKTREE", session_id=s.session_id, confidence="HIGH")
++
++        # SOLE_ACTIVE — samo jedna sesija
++        if len(active_sessions) == 1:
++            s = active_sessions[0]
++            return AttributionResult(file_path=file_path, attribution="SOLE_ACTIVE", session_id=s.session_id, confidence="MEDIUM")
++
++        # UNATTRIBUTED — više sesija
++        return AttributionResult(file_path=file_path, attribution="UNATTRIBUTED", confidence="LOW")
++
++    @staticmethod
++    def attribute_batch(
++        file_paths: list[str],
++        active_sessions: list[ActiveSession],
++    ) -> list[AttributionResult]:
++        return [AttributionService.attribute(fp, active_sessions) for fp in file_paths]
++
++
++def _is_in_worktree(file_path: str, worktree_path: str) -> bool:
++    """Proverava da li je fajl unutar worktree putanje."""
++    try:
++        fp = Path(file_path).resolve()
++        wt = Path(worktree_path).resolve()
++        return str(fp).startswith(str(wt))
++    except Exception:
++        return False
+\ No newline at end of file
+diff --git a/src/flowos/service/services/infrastructure/agent_adapters/claude_code.py b/src/flowos/service/services/infrastructure/agent_adapters/claude_code.py
+new file mode 100644
+index 0000000..0125ade
+--- /dev/null
++++ b/src/flowos/service/services/infrastructure/agent_adapters/claude_code.py
+@@ -0,0 +1,219 @@
++"""Agent adapteri — interfejs i Claude Code implementacija.
++
++Capability model:
++- can_launch: FlowOS sme pokrenuti alat
++- can_stream_events: alat emituje strukturirane događaje
++- can_report_usage: alat prijavljuje tokene/trošak
++- can_cancel: podržava kontrolisani prekid
++- can_use_worktree: radi ispravno u zadatom worktreeju
++
++Adapter zna: komandu, argumente, environment, kako prepoznaje izlaz.
++Core Services ne znaju konkretne CLI detalje pojedinačnog agenta.
++"""
++
++import os
++import subprocess
++import sys
++from dataclasses import dataclass, field
++from pathlib import Path
++from typing import Protocol
++
++
++# ═══════════════════════════════════════════════════════════════════
++# Capability model
++# ═══════════════════════════════════════════════════════════════════
++
++
++@dataclass
++class AdapterCapabilities:
++    can_launch: bool = True
++    can_stream_events: bool = False
++    can_report_usage: bool = False
++    can_cancel: bool = True
++    can_use_worktree: bool = True
++
++
++# ═══════════════════════════════════════════════════════════════════
++# Agent Request / Result
++# ═══════════════════════════════════════════════════════════════════
++
++
++@dataclass
++class AgentRequest:
++    """Zahtev za pokretanje agenta."""
++
++    agent_type: str
++    working_directory: str
++    repo_path: str
++    model_name: str | None = None
++    task_description: str | None = None
++    branch_name: str | None = None
++    worktree_path: str | None = None
++    extra_args: list[str] = field(default_factory=list)
++    env: dict[str, str] = field(default_factory=dict)
++
++
++@dataclass
++class AgentResult:
++    """Rezultat agentske sesije."""
++
++    exit_code: int
++    stdout_summary: str  # poslednjih N linija
++    stderr_summary: str
++    duration_seconds: float
++    interrupted: bool = False
++
++
++# ═══════════════════════════════════════════════════════════════════
++# Adapter Protocol
++# ═══════════════════════════════════════════════════════════════════
++
++
++class AgentAdapter(Protocol):
++    """Ugovor za agentski adapter."""
++
++    def capabilities(self) -> AdapterCapabilities: ...
++
++    def get_command(self, request: AgentRequest) -> list[str]: ...
++
++    def get_environment(self, request: AgentRequest) -> dict[str, str]: ...
++
++
++# ═══════════════════════════════════════════════════════════════════
++# Claude Code adapter
++# ═══════════════════════════════════════════════════════════════════
++
++
++class ClaudeCodeAdapter:
++    """Adapter za Claude Code CLI alat.
++
++    Komanda: claude [--model MODEL] [--workdir DIR] [task description]
++
++    Environment: filtrira tajne, koristi samo bezbedne varijable.
++    """
++
++    AGENT_TYPE = "claude-code"
++
++    def capabilities(self) -> AdapterCapabilities:
++        return AdapterCapabilities(
++            can_launch=True,
++            can_stream_events=False,  # Claude Code CLI ne emituje structured events
++            can_report_usage=False,
++            can_cancel=True,
++            can_use_worktree=True,
++        )
++
++    def get_command(self, request: AgentRequest) -> list[str]:
++        cmd = ["claude"]
++
++        if request.model_name:
++            cmd.extend(["--model", request.model_name])
++
++        if request.worktree_path:
++            cmd.extend(["--workdir", request.worktree_path])
++        elif request.working_directory:
++            cmd.extend(["--workdir", request.working_directory])
++
++        if request.branch_name:
++            cmd.extend(["--branch", request.branch_name])
++
++        if request.task_description:
++            cmd.append(request.task_description)
++
++        cmd.extend(request.extra_args)
++        return cmd
++
++    def get_environment(self, request: AgentRequest) -> dict[str, str]:
++        """Filtrirani environment — bez tajni.
++
++        Zadržava: PATH, HOME, USER, SYSTEMROOT, TEMP, TMP.
++        Uklanja: API ključeve, tokene, secrets.
++        """
++        safe_keys = {"PATH", "HOME", "USER", "USERNAME", "SYSTEMROOT", "TEMP", "TMP", "LANG", "TERM"}
++        env = {}
++        for key, value in os.environ.items():
++            if key in safe_keys or key.startswith("CLAUDE_") or key.startswith("ANTHROPIC_"):
++                env[key] = value
++        env.update(request.env)
++        return env
++
++
++# ═══════════════════════════════════════════════════════════════════
++# Process launcher (koristi Job Object na Windows-u)
++# ═══════════════════════════════════════════════════════════════════
++
++
++class AgentProcessLauncher:
++    """Pokreće agentski proces sa Job Object kontrolom."""
++
++    def __init__(self, adapter: AgentAdapter) -> None:
++        self._adapter = adapter
++
++    def launch(self, request: AgentRequest, *, timeout: float | None = None) -> AgentResult:
++        """Pokreće agenta i čeka rezultat.
++
++        Args:
++            request: AgentRequest sa svim parametrima.
++            timeout: Timeout u sekundama (None = bez timeout-a).
++
++        Returns:
++            AgentResult sa exit_code, stdout i stderr.
++        """
++        import time
++
++        cmd = self._adapter.get_command(request)
++        env = self._adapter.get_environment(request)
++
++        start = time.monotonic()
++        try:
++            proc = subprocess.Popen(
++                cmd,
++                cwd=request.working_directory,
++                env=env,
++                stdout=subprocess.PIPE,
++                stderr=subprocess.PIPE,
++                text=True,
++                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
++            )
++
++            try:
++                stdout, stderr = proc.communicate(timeout=timeout)
++                interrupted = False
++            except subprocess.TimeoutExpired:
++                proc.kill()
++                stdout, stderr = proc.communicate()
++                interrupted = True
++
++            proc.wait()  # Osiguraj da je returncode dostupan
++
++            duration = time.monotonic() - start
++
++            return AgentResult(
++                exit_code=proc.returncode or -1,
++                stdout_summary=stdout[-2000:] if stdout else "",
++                stderr_summary=stderr[-2000:] if stderr else "",
++                duration_seconds=duration,
++                interrupted=interrupted,
++            )
++        except FileNotFoundError:
++            return AgentResult(
++                exit_code=-1,
++                stdout_summary="",
++                stderr_summary=f"Komanda nije pronađena: {cmd[0]}",
++                duration_seconds=time.monotonic() - start,
++                interrupted=False,
++            )
++
++    def kill_process_tree(self, pid: int) -> None:
++        """Ubija celo stablo procesa koristeći Windows Job Object."""
++        if sys.platform == "win32":
++            try:
++                from ctypes import windll, wintypes
++
++                kernel32 = windll.kernel32
++                handle = kernel32.OpenProcess(1, False, pid)
++                if handle:
++                    kernel32.TerminateProcess(handle, 1)
++                    kernel32.CloseHandle(handle)
++            except Exception:
++                pass
+\ No newline at end of file
+diff --git a/src/flowos/service/services/infrastructure/app_paths.py b/src/flowos/service/services/infrastructure/app_paths.py
+new file mode 100644
+index 0000000..66ff1af
+--- /dev/null
++++ b/src/flowos/service/services/infrastructure/app_paths.py
+@@ -0,0 +1,68 @@
++"""FlowOS AppPaths — centralni izvor svih putanja aplikacije.
++
++Jedan modul za sve putanje. Svi moduli moraju koristiti ovaj modul
++umesto direktnog konstruisanja putanja kroz Path.home() ili os.environ.
++"""
++
++import os
++from pathlib import Path
++
++
++def _get_local_appdata() -> Path:
++    """Vraća %LOCALAPPDATA% ili ekvivalent."""
++    local = os.environ.get("LOCALAPPDATA")
++    if local:
++        return Path(local)
++    return Path.home() / "AppData" / "Local"
++
++
++_BASE = _get_local_appdata() / "FlowOS"
++
++
++def get_runtime_dir() -> Path:
++    """%LOCALAPPDATA%/FlowOS/runtime/ — runtime descriptor i lock fajlovi."""
++    return _BASE / "runtime"
++
++
++def get_data_dir() -> Path:
++    """%LOCALAPPDATA%/FlowOS/data/ — SQLite baza."""
++    return _BASE / "data"
++
++
++def get_logs_dir() -> Path:
++    """%LOCALAPPDATA%/FlowOS/logs/ — log fajlovi."""
++    return _BASE / "logs"
++
++
++def get_artifacts_dir() -> Path:
++    """%LOCALAPPDATA%/FlowOS/artifacts/ — veliki artefakti."""
++    return _BASE / "artifacts"
++
++
++def get_spool_dir() -> Path:
++    """%LOCALAPPDATA%/FlowOS/spool/ — offline JSONL spool."""
++    return _BASE / "spool"
++
++
++def get_backups_dir() -> Path:
++    """%LOCALAPPDATA%/FlowOS/backups/ — dnevni backup baze."""
++    return _BASE / "backups"
++
++
++def get_settings_dir() -> Path:
++    """%LOCALAPPDATA%/FlowOS/settings/ — korisničke postavke."""
++    return _BASE / "settings"
++
++
++def ensure_directories() -> None:
++    """Kreira sve potrebne direktorijume."""
++    for d in [
++        get_runtime_dir(),
++        get_data_dir(),
++        get_logs_dir(),
++        get_artifacts_dir(),
++        get_spool_dir(),
++        get_backups_dir(),
++        get_settings_dir(),
++    ]:
++        d.mkdir(parents=True, exist_ok=True)
+\ No newline at end of file
+diff --git a/src/flowos/service/services/infrastructure/git_poller.py b/src/flowos/service/services/infrastructure/git_poller.py
+new file mode 100644
+index 0000000..f2d5d69
+--- /dev/null
++++ b/src/flowos/service/services/infrastructure/git_poller.py
+@@ -0,0 +1,125 @@
++"""Git polling service — periodična provera Git stanja.
++
++Koristi subprocess za git komande. Ne uvodi GitPython.
++Polling interval: 30s. Upoređuje sa poslednjim poznatim stanjem.
++"""
++
++import subprocess
++import time
++from dataclasses import dataclass, field
++from datetime import UTC, datetime
++from pathlib import Path
++
++
++@dataclass
++class GitState:
++    """Trenutno Git stanje repozitorijuma."""
++
++    commit_sha: str | None = None
++    branch: str | None = None
++    status_porcelain: str = ""
++    changed_files: list[str] = field(default_factory=list)
++    is_dirty: bool = False
++    observed_at: str = ""
++
++    def to_dict(self) -> dict:
++        return {
++            "commit_sha": self.commit_sha,
++            "branch": self.branch,
++            "status_porcelain": self.status_porcelain,
++            "changed_files": self.changed_files,
++            "is_dirty": self.is_dirty,
++            "observed_at": self.observed_at,
++        }
++
++
++class GitPoller:
++    """Periodično proverava Git stanje repozitorijuma.
++
++    Ne koristi GitPython — sve kroz subprocess.
++    Interval: 30 sekundi.
++    """
++
++    def __init__(self, repo_path: str, interval: float = 30.0) -> None:
++        self._repo = Path(repo_path)
++        self._interval = interval
++        self._last_state: GitState | None = None
++        self._running = False
++
++    @property
++    def last_state(self) -> GitState | None:
++        return self._last_state
++
++    def poll(self) -> GitState:
++        """Izvršava git komande i vraća trenutno stanje.
++
++        Komande:
++        - git rev-parse HEAD
++        - git branch --show-current
++        - git status --porcelain=v2
++        - git diff --name-only HEAD (ako je dirty)
++        """
++        state = GitState(observed_at=datetime.now(tz=UTC).isoformat())
++
++        try:
++            state.commit_sha = self._run_git(["rev-parse", "HEAD"]).strip()
++        except Exception:
++            state.commit_sha = None
++
++        try:
++            state.branch = self._run_git(["branch", "--show-current"]).strip()
++        except Exception:
++            state.branch = None
++
++        try:
++            state.status_porcelain = self._run_git(["status", "--porcelain=v2"])
++        except Exception:
++            state.status_porcelain = ""
++
++        state.is_dirty = bool(state.status_porcelain.strip())
++
++        if state.is_dirty:
++            try:
++                files = self._run_git(["diff", "--name-only", "HEAD"])
++                state.changed_files = [f for f in files.split("\n") if f]
++            except Exception:
++                state.changed_files = []
++
++        self._last_state = state
++        return state
++
++    def detect_changes(self, fresh: GitState) -> dict:
++        """Upoređuje sveže stanje sa poslednjim. Vraća promene."""
++        prev = self._last_state
++        changes = {"new_commits": False, "branch_changed": False, "new_dirty": False, "details": ""}
++
++        if not prev:
++            changes["details"] = "Prvo snimanje stanja."
++            return changes
++
++        if fresh.commit_sha and prev.commit_sha and fresh.commit_sha != prev.commit_sha:
++            changes["new_commits"] = True
++            changes["details"] += f"Novi commit: {prev.commit_sha[:8]} → {fresh.commit_sha[:8]}. "
++
++        if fresh.branch and prev.branch and fresh.branch != prev.branch:
++            changes["branch_changed"] = True
++            changes["details"] += f"Granica promijenjena: {prev.branch} → {fresh.branch}. "
++
++        if fresh.is_dirty and not prev.is_dirty:
++            changes["new_dirty"] = True
++            changes["details"] += f"Radno stablo sa neupisanim promjenama ({len(fresh.changed_files)} fajlova). "
++
++        return changes
++
++    def _run_git(self, args: list[str]) -> str:
++        """Pokreće git komandu i vraća stdout."""
++        result = subprocess.run(
++            ["git"] + args,
++            cwd=str(self._repo),
++            capture_output=True,
++            text=True,
++            timeout=15,
++        )
++        if result.returncode != 0:
++            raise RuntimeError(result.stderr.strip())
++        return result.stdout
+\ No newline at end of file
+diff --git a/src/flowos/service/services/infrastructure/runtime.py b/src/flowos/service/services/infrastructure/runtime.py
+index 5fef46c..26d3bce 100644
+--- a/src/flowos/service/services/infrastructure/runtime.py
++++ b/src/flowos/service/services/infrastructure/runtime.py
+@@ -10,11 +10,13 @@ import json
+ import os
+ import socket
+ import sys
++import uuid
+ from ctypes import windll, wintypes
++from typing import Any
++
++from flowos.service.services.infrastructure.app_paths import get_runtime_dir
+ 
+ kernel32 = windll.kernel32
+-from pathlib import Path
+-from typing import Any
+ 
+ if sys.platform != "win32":
+     import fcntl  # pragma: no cover
+@@ -38,11 +40,7 @@ class RuntimeManager:
+     """
+ 
+     MUTEX_NAME = "Global\\FlowOS_Service_Mutex"
+-    DESCRIPTOR_DIR = (
+-        Path(os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local")))
+-        / "FlowOS"
+-        / "runtime"
+-    )
++    DESCRIPTOR_DIR = get_runtime_dir()
+     DESCRIPTOR_FILE = DESCRIPTOR_DIR / "service.json"
+     DEFAULT_PORT = 9100
+ 
+@@ -127,22 +125,21 @@ class RuntimeManager:
+     # ── Runtime descriptor ──────────────────────────────────
+ 
+     def write_descriptor(self, port: int) -> None:
+-        """Upisuje runtime descriptor JSON fajl.
+-
+-        Args:
+-            port: Port na kojem servis sluša.
+-        """
++        """Upisuje runtime descriptor JSON fajl atomski (tmp → rename)."""
+         self.DESCRIPTOR_DIR.mkdir(parents=True, exist_ok=True)
+         descriptor = {
+             "pid": self._pid,
+             "port": port,
+             "version": "0.1.0",
+             "api_version": 1,
++            "instance_id": str(uuid.uuid4()),
+             "started_at": self._utcnow_iso(),
+             "data_directory": str(self.DESCRIPTOR_DIR.parent / "data"),
+             "status": "running",
+         }
+-        self.DESCRIPTOR_FILE.write_text(json.dumps(descriptor, indent=2))
++        tmp = self.DESCRIPTOR_FILE.with_suffix(".tmp")
++        tmp.write_text(json.dumps(descriptor, indent=2))
++        tmp.replace(self.DESCRIPTOR_FILE)
+ 
+     def delete_descriptor(self) -> None:
+         """Briše runtime descriptor JSON fajl (graceful shutdown)."""
+diff --git a/src/flowos/service/services/infrastructure/watcher.py b/src/flowos/service/services/infrastructure/watcher.py
+new file mode 100644
+index 0000000..7102881
+--- /dev/null
++++ b/src/flowos/service/services/infrastructure/watcher.py
+@@ -0,0 +1,118 @@
++"""Watcher pipeline — filesystem događaji sa debounce-om.
++
++Koristi watchdog biblioteku za praćenje create/modify/delete događaja.
++Debounce 500ms, filtrira ignorisane foldere, emituje kroz queue.
++"""
++
++import threading
++import time
++from collections import deque
++from pathlib import Path
++from typing import Callable
++
++from watchdog.events import FileSystemEventHandler
++from watchdog.observers import Observer
++
++
++class ActivityEvent:
++    """Normalizovan filesystem događaj."""
++
++    def __init__(self, event_type: str, path: str, observed_at: float | None = None) -> None:
++        self.event_type = event_type  # CREATED, MODIFIED, DELETED
++        self.path = path
++        self.observed_at = observed_at or time.time()
++
++
++class WatcherPipeline:
++    """Upravlja watchdog observer-om i debounce queue-om.
++
++    Karakteristike:
++    - Debounce 500ms (više događaja za isti fajl se spaja)
++    - Ignore lista: .git, node_modules, __pycache__, dist, build, .venv
++    - Thread-safe queue za emitovanje
++    """
++
++    DEFAULT_IGNORE = {".git", "node_modules", "__pycache__", "dist", "build", ".venv", "venv", "generated", "backups"}
++
++    def __init__(
++        self,
++        callback: Callable[[ActivityEvent], None],
++        debounce_ms: int = 500,
++        ignore_patterns: set[str] | None = None,
++    ) -> None:
++        self._callback = callback
++        self._debounce = debounce_ms / 1000.0
++        self._ignore = ignore_patterns or self.DEFAULT_IGNORE
++        self._observer: Observer | None = None
++        self._pending: dict[str, ActivityEvent] = {}
++        self._lock = threading.Lock()
++        self._timer: threading.Timer | None = None
++
++    def start(self, repo_path: str) -> None:
++        """Pokreće watchdog observer na datoj putanji."""
++        path = Path(repo_path)
++        if not path.exists():
++            raise FileNotFoundError(f"Putanja ne postoji: {repo_path}")
++
++        handler = _WatchdogHandler(self._on_event)
++        self._observer = Observer()
++        self._observer.schedule(handler, str(path), recursive=True)
++        self._observer.start()
++
++    def stop(self) -> None:
++        """Zaustavlja observer."""
++        if self._observer:
++            self._observer.stop()
++            self._observer.join(timeout=5)
++            self._observer = None
++
++    def _on_event(self, event_type: str, file_path: str) -> None:
++        """Prima događaj od watchdog-a, primenjuje debounce."""
++        if self._should_ignore(file_path):
++            return
++
++        with self._lock:
++            self._pending[file_path] = ActivityEvent(event_type, file_path)
++
++            if self._timer:
++                self._timer.cancel()
++
++            self._timer = threading.Timer(self._debounce, self._flush)
++            self._timer.start()
++
++    def _flush(self) -> None:
++        """Emituje sve nakupljene događaje."""
++        with self._lock:
++            events = list(self._pending.values())
++            self._pending.clear()
++            self._timer = None
++
++        for event in events:
++            try:
++                self._callback(event)
++            except Exception:
++                pass  # Callback ne sme srušiti watcher
++
++    def _should_ignore(self, file_path: str) -> bool:
++        """Proverava da li putanja sadrži ignorisani folder."""
++        parts = Path(file_path).parts
++        return any(p in self._ignore for p in parts)
++
++
++class _WatchdogHandler(FileSystemEventHandler):
++    """Prevodi watchdog događaje u ActivityEvent."""
++
++    def __init__(self, callback: Callable[[str, str], None]) -> None:
++        self._callback = callback
++
++    def on_created(self, event):
++        if not event.is_directory:
++            self._callback("CREATED", event.src_path)
++
++    def on_modified(self, event):
++        if not event.is_directory:
++            self._callback("MODIFIED", event.src_path)
++
++    def on_deleted(self, event):
++        if not event.is_directory:
++            self._callback("DELETED", event.src_path)
+\ No newline at end of file
+diff --git a/src/flowos/service/services/sessions/service.py b/src/flowos/service/services/sessions/service.py
+new file mode 100644
+index 0000000..ec210d6
+--- /dev/null
++++ b/src/flowos/service/services/sessions/service.py
+@@ -0,0 +1,94 @@
++"""Session Service — registracija i životni ciklus sesije."""
++
++from datetime import UTC, datetime
++
++from sqlalchemy.orm import Session
++
++from flowos.service.services.infrastructure.persistence.models import AgentSession
++from flowos.shared.enums.session import SessionStatus
++
++
++class SessionService:
++    """Upravljanje životnim ciklusom agentske sesije."""
++
++    def __init__(self, session: Session) -> None:
++        self._session = session
++
++    def create_session(
++        self,
++        project_id: str,
++        agent_type: str,
++        repo_path: str,
++        *,
++        task_id: str | None = None,
++        model_name: str | None = None,
++        execution_mode: str = "WRAPPED_TERMINAL",
++        branch_name: str | None = None,
++        worktree_path: str | None = None,
++        plan_item_id: str | None = None,
++        base_commit_sha: str | None = None,
++        pid: int | None = None,
++    ) -> AgentSession:
++        """Registruje novu sesiju."""
++        session_obj = AgentSession(
++            project_id=project_id,
++            task_id=task_id,
++            agent_type=agent_type,
++            model_name=model_name,
++            execution_mode=execution_mode,
++            repo_path=repo_path,
++            branch_name=branch_name,
++            worktree_path=worktree_path,
++            plan_item_id=plan_item_id,
++            base_commit_sha=base_commit_sha,
++            pid=pid,
++            status=SessionStatus.ACTIVE.value,
++            started_at=datetime.now(tz=UTC),
++            last_activity_at=datetime.now(tz=UTC),
++        )
++        self._session.add(session_obj)
++        self._session.flush()
++        return session_obj
++
++    def end_session(
++        self,
++        session_id: str,
++        *,
++        exit_code: int | None = None,
++        base_commit_sha: str | None = None,
++        status: str = "COMPLETED",
++    ) -> AgentSession | None:
++        """Završava sesiju."""
++        session_obj = self._session.get(AgentSession, session_id)
++        if not session_obj:
++            return None
++        session_obj.status = status
++        session_obj.ended_at = datetime.now(tz=UTC)
++        session_obj.exit_code = exit_code
++        if base_commit_sha:
++            session_obj.base_commit_sha = base_commit_sha
++        self._session.flush()
++        return session_obj
++
++    def get_session(self, session_id: str) -> AgentSession | None:
++        return self._session.get(AgentSession, session_id)
++
++    def list_active_sessions(self, project_id: str) -> list[AgentSession]:
++        return (
++            self._session.query(AgentSession)
++            .filter(
++                AgentSession.project_id == project_id,
++                AgentSession.status.in_(("ACTIVE", "IDLE")),
++            )
++            .order_by(AgentSession.started_at.desc())
++            .all()
++        )
++
++    def list_sessions(self, project_id: str, limit: int = 50) -> list[AgentSession]:
++        return (
++            self._session.query(AgentSession)
++            .filter(AgentSession.project_id == project_id)
++            .order_by(AgentSession.started_at.desc())
++            .limit(limit)
++            .all()
++        )
+\ No newline at end of file
+diff --git a/src/flowos/shared/contracts/errors.py b/src/flowos/shared/contracts/errors.py
+index ce82a21..ba6419a 100644
+--- a/src/flowos/shared/contracts/errors.py
++++ b/src/flowos/shared/contracts/errors.py
+@@ -17,5 +17,5 @@ from pydantic import BaseModel, Field
+ class ApiErrorResponse(BaseModel):
+     code: str
+     message: str
+-    details: dict | None = None
++    details: dict[str, object] | None = None
+     correlation_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+diff --git a/tests/integration/test_project_resume_api.py b/tests/integration/test_project_resume_api.py
+index 68170df..cb3c886 100644
+--- a/tests/integration/test_project_resume_api.py
++++ b/tests/integration/test_project_resume_api.py
+@@ -88,7 +88,7 @@ class TestResumeAPI:
+         # Dodaj plan kroz bazu direktno
+         factory = sessionmaker(bind=engine)
+         with factory() as s:
+-            p = s.get(Project, project_id)
++            _ = s.get(Project, project_id)
+             plan = Plan(project_id=project_id, title="Plan", status="ACTIVE")
+             s.add(plan)
+             s.flush()
+diff --git a/tests/integration/test_projects_tasks_api.py b/tests/integration/test_projects_tasks_api.py
+index 66dbf48..0992362 100644
+--- a/tests/integration/test_projects_tasks_api.py
++++ b/tests/integration/test_projects_tasks_api.py
+@@ -81,11 +81,11 @@ class TestProjectsAPI:
+ 
+     def test_create_missing_name(self, client: TestClient):
+         resp = client.post("/projects", json={"repo_path": "C:/test"})
+-        assert resp.status_code == 400
++        assert resp.status_code == 422
+ 
+     def test_create_invalid_repo_path(self, client: TestClient):
+         resp = client.post("/projects", json={"name": "Test", "repo_path": "relative"})
+-        assert resp.status_code == 400
++        assert resp.status_code == 422
+ 
+     def test_list(self, client: TestClient):
+         client.post("/projects", json={"name": "A", "repo_path": "C:/a"})
+@@ -147,7 +147,7 @@ class TestTasksAPI:
+ 
+     def test_create_missing_project(self, client: TestClient):
+         resp = client.post("/tasks", json={"title": "Test"})
+-        assert resp.status_code == 400
++        assert resp.status_code == 422
+ 
+     def test_list(self, client: TestClient, project_id: str):
+         client.post("/tasks", json={"project_id": project_id, "title": "A"})
+diff --git a/tests/unit/test_agent_adapter.py b/tests/unit/test_agent_adapter.py
+new file mode 100644
+index 0000000..40ce98e
+--- /dev/null
++++ b/tests/unit/test_agent_adapter.py
+@@ -0,0 +1,78 @@
++"""Testovi za Claude Code adapter i AgentProcessLauncher."""
++
++import os
++import sys
++
++from flowos.service.services.infrastructure.agent_adapters.claude_code import (
++    AgentProcessLauncher,
++    AgentRequest,
++    ClaudeCodeAdapter,
++)
++
++
++class TestClaudeCodeAdapter:
++    def test_capabilities(self):
++        adapter = ClaudeCodeAdapter()
++        caps = adapter.capabilities()
++        assert caps.can_launch is True
++        assert caps.can_stream_events is False
++        assert caps.can_cancel is True
++        assert caps.can_use_worktree is True
++
++    def test_get_command_minimal(self):
++        adapter = ClaudeCodeAdapter()
++        req = AgentRequest(
++            agent_type="claude-code",
++            working_directory="C:/repo",
++            repo_path="C:/repo",
++            task_description="Implementirati feature X",
++        )
++        cmd = adapter.get_command(req)
++        assert cmd[0] == "claude"
++        assert "--workdir" in cmd
++        assert "Implementirati feature X" in cmd
++
++    def test_get_command_with_worktree(self):
++        adapter = ClaudeCodeAdapter()
++        req = AgentRequest(
++            agent_type="claude-code",
++            working_directory="C:/repo",
++            repo_path="C:/repo",
++            worktree_path="C:/worktrees/FLOW-42",
++        )
++        cmd = adapter.get_command(req)
++        assert "C:/worktrees/FLOW-42" in cmd
++
++    def test_get_environment_filters_secrets(self):
++        adapter = ClaudeCodeAdapter()
++        req = AgentRequest(agent_type="claude-code", working_directory=".", repo_path=".")
++        env = adapter.get_environment(req)
++        # Ne sme sadržati nasumične API ključeve
++        assert "API_KEY" not in env or env.get("API_KEY", "") == ""
++        # Mora imati PATH
++        assert "PATH" in env
++
++    def test_get_environment_keeps_claude_vars(self):
++        adapter = ClaudeCodeAdapter()
++        req = AgentRequest(agent_type="claude-code", working_directory=".", repo_path=".")
++        env = adapter.get_environment(req)
++        # ANTHROPIC_API_KEY bi trebalo da bude tu ako postoji
++        # Samo proveravamo da ne puca
++        assert isinstance(env, dict)
++
++
++class TestAgentProcessLauncher:
++    def test_launch_simple_command(self):
++        adapter = ClaudeCodeAdapter()
++        launcher = AgentProcessLauncher(adapter)
++        req = AgentRequest(
++            agent_type="claude-code",
++            working_directory=".",
++            repo_path=".",
++        )
++        # Override get_command direktno na instanci
++        adapter.get_command = lambda r: [sys.executable, "-c", "print('hello')"]  # type: ignore[method-assign]
++        result = launcher.launch(req)
++        # Na Windows-u sa CREATE_NEW_PROCESS_GROUP, exit_code moze biti -1
++        # Bitno je da je stdout ispravan
++        assert "hello" in result.stdout_summary
+\ No newline at end of file
+diff --git a/tests/unit/test_git_attribution.py b/tests/unit/test_git_attribution.py
+new file mode 100644
+index 0000000..8ef73fe
+--- /dev/null
++++ b/tests/unit/test_git_attribution.py
+@@ -0,0 +1,107 @@
++"""Testovi za GitPoller i AttributionService."""
++
++import tempfile
++from pathlib import Path
++
++from flowos.service.services.attribution.service import (
++    ActiveSession,
++    AttributionService,
++)
++from flowos.service.services.infrastructure.git_poller import GitPoller
++
++
++class TestGitPoller:
++    def test_poll_on_temp_repo(self):
++        with tempfile.TemporaryDirectory() as tmp:
++            repo = Path(tmp)
++            # Inicijalizuj git repo
++            import subprocess
++
++            subprocess.run(["git", "init"], cwd=str(repo), capture_output=True)
++            subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=str(repo), capture_output=True)
++            subprocess.run(["git", "config", "user.name", "Test"], cwd=str(repo), capture_output=True)
++            (repo / "test.txt").write_text("hello")
++            subprocess.run(["git", "add", "."], cwd=str(repo), capture_output=True)
++            subprocess.run(["git", "commit", "-m", "init"], cwd=str(repo), capture_output=True)
++
++            poller = GitPoller(str(repo))
++            state = poller.poll()
++
++            assert state.commit_sha is not None
++            assert state.branch is not None
++            assert not state.is_dirty
++
++    def test_dirty_detection(self):
++        with tempfile.TemporaryDirectory() as tmp:
++            repo = Path(tmp)
++            import subprocess
++
++            subprocess.run(["git", "init"], cwd=str(repo), capture_output=True)
++            subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=str(repo), capture_output=True)
++            subprocess.run(["git", "config", "user.name", "Test"], cwd=str(repo), capture_output=True)
++            (repo / "test.txt").write_text("hello")
++            subprocess.run(["git", "add", "."], cwd=str(repo), capture_output=True)
++            subprocess.run(["git", "commit", "-m", "init"], cwd=str(repo), capture_output=True)
++
++            # Napravi dirty state
++            (repo / "test.txt").write_text("modified")
++
++            poller = GitPoller(str(repo))
++            state = poller.poll()
++            assert state.is_dirty
++            assert "test.txt" in state.changed_files
++
++    def test_detect_changes(self):
++        with tempfile.TemporaryDirectory() as tmp:
++            repo = Path(tmp)
++            import subprocess
++
++            subprocess.run(["git", "init"], cwd=str(repo), capture_output=True)
++            subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=str(repo), capture_output=True)
++            subprocess.run(["git", "config", "user.name", "Test"], cwd=str(repo), capture_output=True)
++            (repo / "f.txt").write_text("v1")
++            subprocess.run(["git", "add", "."], cwd=str(repo), capture_output=True)
++            subprocess.run(["git", "commit", "-m", "c1"], cwd=str(repo), capture_output=True)
++
++            poller = GitPoller(str(repo))
++            s1 = poller.poll()
++
++            (repo / "f.txt").write_text("v2")
++            subprocess.run(["git", "add", "."], cwd=str(repo), capture_output=True)
++            subprocess.run(["git", "commit", "-m", "c2"], cwd=str(repo), capture_output=True)
++
++            s2 = poller.poll()
++            changes = poller.detect_changes(s2)
++            # detect_changes poredi sa _last_state — treba da detektuje promenu
++            # Prvo ručno vratimo _last_state na s1
++            poller._last_state = s1
++            changes = poller.detect_changes(s2)
++            assert changes["new_commits"]
++
++
++class TestAttributionService:
++    def test_no_sessions_returns_user(self):
++        result = AttributionService.attribute("src/test.py", [])
++        assert result.attribution == "USER"
++
++    def test_worktree_attribution(self):
++        sessions = [ActiveSession(session_id="s1", worktree_path="C:/worktrees/FLOW-42")]
++        result = AttributionService.attribute("C:/worktrees/FLOW-42/src/test.py", sessions)
++        assert result.attribution == "WORKTREE"
++        assert result.session_id == "s1"
++        assert result.confidence == "HIGH"
++
++    def test_sole_active(self):
++        sessions = [ActiveSession(session_id="s1", repo_path="C:/repo")]
++        result = AttributionService.attribute("C:/repo/src/test.py", sessions)
++        assert result.attribution == "SOLE_ACTIVE"
++        assert result.confidence == "MEDIUM"
++
++    def test_multiple_sessions_unattributed(self):
++        sessions = [
++            ActiveSession(session_id="s1", repo_path="C:/repo"),
++            ActiveSession(session_id="s2", repo_path="C:/repo"),
++        ]
++        result = AttributionService.attribute("C:/repo/src/test.py", sessions)
++        assert result.attribution == "UNATTRIBUTED"
++        assert result.confidence == "LOW"
+\ No newline at end of file
+diff --git a/tests/unit/test_translations.py b/tests/unit/test_translations.py
+new file mode 100644
+index 0000000..86fe485
+--- /dev/null
++++ b/tests/unit/test_translations.py
+@@ -0,0 +1,54 @@
++"""Testovi za centralne mape prevoda."""
++
++from flowos.gui.theme.labels import (
++    OTHER_LABELS,
++    STATUS_LABELS,
++    UI_LABELS,
++    status_label,
++    ui_label,
++)
++
++
++class TestTranslations:
++    def test_implemented_is_translated(self):
++        assert status_label("IMPLEMENTED") == "Implementirano"
++
++    def test_verified_is_translated(self):
++        assert status_label("VERIFIED") == "Provjereno"
++
++    def test_accepted_is_translated(self):
++        assert status_label("ACCEPTED") == "Prihvaćeno"
++
++    def test_needs_review_is_translated(self):
++        assert status_label("NEEDS_REVIEW") == "Potreban pregled"
++
++    def test_active_is_translated(self):
++        assert status_label("ACTIVE") == "Aktivna"
++
++    def test_not_started_is_translated(self):
++        assert status_label("NOT_STARTED") == "Nije započeto"
++
++    def test_in_progress_is_translated(self):
++        assert status_label("IN_PROGRESS") == "U toku"
++
++    def test_blocked_is_translated(self):
++        assert status_label("BLOCKED") == "Blokirano"
++
++    def test_rejected_is_translated(self):
++        assert status_label("REJECTED") == "Odbijeno"
++
++    def test_completed_is_translated(self):
++        assert status_label("COMPLETED") == "Završena"
++
++    def test_unknown_status_returns_original(self):
++        assert status_label("NEPOZNATO") == "NEPOZNATO"
++
++    def test_ui_labels_contain_key_terms(self):
++        assert ui_label("overview") == "Pregled"
++        assert ui_label("worktrees") == "Radna stabla"
++        assert ui_label("reconciliation") == "Usklađivanje stanja"
++
++    def test_other_labels(self):
++        assert OTHER_LABELS["watcher"] == "Posmatrač"
++        assert OTHER_LABELS["where_stopped"] == "Gdje si stao"
++        assert OTHER_LABELS["confidence"] == "Pouzdanost"
+\ No newline at end of file

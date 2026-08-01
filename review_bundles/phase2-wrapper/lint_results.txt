@@ -1,0 +1,1700 @@
+F821 Undefined name `Optional`
+   --> src\flowos\cli\app.py:226:11
+    |
+224 |     project: str = typer.Option(..., "--project", "-p"),
+225 |     repo: str = typer.Option(..., "--repo", "-r"),
+226 |     task: Optional[str] = typer.Option(None, "--task", "-t"),
+    |           ^^^^^^^^
+227 |     model: Optional[str] = typer.Option(None, "--model", "-m"),
+228 |     worktree: Optional[str] = typer.Option(None, "--worktree", "-w"),
+    |
+
+B008 Do not perform function call `typer.Option` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+   --> src\flowos\cli\app.py:226:27
+    |
+224 |     project: str = typer.Option(..., "--project", "-p"),
+225 |     repo: str = typer.Option(..., "--repo", "-r"),
+226 |     task: Optional[str] = typer.Option(None, "--task", "-t"),
+    |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+227 |     model: Optional[str] = typer.Option(None, "--model", "-m"),
+228 |     worktree: Optional[str] = typer.Option(None, "--worktree", "-w"),
+    |
+
+F821 Undefined name `Optional`
+   --> src\flowos\cli\app.py:227:12
+    |
+225 |     repo: str = typer.Option(..., "--repo", "-r"),
+226 |     task: Optional[str] = typer.Option(None, "--task", "-t"),
+227 |     model: Optional[str] = typer.Option(None, "--model", "-m"),
+    |            ^^^^^^^^
+228 |     worktree: Optional[str] = typer.Option(None, "--worktree", "-w"),
+229 |     plan_item: Optional[str] = typer.Option(None, "--plan-item"),
+    |
+
+B008 Do not perform function call `typer.Option` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+   --> src\flowos\cli\app.py:227:28
+    |
+225 |     repo: str = typer.Option(..., "--repo", "-r"),
+226 |     task: Optional[str] = typer.Option(None, "--task", "-t"),
+227 |     model: Optional[str] = typer.Option(None, "--model", "-m"),
+    |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+228 |     worktree: Optional[str] = typer.Option(None, "--worktree", "-w"),
+229 |     plan_item: Optional[str] = typer.Option(None, "--plan-item"),
+    |
+
+F821 Undefined name `Optional`
+   --> src\flowos\cli\app.py:228:15
+    |
+226 |     task: Optional[str] = typer.Option(None, "--task", "-t"),
+227 |     model: Optional[str] = typer.Option(None, "--model", "-m"),
+228 |     worktree: Optional[str] = typer.Option(None, "--worktree", "-w"),
+    |               ^^^^^^^^
+229 |     plan_item: Optional[str] = typer.Option(None, "--plan-item"),
+230 | ):
+    |
+
+B008 Do not perform function call `typer.Option` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+   --> src\flowos\cli\app.py:228:31
+    |
+226 |     task: Optional[str] = typer.Option(None, "--task", "-t"),
+227 |     model: Optional[str] = typer.Option(None, "--model", "-m"),
+228 |     worktree: Optional[str] = typer.Option(None, "--worktree", "-w"),
+    |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+229 |     plan_item: Optional[str] = typer.Option(None, "--plan-item"),
+230 | ):
+    |
+
+F821 Undefined name `Optional`
+   --> src\flowos\cli\app.py:229:16
+    |
+227 |     model: Optional[str] = typer.Option(None, "--model", "-m"),
+228 |     worktree: Optional[str] = typer.Option(None, "--worktree", "-w"),
+229 |     plan_item: Optional[str] = typer.Option(None, "--plan-item"),
+    |                ^^^^^^^^
+230 | ):
+231 |     """Pokreni novu agentsku sesiju."""
+    |
+
+B008 Do not perform function call `typer.Option` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+   --> src\flowos\cli\app.py:229:32
+    |
+227 |     model: Optional[str] = typer.Option(None, "--model", "-m"),
+228 |     worktree: Optional[str] = typer.Option(None, "--worktree", "-w"),
+229 |     plan_item: Optional[str] = typer.Option(None, "--plan-item"),
+    |                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+230 | ):
+231 |     """Pokreni novu agentsku sesiju."""
+    |
+
+F821 Undefined name `Optional`
+   --> src\flowos\cli\app.py:251:16
+    |
+249 | def session_end(
+250 |     session_id: str = typer.Argument(...),
+251 |     exit_code: Optional[int] = typer.Option(None, "--exit-code", "-e"),
+    |                ^^^^^^^^
+252 | ):
+253 |     """Završi sesiju."""
+    |
+
+B008 Do not perform function call `typer.Option` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+   --> src\flowos\cli\app.py:251:32
+    |
+249 | def session_end(
+250 |     session_id: str = typer.Argument(...),
+251 |     exit_code: Optional[int] = typer.Option(None, "--exit-code", "-e"),
+    |                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+252 | ):
+253 |     """Završi sesiju."""
+    |
+
+W292 [*] No newline at end of file
+  --> src\flowos\gui\app.py:82:11
+   |
+81 | if __name__ == "__main__":
+82 |     main()
+   |           ^
+help: Add trailing newline
+   |
+81 | if __name__ == "__main__":
+   -     main()
+82 +     main()
+   |
+
+E701 Multiple statements on one line (colon)
+  --> src\flowos\gui\controllers\overview.py:46:27
+   |
+45 |     def _on_plan_progress(self, data: dict):
+46 |         if "error" in data: self.error_occurred.emit(data["error"]); return
+   |                           ^
+47 |         plan = data.get("plan")
+48 |         self.plan_progress_loaded.emit({
+   |
+
+E702 Multiple statements on one line (semicolon)
+  --> src\flowos\gui\controllers\overview.py:46:68
+   |
+45 |     def _on_plan_progress(self, data: dict):
+46 |         if "error" in data: self.error_occurred.emit(data["error"]); return
+   |                                                                    ^
+47 |         plan = data.get("plan")
+48 |         self.plan_progress_loaded.emit({
+   |
+
+E701 Multiple statements on one line (colon)
+  --> src\flowos\gui\controllers\overview.py:58:27
+   |
+57 |     def _on_resume(self, data: dict):
+58 |         if "error" in data: self.error_occurred.emit(data["error"]); return
+   |                           ^
+59 |         self.resume_loaded.emit({
+60 |             "status": data.get("resume_status","NO_HISTORY"),
+   |
+
+E702 Multiple statements on one line (semicolon)
+  --> src\flowos\gui\controllers\overview.py:58:68
+   |
+57 |     def _on_resume(self, data: dict):
+58 |         if "error" in data: self.error_occurred.emit(data["error"]); return
+   |                                                                    ^
+59 |         self.resume_loaded.emit({
+60 |             "status": data.get("resume_status","NO_HISTORY"),
+   |
+
+W292 [*] No newline at end of file
+  --> src\flowos\gui\controllers\overview.py:75:26
+   |
+73 |             "started_at": s.get("started_at",""), "worktree_path": s.get("worktree_path"),
+74 |             "branch_name": s.get("branch_name",""),
+75 |         } for s in data])
+   |                          ^
+help: Add trailing newline
+   |
+74 |             "branch_name": s.get("branch_name",""),
+   -         } for s in data])
+75 +         } for s in data])
+   |
+
+W292 [*] No newline at end of file
+   --> src\flowos\gui\services\client.py:114:28
+    |
+112 |             if signal:
+113 |                 signal.emit({"error": msg})
+114 |         reply.deleteLater()
+    |                            ^
+help: Add trailing newline
+    |
+113 |                 signal.emit({"error": msg})
+    -         reply.deleteLater()
+114 +         reply.deleteLater()
+    |
+
+W292 [*] No newline at end of file
+  --> src\flowos\gui\theme\labels.py:85:58
+   |
+83 | def ui_label(key: str) -> str:
+84 |     """Vraća prevedeni UI pojam ili original."""
+85 |     return UI_LABELS.get(key, OTHER_LABELS.get(key, key))
+   |                                                          ^
+help: Add trailing newline
+   |
+84 |     """Vraća prevedeni UI pojam ili original."""
+   -     return UI_LABELS.get(key, OTHER_LABELS.get(key, key))
+85 +     return UI_LABELS.get(key, OTHER_LABELS.get(key, key))
+   |
+
+F401 [*] `flowos.gui.theme.labels.OTHER_LABELS` imported but unused
+  --> src\flowos\gui\views\overview_skeleton.py:28:37
+   |
+26 | )
+27 |
+28 | from flowos.gui.theme.labels import OTHER_LABELS, STATUS_LABELS, status_label, ui_label
+   |                                     ^^^^^^^^^^^^
+29 |
+30 | # ═══════════════════════════════════════════════════════════════════
+   |
+help: Remove unused import
+   |
+27 |
+   - from flowos.gui.theme.labels import OTHER_LABELS, STATUS_LABELS, status_label, ui_label
+28 + from flowos.gui.theme.labels import status_label
+29 |
+   |
+
+F401 [*] `flowos.gui.theme.labels.STATUS_LABELS` imported but unused
+  --> src\flowos\gui\views\overview_skeleton.py:28:51
+   |
+26 | )
+27 |
+28 | from flowos.gui.theme.labels import OTHER_LABELS, STATUS_LABELS, status_label, ui_label
+   |                                                   ^^^^^^^^^^^^^
+29 |
+30 | # ═══════════════════════════════════════════════════════════════════
+   |
+help: Remove unused import
+   |
+27 |
+   - from flowos.gui.theme.labels import OTHER_LABELS, STATUS_LABELS, status_label, ui_label
+28 + from flowos.gui.theme.labels import status_label
+29 |
+   |
+
+F401 [*] `flowos.gui.theme.labels.ui_label` imported but unused
+  --> src\flowos\gui\views\overview_skeleton.py:28:80
+   |
+26 | )
+27 |
+28 | from flowos.gui.theme.labels import OTHER_LABELS, STATUS_LABELS, status_label, ui_label
+   |                                                                                ^^^^^^^^
+29 |
+30 | # ═══════════════════════════════════════════════════════════════════
+   |
+help: Remove unused import
+   |
+27 |
+   - from flowos.gui.theme.labels import OTHER_LABELS, STATUS_LABELS, status_label, ui_label
+28 + from flowos.gui.theme.labels import status_label
+29 |
+   |
+
+E701 Multiple statements on one line (colon)
+  --> src\flowos\gui\views\overview_skeleton.py:82:12
+   |
+80 |     lbl = QLabel(text)
+81 |     f = QFont("Segoe UI", fs)
+82 |     if bold: f.setBold(True)
+   |            ^
+83 |     lbl.setFont(f)
+84 |     lbl.setStyleSheet(f"color: {color}; border: none; background: transparent;")
+   |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:118:26
+    |
+116 |         layout.setSpacing(SPACING_LG)
+117 |         layout.addWidget(_lbl("◆ FlowOS", FONT_LG, True, BLUE))
+118 |         sep = QLabel("|"); sep.setStyleSheet(f"color: {BORDER}; border: none;"); layout.addWidget(sep)
+    |                          ^
+119 |         layout.addWidget(_lbl("Projekat:", FONT_SM, False, TEXT_MUTED))
+120 |         layout.addWidget(_lbl("FlowOS Core ▼", FONT_MD, True))
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:118:80
+    |
+116 |         layout.setSpacing(SPACING_LG)
+117 |         layout.addWidget(_lbl("◆ FlowOS", FONT_LG, True, BLUE))
+118 |         sep = QLabel("|"); sep.setStyleSheet(f"color: {BORDER}; border: none;"); layout.addWidget(sep)
+    |                                                                                ^
+119 |         layout.addWidget(_lbl("Projekat:", FONT_SM, False, TEXT_MUTED))
+120 |         layout.addWidget(_lbl("FlowOS Core ▼", FONT_MD, True))
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:122:26
+    |
+120 |         layout.addWidget(_lbl("FlowOS Core ▼", FONT_MD, True))
+121 |         layout.addSpacing(SPACING_XL)
+122 |         dot = QLabel("●"); dot.setStyleSheet(f"color: {GREEN}; border: none; font-size: 14px;"); layout.addWidget(dot)
+    |                          ^
+123 |         layout.addWidget(_lbl("Ažurno", FONT_SM, False, GREEN))
+124 |         layout.addStretch()
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:122:96
+    |
+120 |         layout.addWidget(_lbl("FlowOS Core ▼", FONT_MD, True))
+121 |         layout.addSpacing(SPACING_XL)
+122 |         dot = QLabel("●"); dot.setStyleSheet(f"color: {GREEN}; border: none; font-size: 14px;"); layout.addWidget(dot)
+    |                                                                                                ^
+123 |         layout.addWidget(_lbl("Ažurno", FONT_SM, False, GREEN))
+124 |         layout.addStretch()
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:126:31
+    |
+124 |         layout.addStretch()
+125 |         layout.addWidget(_lbl("● Servis aktivan", FONT_SM, False, GREEN))
+126 |         btn = QPushButton("↻"); btn.setFixedSize(32, 32)
+    |                               ^
+127 |         btn.setStyleSheet(f"background: {BG_CARD}; border: 1px solid {BORDER}; border-radius: 4px; color: {TEXT_PRIMARY};")
+128 |         btn.clicked.connect(self.refresh_requested.emit)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:141:42
+    |
+139 |     def __init__(self, parent=None):
+140 |         super().__init__(parent)
+141 |         self.setMinimumWidth(SIDEBAR_MIN); self.setMaximumWidth(300)
+    |                                          ^
+142 |         self.setStyleSheet(f"background: {BG_SECONDARY}; border-right: 1px solid {BORDER};")
+143 |         layout = QVBoxLayout(self)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:144:64
+    |
+142 |         self.setStyleSheet(f"background: {BG_SECONDARY}; border-right: 1px solid {BORDER};")
+143 |         layout = QVBoxLayout(self)
+144 |         layout.setContentsMargins(0, SPACING_MD, 0, SPACING_MD); layout.setSpacing(0)
+    |                                                                ^
+145 |
+146 |         nav_label = _sec("Navigacija")
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:167:31
+    |
+165 |         layout.addWidget(proj_title)
+166 |         card = _card()
+167 |         cl = QVBoxLayout(card); cl.setContentsMargins(SPACING_LG, SPACING_LG, SPACING_LG, SPACING_LG); cl.setSpacing(SPACING_SM)
+    |                               ^
+168 |         cl.addWidget(_lbl("FlowOS Core", FONT_MD, True))
+169 |         cl.addWidget(_lbl("Plan: FlowOS v3", FONT_XS, False, GREEN))
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:167:102
+    |
+165 |         layout.addWidget(proj_title)
+166 |         card = _card()
+167 |         cl = QVBoxLayout(card); cl.setContentsMargins(SPACING_LG, SPACING_LG, SPACING_LG, SPACING_LG); cl.setSpacing(SPACING_SM)
+    |                                                                                                      ^
+168 |         cl.addWidget(_lbl("FlowOS Core", FONT_MD, True))
+169 |         cl.addWidget(_lbl("Plan: FlowOS v3", FONT_XS, False, GREEN))
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:188:27
+    |
+186 |         layout.addStretch()
+187 |
+188 |         sl = QHBoxLayout(); sl.setContentsMargins(SPACING_XL, 0, SPACING_MD, 0)
+    |                           ^
+189 |         dot = QLabel("●"); dot.setStyleSheet(f"color: {GREEN}; border: none;")
+190 |         sl.addWidget(dot); sl.addWidget(_lbl("Povezano sa servisom", FONT_XS, False, GREEN)); sl.addStretch()
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:189:26
+    |
+188 |         sl = QHBoxLayout(); sl.setContentsMargins(SPACING_XL, 0, SPACING_MD, 0)
+189 |         dot = QLabel("●"); dot.setStyleSheet(f"color: {GREEN}; border: none;")
+    |                          ^
+190 |         sl.addWidget(dot); sl.addWidget(_lbl("Povezano sa servisom", FONT_XS, False, GREEN)); sl.addStretch()
+191 |         layout.addLayout(sl)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:190:26
+    |
+188 |         sl = QHBoxLayout(); sl.setContentsMargins(SPACING_XL, 0, SPACING_MD, 0)
+189 |         dot = QLabel("●"); dot.setStyleSheet(f"color: {GREEN}; border: none;")
+190 |         sl.addWidget(dot); sl.addWidget(_lbl("Povezano sa servisom", FONT_XS, False, GREEN)); sl.addStretch()
+    |                          ^
+191 |         layout.addLayout(sl)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:190:93
+    |
+188 |         sl = QHBoxLayout(); sl.setContentsMargins(SPACING_XL, 0, SPACING_MD, 0)
+189 |         dot = QLabel("●"); dot.setStyleSheet(f"color: {GREEN}; border: none;")
+190 |         sl.addWidget(dot); sl.addWidget(_lbl("Povezano sa servisom", FONT_XS, False, GREEN)); sl.addStretch()
+    |                                                                                             ^
+191 |         layout.addLayout(sl)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:202:35
+    |
+200 |         super().__init__(parent)
+201 |         self.setStyleSheet("background: transparent; border: none;")
+202 |         layout = QVBoxLayout(self); layout.setContentsMargins(0, 0, 0, 0); layout.setSpacing(SPACING_MD)
+    |                                   ^
+203 |
+204 |         header = QHBoxLayout()
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:202:74
+    |
+200 |         super().__init__(parent)
+201 |         self.setStyleSheet("background: transparent; border: none;")
+202 |         layout = QVBoxLayout(self); layout.setContentsMargins(0, 0, 0, 0); layout.setSpacing(SPACING_MD)
+    |                                                                          ^
+203 |
+204 |         header = QHBoxLayout()
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:211:27
+    |
+210 | …     # Statusni sažetak na srpskom
+211 | …     sr = QHBoxLayout(); sr.setSpacing(SPACING_LG)
+    |                         ^
+212 | …     for n, s, c in [(3, "prihvaćene", GREEN), (1, "provjerena", TEAL), (1, "implementirana", PURPLE), (1, "u toku", YELLOW), (3, "n…
+213 | …         it = QLabel(f"{n} {s}"); it.setFont(QFont("Segoe UI", FONT_SM, QFont.Weight.Bold)); it.setStyleSheet(f"color: {c}; border: …
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:213:36
+    |
+211 | …     sr = QHBoxLayout(); sr.setSpacing(SPACING_LG)
+212 | …     for n, s, c in [(3, "prihvaćene", GREEN), (1, "provjerena", TEAL), (1, "implementirana", PURPLE), (1, "u toku", YELLOW), (3, "n…
+213 | …         it = QLabel(f"{n} {s}"); it.setFont(QFont("Segoe UI", FONT_SM, QFont.Weight.Bold)); it.setStyleSheet(f"color: {c}; border: …
+    |                                  ^
+214 | …         sr.addWidget(it)
+215 | …     sr.addStretch()
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:213:95
+    |
+211 | …     sr = QHBoxLayout(); sr.setSpacing(SPACING_LG)
+212 | …     for n, s, c in [(3, "prihvaćene", GREEN), (1, "provjerena", TEAL), (1, "implementirana", PURPLE), (1, "u toku", YELLOW), (3, "n…
+213 | …         it = QLabel(f"{n} {s}"); it.setFont(QFont("Segoe UI", FONT_SM, QFont.Weight.Bold)); it.setStyleSheet(f"color: {c}; border: …
+    |                                                                                             ^
+214 | …         sr.addWidget(it)
+215 | …     sr.addStretch()
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:220:43
+    |
+218 |         tree = QTreeWidget()
+219 |         tree.setHeaderLabels(["Faza / Stavka", "Status", "Agent/Sesija", "Kriterijumi", "Stanje"])
+220 |         tree.setAlternatingRowColors(True); tree.setRootIsDecorated(True); tree.setIndentation(20)
+    |                                           ^
+221 |         tree.setStyleSheet(f"""QTreeWidget {{ background: {BG_CARD}; border: 1px solid {BORDER}; border-radius: {RADIUS_MD}px; }}
+222 |             QTreeWidget::item {{ padding: {SPACING_SM}px; color: {TEXT_PRIMARY}; }}
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:220:74
+    |
+218 |         tree = QTreeWidget()
+219 |         tree.setHeaderLabels(["Faza / Stavka", "Status", "Agent/Sesija", "Kriterijumi", "Stanje"])
+220 |         tree.setAlternatingRowColors(True); tree.setRootIsDecorated(True); tree.setIndentation(20)
+    |                                                                          ^
+221 |         tree.setStyleSheet(f"""QTreeWidget {{ background: {BG_CARD}; border: 1px solid {BORDER}; border-radius: {RADIUS_MD}px; }}
+222 |             QTreeWidget::item {{ padding: {SPACING_SM}px; color: {TEXT_PRIMARY}; }}
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:225:36
+    |
+223 | …         QTreeWidget::item:selected {{ background: {BG_HOVER}; }}
+224 | …         QHeaderView::section {{ background: {BG_SECONDARY}; border: none; border-bottom: 1px solid {BORDER}; padding: {SPACING_SM}p…
+225 | …     tree.setColumnWidth(0, 340); tree.setColumnWidth(1, 100); tree.setColumnWidth(2, 110); tree.setColumnWidth(3, 80); tree.setColu…
+    |                                  ^
+226 | …
+227 | …     f1 = QTreeWidgetItem(tree, ["Faza 1 — Temelj i prvi vertikalni tok", "", "", "", ""])
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:225:65
+    |
+223 | …         QTreeWidget::item:selected {{ background: {BG_HOVER}; }}
+224 | …         QHeaderView::section {{ background: {BG_SECONDARY}; border: none; border-bottom: 1px solid {BORDER}; padding: {SPACING_SM}p…
+225 | …     tree.setColumnWidth(0, 340); tree.setColumnWidth(1, 100); tree.setColumnWidth(2, 110); tree.setColumnWidth(3, 80); tree.setColu…
+    |                                                               ^
+226 | …
+227 | …     f1 = QTreeWidgetItem(tree, ["Faza 1 — Temelj i prvi vertikalni tok", "", "", "", ""])
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:225:94
+    |
+223 | …         QTreeWidget::item:selected {{ background: {BG_HOVER}; }}
+224 | …         QHeaderView::section {{ background: {BG_SECONDARY}; border: none; border-bottom: 1px solid {BORDER}; padding: {SPACING_SM}p…
+225 | …     tree.setColumnWidth(0, 340); tree.setColumnWidth(1, 100); tree.setColumnWidth(2, 110); tree.setColumnWidth(3, 80); tree.setColu…
+    |                                                                                            ^
+226 | …
+227 | …     f1 = QTreeWidgetItem(tree, ["Faza 1 — Temelj i prvi vertikalni tok", "", "", "", ""])
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:225:122
+    |
+223 | …         QTreeWidget::item:selected {{ background: {BG_HOVER}; }}
+224 | …         QHeaderView::section {{ background: {BG_SECONDARY}; border: none; border-bottom: 1px solid {BORDER}; padding: {SPACING_SM}p…
+225 | …     tree.setColumnWidth(0, 340); tree.setColumnWidth(1, 100); tree.setColumnWidth(2, 110); tree.setColumnWidth(3, 80); tree.setColu…
+    |                                                                                                                        ^
+226 | …
+227 | …     f1 = QTreeWidgetItem(tree, ["Faza 1 — Temelj i prvi vertikalni tok", "", "", "", ""])
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:228:29
+    |
+227 |         f1 = QTreeWidgetItem(tree, ["Faza 1 — Temelj i prvi vertikalni tok", "", "", "", ""])
+228 |         f1.setExpanded(True); f1.setFont(0, QFont("Segoe UI", FONT_MD, QFont.Weight.Bold))
+    |                             ^
+229 |         for key, status, agent, crit, ns in [
+230 |             ("FLOW-101  Zajednički ugovori", "VERIFIED", "—", "6/6", "Spremno"),
+    |
+
+E741 Ambiguous variable name: `l`
+   --> src\flowos\gui\views\overview_skeleton.py:252:9
+    |
+250 |     def __init__(self, parent=None):
+251 |         super().__init__(parent)
+252 |         l = QVBoxLayout(self); l.setContentsMargins(0, 0, 0, 0); l.setSpacing(SPACING_SM)
+    |         ^
+253 |         l.addWidget(_lbl("AKTIVNE SESIJE (1)", FONT_LG, True))
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:252:30
+    |
+250 |     def __init__(self, parent=None):
+251 |         super().__init__(parent)
+252 |         l = QVBoxLayout(self); l.setContentsMargins(0, 0, 0, 0); l.setSpacing(SPACING_SM)
+    |                              ^
+253 |         l.addWidget(_lbl("AKTIVNE SESIJE (1)", FONT_LG, True))
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:252:64
+    |
+250 |     def __init__(self, parent=None):
+251 |         super().__init__(parent)
+252 |         l = QVBoxLayout(self); l.setContentsMargins(0, 0, 0, 0); l.setSpacing(SPACING_SM)
+    |                                                                ^
+253 |         l.addWidget(_lbl("AKTIVNE SESIJE (1)", FONT_LG, True))
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:257:39
+    |
+255 |         tree = QTreeWidget()
+256 |         tree.setHeaderLabels(["Sesija", "Agent", "Plan stavka", "Grana", "Status"])
+257 |         tree.setRootIsDecorated(False); tree.setMaximumHeight(90)
+    |                                       ^
+258 |         tree.setStyleSheet(f"""QTreeWidget {{ background: {BG_CARD}; border: 1px solid {BORDER}; border-radius: {RADIUS_MD}px; }}
+259 |             QTreeWidget::item {{ padding: {SPACING_SM}px; color: {TEXT_PRIMARY}; }}
+    |
+
+E741 Ambiguous variable name: `l`
+   --> src\flowos\gui\views\overview_skeleton.py:273:9
+    |
+271 |     def __init__(self, parent=None):
+272 |         super().__init__(parent)
+273 |         l = QVBoxLayout(self); l.setContentsMargins(0, 0, 0, 0); l.setSpacing(SPACING_SM)
+    |         ^
+274 |         h = QHBoxLayout(); h.addWidget(_lbl("NEDAVNA AKTIVNOST", FONT_LG, True)); h.addStretch()
+275 |         h.addWidget(QPushButton("Otvori vremensku liniju →")); l.addLayout(h)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:273:30
+    |
+271 |     def __init__(self, parent=None):
+272 |         super().__init__(parent)
+273 |         l = QVBoxLayout(self); l.setContentsMargins(0, 0, 0, 0); l.setSpacing(SPACING_SM)
+    |                              ^
+274 |         h = QHBoxLayout(); h.addWidget(_lbl("NEDAVNA AKTIVNOST", FONT_LG, True)); h.addStretch()
+275 |         h.addWidget(QPushButton("Otvori vremensku liniju →")); l.addLayout(h)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:273:64
+    |
+271 |     def __init__(self, parent=None):
+272 |         super().__init__(parent)
+273 |         l = QVBoxLayout(self); l.setContentsMargins(0, 0, 0, 0); l.setSpacing(SPACING_SM)
+    |                                                                ^
+274 |         h = QHBoxLayout(); h.addWidget(_lbl("NEDAVNA AKTIVNOST", FONT_LG, True)); h.addStretch()
+275 |         h.addWidget(QPushButton("Otvori vremensku liniju →")); l.addLayout(h)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:274:26
+    |
+272 | …     super().__init__(parent)
+273 | …     l = QVBoxLayout(self); l.setContentsMargins(0, 0, 0, 0); l.setSpacing(SPACING_SM)
+274 | …     h = QHBoxLayout(); h.addWidget(_lbl("NEDAVNA AKTIVNOST", FONT_LG, True)); h.addStretch()
+    |                        ^
+275 | …     h.addWidget(QPushButton("Otvori vremensku liniju →")); l.addLayout(h)
+276 | …     for t, src, det in [("17:22", "pi / SESSION-42", "Commit a8f19d2"), ("17:10", "pi / SESSION-42", "Testovi: 18/19 prolazi"), ("1…
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:274:81
+    |
+272 | …     super().__init__(parent)
+273 | …     l = QVBoxLayout(self); l.setContentsMargins(0, 0, 0, 0); l.setSpacing(SPACING_SM)
+274 | …     h = QHBoxLayout(); h.addWidget(_lbl("NEDAVNA AKTIVNOST", FONT_LG, True)); h.addStretch()
+    |                                                                               ^
+275 | …     h.addWidget(QPushButton("Otvori vremensku liniju →")); l.addLayout(h)
+276 | …     for t, src, det in [("17:22", "pi / SESSION-42", "Commit a8f19d2"), ("17:10", "pi / SESSION-42", "Testovi: 18/19 prolazi"), ("1…
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:275:62
+    |
+273 | …     l = QVBoxLayout(self); l.setContentsMargins(0, 0, 0, 0); l.setSpacing(SPACING_SM)
+274 | …     h = QHBoxLayout(); h.addWidget(_lbl("NEDAVNA AKTIVNOST", FONT_LG, True)); h.addStretch()
+275 | …     h.addWidget(QPushButton("Otvori vremensku liniju →")); l.addLayout(h)
+    |                                                            ^
+276 | …     for t, src, det in [("17:22", "pi / SESSION-42", "Commit a8f19d2"), ("17:10", "pi / SESSION-42", "Testovi: 18/19 prolazi"), ("1…
+277 | …         rl = QHBoxLayout(); rl.addWidget(_lbl(t, FONT_XS, False, TEXT_MUTED)); rl.addWidget(_lbl(src, FONT_SM, True)); rl.addWidget…
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:277:31
+    |
+275 | …     h.addWidget(QPushButton("Otvori vremensku liniju →")); l.addLayout(h)
+276 | …     for t, src, det in [("17:22", "pi / SESSION-42", "Commit a8f19d2"), ("17:10", "pi / SESSION-42", "Testovi: 18/19 prolazi"), ("1…
+277 | …         rl = QHBoxLayout(); rl.addWidget(_lbl(t, FONT_XS, False, TEXT_MUTED)); rl.addWidget(_lbl(src, FONT_SM, True)); rl.addWidget…
+    |                             ^
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:277:82
+    |
+275 | …     h.addWidget(QPushButton("Otvori vremensku liniju →")); l.addLayout(h)
+276 | …     for t, src, det in [("17:22", "pi / SESSION-42", "Commit a8f19d2"), ("17:10", "pi / SESSION-42", "Testovi: 18/19 prolazi"), ("1…
+277 | …         rl = QHBoxLayout(); rl.addWidget(_lbl(t, FONT_XS, False, TEXT_MUTED)); rl.addWidget(_lbl(src, FONT_SM, True)); rl.addWidget…
+    |                                                                                ^
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:277:122
+    |
+275 | …     h.addWidget(QPushButton("Otvori vremensku liniju →")); l.addLayout(h)
+276 | …     for t, src, det in [("17:22", "pi / SESSION-42", "Commit a8f19d2"), ("17:10", "pi / SESSION-42", "Testovi: 18/19 prolazi"), ("1…
+277 | …         rl = QHBoxLayout(); rl.addWidget(_lbl(t, FONT_XS, False, TEXT_MUTED)); rl.addWidget(_lbl(src, FONT_SM, True)); rl.addWidget…
+    |                                                                                                                        ^
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:277:179
+    |
+275 | …
+276 | …: 18/19 prolazi"), ("16:40", "Sesija pokrenuta", "FLOW-103"), ("15:55", "FLOW-102", "Prešao u Provjereno")]:
+277 | …, True)); rl.addWidget(_lbl(det, FONT_SM, False, TEXT_SECONDARY)); rl.addStretch(); l.addLayout(rl)
+    |                                                                   ^
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:277:196
+    |
+275 | …
+276 | …, ("16:40", "Sesija pokrenuta", "FLOW-103"), ("15:55", "FLOW-102", "Prešao u Provjereno")]:
+277 | …idget(_lbl(det, FONT_SM, False, TEXT_SECONDARY)); rl.addStretch(); l.addLayout(rl)
+    |                                                                   ^
+
+E741 Ambiguous variable name: `l`
+   --> src\flowos\gui\views\overview_skeleton.py:288:9
+    |
+286 |         super().__init__(parent)
+287 |         self.setStyleSheet(f"background: {BG_CARD}; border: 1px solid {BORDER}; border-radius: {RADIUS_MD}px;")
+288 |         l = QVBoxLayout(self); l.setContentsMargins(SPACING_XL, SPACING_XL, SPACING_XL, SPACING_XL); l.setSpacing(SPACING_MD)
+    |         ^
+289 |         l.addWidget(_lbl("GDJE SI STAO", FONT_LG, True))
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:288:30
+    |
+286 |         super().__init__(parent)
+287 |         self.setStyleSheet(f"background: {BG_CARD}; border: 1px solid {BORDER}; border-radius: {RADIUS_MD}px;")
+288 |         l = QVBoxLayout(self); l.setContentsMargins(SPACING_XL, SPACING_XL, SPACING_XL, SPACING_XL); l.setSpacing(SPACING_MD)
+    |                              ^
+289 |         l.addWidget(_lbl("GDJE SI STAO", FONT_LG, True))
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:288:100
+    |
+286 |         super().__init__(parent)
+287 |         self.setStyleSheet(f"background: {BG_CARD}; border: 1px solid {BORDER}; border-radius: {RADIUS_MD}px;")
+288 |         l = QVBoxLayout(self); l.setContentsMargins(SPACING_XL, SPACING_XL, SPACING_XL, SPACING_XL); l.setSpacing(SPACING_MD)
+    |                                                                                                    ^
+289 |         l.addWidget(_lbl("GDJE SI STAO", FONT_LG, True))
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:305:34
+    |
+303 |         stopped = _lbl("Rad servisnog procesa i dijagnostički endpointi su implementirani. "
+304 |                        "Force terminate na Windows-u ostavlja runtime descriptor.", FONT_SM, False, TEXT_SECONDARY)
+305 |         stopped.setWordWrap(True); l.addWidget(stopped)
+    |                                  ^
+306 |
+307 |         # Sljedeći korak — vizuelno istaknut
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:310:36
+    |
+308 |         l.addWidget(_sec("Sljedeći konkretan korak"))
+309 |         next_step = _lbl("Implementirati nadzor nad čišćenjem nakon prisilnog prekida.", FONT_SM, True, TEXT_PRIMARY)
+310 |         next_step.setWordWrap(True); l.addWidget(next_step)
+    |                                    ^
+311 |
+312 |         # Preuslovi
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:315:31
+    |
+313 | …     l.addWidget(_sec("Prije nastavka provjeriti"))
+314 | …     prec = _lbl("• trenutni HEAD\n• radno stablo sa neupisanim promjenama\n• neuspješan test životnog ciklusa", FONT_SM, False, TEX…
+315 | …     prec.setWordWrap(True); l.addWidget(prec)
+    |                             ^
+316 | …
+317 | …     # Pouzdanost
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:321:97
+    |
+319 |         cr.addWidget(_lbl("Pouzdanost:", FONT_XS, False, TEXT_MUTED))
+320 |         cr.addWidget(_lbl("Srednja", FONT_SM, True, YELLOW))
+321 |         cr.addWidget(_lbl("· posljednje usklađivanje: prije 2 min", FONT_XS, False, TEXT_MUTED)); cr.addStretch()
+    |                                                                                                 ^
+322 |         l.addLayout(cr)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:326:33
+    |
+324 | …     bl = QHBoxLayout()
+325 | …     for t in ["Nastavi rad", "Otvori izvještaj"]:
+326 | …         btn = QPushButton(t); btn.setStyleSheet(f"background: {BG_HOVER}; border: 1px solid {BORDER}; border-radius: 4px; color: {T…
+    |                               ^
+327 | …         bl.addWidget(btn)
+328 | …     bl.addStretch(); l.addLayout(bl)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:328:24
+    |
+326 | …         btn = QPushButton(t); btn.setStyleSheet(f"background: {BG_HOVER}; border: 1px solid {BORDER}; border-radius: 4px; color: {T…
+327 | …         bl.addWidget(btn)
+328 | …     bl.addStretch(); l.addLayout(bl)
+    |                      ^
+
+E741 Ambiguous variable name: `l`
+   --> src\flowos\gui\views\overview_skeleton.py:339:9
+    |
+337 |         super().__init__(parent)
+338 |         self.setStyleSheet(f"background: {BG_CARD}; border: 1px solid {BORDER}; border-radius: {RADIUS_MD}px;")
+339 |         l = QVBoxLayout(self); l.setContentsMargins(SPACING_XL, SPACING_XL, SPACING_XL, SPACING_XL); l.setSpacing(SPACING_MD)
+    |         ^
+340 |         l.addWidget(_lbl("DETALJI STAVKE PLANA", FONT_LG, True))
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:339:30
+    |
+337 |         super().__init__(parent)
+338 |         self.setStyleSheet(f"background: {BG_CARD}; border: 1px solid {BORDER}; border-radius: {RADIUS_MD}px;")
+339 |         l = QVBoxLayout(self); l.setContentsMargins(SPACING_XL, SPACING_XL, SPACING_XL, SPACING_XL); l.setSpacing(SPACING_MD)
+    |                              ^
+340 |         l.addWidget(_lbl("DETALJI STAVKE PLANA", FONT_LG, True))
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:339:100
+    |
+337 |         super().__init__(parent)
+338 |         self.setStyleSheet(f"background: {BG_CARD}; border: 1px solid {BORDER}; border-radius: {RADIUS_MD}px;")
+339 |         l = QVBoxLayout(self); l.setContentsMargins(SPACING_XL, SPACING_XL, SPACING_XL, SPACING_XL); l.setSpacing(SPACING_MD)
+    |                                                                                                    ^
+340 |         l.addWidget(_lbl("DETALJI STAVKE PLANA", FONT_LG, True))
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:343:30
+    |
+342 | …     for lbl, val in [("FLOW-103", "Rad servisnog procesa"), ("Faza:", "Faza 1"), ("Status:", "Implementirano"), ("Agent:", "pi"), (…
+343 | …         r = QHBoxLayout(); r.addWidget(_lbl(lbl, FONT_XS, False, TEXT_MUTED)); r.addWidget(_lbl(val, FONT_SM, True)); r.addStretch(…
+    |                            ^
+344 | …
+345 | …     l.addWidget(_sec("Kriterijumi prihvatanja"))
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:343:82
+    |
+342 | …     for lbl, val in [("FLOW-103", "Rad servisnog procesa"), ("Faza:", "Faza 1"), ("Status:", "Implementirano"), ("Agent:", "pi"), (…
+343 | …         r = QHBoxLayout(); r.addWidget(_lbl(lbl, FONT_XS, False, TEXT_MUTED)); r.addWidget(_lbl(val, FONT_SM, True)); r.addStretch(…
+    |                                                                                ^
+344 | …
+345 | …     l.addWidget(_sec("Kriterijumi prihvatanja"))
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:343:121
+    |
+342 | …     for lbl, val in [("FLOW-103", "Rad servisnog procesa"), ("Faza:", "Faza 1"), ("Status:", "Implementirano"), ("Agent:", "pi"), (…
+343 | …         r = QHBoxLayout(); r.addWidget(_lbl(lbl, FONT_XS, False, TEXT_MUTED)); r.addWidget(_lbl(val, FONT_SM, True)); r.addStretch(…
+    |                                                                                                                       ^
+344 | …
+345 | …     l.addWidget(_sec("Kriterijumi prihvatanja"))
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:343:137
+    |
+342 | …", "Faza 1"), ("Status:", "Implementirano"), ("Agent:", "pi"), ("Sesija:", "SESSION-42")]:
+343 | …XT_MUTED)); r.addWidget(_lbl(val, FONT_SM, True)); r.addStretch(); l.addLayout(r)
+    |                                                                   ^
+344 | …
+345 | …
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:349:31
+    |
+347 | …                    ("✓", "Runtime descriptor", GREEN), ("✓", "/health, /version, /runtime", GREEN),
+348 | …                    ("◐", "Pristojno gašenje — 1 test ne prolazi", YELLOW), ("○", "Lokalni strukturisani zapisi", GRAY)]:
+349 | …     rl = QHBoxLayout(); cl = QLabel(c); cl.setFont(QFont("Segoe UI", FONT_SM, QFont.Weight.Bold)); cl.setStyleSheet(f"color: {col};…
+    |                         ^
+350 | …     rl.addWidget(cl); rl.addWidget(_lbl(d, FONT_SM, False, TEXT_SECONDARY)); rl.addStretch(); l.addLayout(rl)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:349:47
+    |
+347 | …                    ("✓", "Runtime descriptor", GREEN), ("✓", "/health, /version, /runtime", GREEN),
+348 | …                    ("◐", "Pristojno gašenje — 1 test ne prolazi", YELLOW), ("○", "Lokalni strukturisani zapisi", GRAY)]:
+349 | …     rl = QHBoxLayout(); cl = QLabel(c); cl.setFont(QFont("Segoe UI", FONT_SM, QFont.Weight.Bold)); cl.setStyleSheet(f"color: {col};…
+    |                                         ^
+350 | …     rl.addWidget(cl); rl.addWidget(_lbl(d, FONT_SM, False, TEXT_SECONDARY)); rl.addStretch(); l.addLayout(rl)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:349:106
+    |
+347 | …                    ("✓", "Runtime descriptor", GREEN), ("✓", "/health, /version, /runtime", GREEN),
+348 | …                    ("◐", "Pristojno gašenje — 1 test ne prolazi", YELLOW), ("○", "Lokalni strukturisani zapisi", GRAY)]:
+349 | …     rl = QHBoxLayout(); cl = QLabel(c); cl.setFont(QFont("Segoe UI", FONT_SM, QFont.Weight.Bold)); cl.setStyleSheet(f"color: {col};…
+    |                                                                                                    ^
+350 | …     rl.addWidget(cl); rl.addWidget(_lbl(d, FONT_SM, False, TEXT_SECONDARY)); rl.addStretch(); l.addLayout(rl)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:349:156
+    |
+347 | …runtime", GREEN),
+348 | …Lokalni strukturisani zapisi", GRAY)]:
+349 | …t.Weight.Bold)); cl.setStyleSheet(f"color: {col}; border: none;"); cl.setFixedWidth(20)
+    |                                                                   ^
+350 | …dStretch(); l.addLayout(rl)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:350:29
+    |
+348 | …                        ("◐", "Pristojno gašenje — 1 test ne prolazi", YELLOW), ("○", "Lokalni strukturisani zapisi", GRAY)]:
+349 | …         rl = QHBoxLayout(); cl = QLabel(c); cl.setFont(QFont("Segoe UI", FONT_SM, QFont.Weight.Bold)); cl.setStyleSheet(f"color: {c…
+350 | …         rl.addWidget(cl); rl.addWidget(_lbl(d, FONT_SM, False, TEXT_SECONDARY)); rl.addStretch(); l.addLayout(rl)
+    |                           ^
+351 | …
+352 | …     l.addWidget(_sec("Dokazi"))
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:350:84
+    |
+348 | …                        ("◐", "Pristojno gašenje — 1 test ne prolazi", YELLOW), ("○", "Lokalni strukturisani zapisi", GRAY)]:
+349 | …         rl = QHBoxLayout(); cl = QLabel(c); cl.setFont(QFont("Segoe UI", FONT_SM, QFont.Weight.Bold)); cl.setStyleSheet(f"color: {c…
+350 | …         rl.addWidget(cl); rl.addWidget(_lbl(d, FONT_SM, False, TEXT_SECONDARY)); rl.addStretch(); l.addLayout(rl)
+    |                                                                                  ^
+351 | …
+352 | …     l.addWidget(_sec("Dokazi"))
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:350:101
+    |
+348 | …                        ("◐", "Pristojno gašenje — 1 test ne prolazi", YELLOW), ("○", "Lokalni strukturisani zapisi", GRAY)]:
+349 | …         rl = QHBoxLayout(); cl = QLabel(c); cl.setFont(QFont("Segoe UI", FONT_SM, QFont.Weight.Bold)); cl.setStyleSheet(f"color: {c…
+350 | …         rl.addWidget(cl); rl.addWidget(_lbl(d, FONT_SM, False, TEXT_SECONDARY)); rl.addStretch(); l.addLayout(rl)
+    |                                                                                                   ^
+351 | …
+352 | …     l.addWidget(_sec("Dokazi"))
+    |
+
+E741 Ambiguous variable name: `l`
+   --> src\flowos\gui\views\overview_skeleton.py:364:9
+    |
+362 | …     super().__init__(parent)
+363 | …     self.setStyleSheet(f"background: {BG_CARD}; border: 1px solid {YELLOW}; border-radius: {RADIUS_MD}px; border-left: 4px solid {Y…
+364 | …     l = QVBoxLayout(self); l.setContentsMargins(SPACING_XL, SPACING_XL, SPACING_XL, SPACING_XL); l.setSpacing(SPACING_SM)
+    |       ^
+365 | …     l.addWidget(_lbl("⚠ PROMJENE VAN FLOWOS-A", FONT_MD, True, YELLOW))
+366 | …     l.addWidget(_lbl("Projekat je mijenjan van FlowOS-a.", FONT_SM, False, TEXT_SECONDARY))
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:364:30
+    |
+362 | …     super().__init__(parent)
+363 | …     self.setStyleSheet(f"background: {BG_CARD}; border: 1px solid {YELLOW}; border-radius: {RADIUS_MD}px; border-left: 4px solid {Y…
+364 | …     l = QVBoxLayout(self); l.setContentsMargins(SPACING_XL, SPACING_XL, SPACING_XL, SPACING_XL); l.setSpacing(SPACING_SM)
+    |                            ^
+365 | …     l.addWidget(_lbl("⚠ PROMJENE VAN FLOWOS-A", FONT_MD, True, YELLOW))
+366 | …     l.addWidget(_lbl("Projekat je mijenjan van FlowOS-a.", FONT_SM, False, TEXT_SECONDARY))
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:364:100
+    |
+362 | …     super().__init__(parent)
+363 | …     self.setStyleSheet(f"background: {BG_CARD}; border: 1px solid {YELLOW}; border-radius: {RADIUS_MD}px; border-left: 4px solid {Y…
+364 | …     l = QVBoxLayout(self); l.setContentsMargins(SPACING_XL, SPACING_XL, SPACING_XL, SPACING_XL); l.setSpacing(SPACING_SM)
+    |                                                                                                  ^
+365 | …     l.addWidget(_lbl("⚠ PROMJENE VAN FLOWOS-A", FONT_MD, True, YELLOW))
+366 | …     l.addWidget(_lbl("Projekat je mijenjan van FlowOS-a.", FONT_SM, False, TEXT_SECONDARY))
+    |
+
+E741 Ambiguous variable name: `l`
+   --> src\flowos\gui\views\overview_skeleton.py:381:9
+    |
+379 |         self.setFixedHeight(FOOTER_HEIGHT)
+380 |         self.setStyleSheet(f"background: {BG_SECONDARY}; border-top: 1px solid {BORDER};")
+381 |         l = QHBoxLayout(self); l.setContentsMargins(SPACING_XL, 0, SPACING_XL, 0); l.setSpacing(SPACING_XL)
+    |         ^
+382 |         for t in ["Servis: aktivan", "API: v1", "Baza: flowos.db · u redu", "Posmatrač: aktivan", "Usklađivanje stanja: prije 2 min"]:
+383 |             l.addWidget(_lbl(t, FONT_XS, False, TEXT_MUTED))
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:381:30
+    |
+379 |         self.setFixedHeight(FOOTER_HEIGHT)
+380 |         self.setStyleSheet(f"background: {BG_SECONDARY}; border-top: 1px solid {BORDER};")
+381 |         l = QHBoxLayout(self); l.setContentsMargins(SPACING_XL, 0, SPACING_XL, 0); l.setSpacing(SPACING_XL)
+    |                              ^
+382 |         for t in ["Servis: aktivan", "API: v1", "Baza: flowos.db · u redu", "Posmatrač: aktivan", "Usklađivanje stanja: prije 2 min"]:
+383 |             l.addWidget(_lbl(t, FONT_XS, False, TEXT_MUTED))
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:381:82
+    |
+379 |         self.setFixedHeight(FOOTER_HEIGHT)
+380 |         self.setStyleSheet(f"background: {BG_SECONDARY}; border-top: 1px solid {BORDER};")
+381 |         l = QHBoxLayout(self); l.setContentsMargins(SPACING_XL, 0, SPACING_XL, 0); l.setSpacing(SPACING_XL)
+    |                                                                                  ^
+382 |         for t in ["Servis: aktivan", "API: v1", "Baza: flowos.db · u redu", "Posmatrač: aktivan", "Usklađivanje stanja: prije 2 min"]:
+383 |             l.addWidget(_lbl(t, FONT_XS, False, TEXT_MUTED))
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:395:31
+    |
+393 |         super().__init__()
+394 |         self.setWindowTitle("FlowOS — Pregled")
+395 |         self.resize(1400, 900); self.setMinimumSize(1024, 700)
+    |                               ^
+396 |
+397 |         c = QWidget(); self.setCentralWidget(c)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:397:22
+    |
+395 |         self.resize(1400, 900); self.setMinimumSize(1024, 700)
+396 |
+397 |         c = QWidget(); self.setCentralWidget(c)
+    |                      ^
+398 |         root = QVBoxLayout(c); root.setContentsMargins(0, 0, 0, 0); root.setSpacing(0)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:398:30
+    |
+397 |         c = QWidget(); self.setCentralWidget(c)
+398 |         root = QVBoxLayout(c); root.setContentsMargins(0, 0, 0, 0); root.setSpacing(0)
+    |                              ^
+399 |
+400 |         self.topbar = TopBar(); root.addWidget(self.topbar)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:398:67
+    |
+397 |         c = QWidget(); self.setCentralWidget(c)
+398 |         root = QVBoxLayout(c); root.setContentsMargins(0, 0, 0, 0); root.setSpacing(0)
+    |                                                                   ^
+399 |
+400 |         self.topbar = TopBar(); root.addWidget(self.topbar)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:400:31
+    |
+398 |         root = QVBoxLayout(c); root.setContentsMargins(0, 0, 0, 0); root.setSpacing(0)
+399 |
+400 |         self.topbar = TopBar(); root.addWidget(self.topbar)
+    |                               ^
+401 |
+402 |         splitter = QSplitter(Qt.Orientation.Horizontal)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:406:27
+    |
+405 | …     # Centralni — scroll
+406 | …     cs = QScrollArea(); cs.setWidgetResizable(True); cs.setStyleSheet(f"QScrollArea {{ border: none; background: {BG_PRIMARY}; }}")
+    |                         ^
+407 | …     cc = QWidget(); cl = QVBoxLayout(cc); cl.setContentsMargins(SPACING_XXL, SPACING_XL, SPACING_XL, SPACING_XL); cl.setSpacing(SPA…
+408 | …     cl.addWidget(PlanProgressWidget()); cl.addWidget(ActiveSessionsWidget()); cl.addWidget(RecentActivityWidget()); cl.addStretch()
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:406:56
+    |
+405 | …     # Centralni — scroll
+406 | …     cs = QScrollArea(); cs.setWidgetResizable(True); cs.setStyleSheet(f"QScrollArea {{ border: none; background: {BG_PRIMARY}; }}")
+    |                                                      ^
+407 | …     cc = QWidget(); cl = QVBoxLayout(cc); cl.setContentsMargins(SPACING_XXL, SPACING_XL, SPACING_XL, SPACING_XL); cl.setSpacing(SPA…
+408 | …     cl.addWidget(PlanProgressWidget()); cl.addWidget(ActiveSessionsWidget()); cl.addWidget(RecentActivityWidget()); cl.addStretch()
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:407:23
+    |
+405 | …     # Centralni — scroll
+406 | …     cs = QScrollArea(); cs.setWidgetResizable(True); cs.setStyleSheet(f"QScrollArea {{ border: none; background: {BG_PRIMARY}; }}")
+407 | …     cc = QWidget(); cl = QVBoxLayout(cc); cl.setContentsMargins(SPACING_XXL, SPACING_XL, SPACING_XL, SPACING_XL); cl.setSpacing(SPA…
+    |                     ^
+408 | …     cl.addWidget(PlanProgressWidget()); cl.addWidget(ActiveSessionsWidget()); cl.addWidget(RecentActivityWidget()); cl.addStretch()
+409 | …     cs.setWidget(cc); splitter.addWidget(cs)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:407:45
+    |
+405 | …     # Centralni — scroll
+406 | …     cs = QScrollArea(); cs.setWidgetResizable(True); cs.setStyleSheet(f"QScrollArea {{ border: none; background: {BG_PRIMARY}; }}")
+407 | …     cc = QWidget(); cl = QVBoxLayout(cc); cl.setContentsMargins(SPACING_XXL, SPACING_XL, SPACING_XL, SPACING_XL); cl.setSpacing(SPA…
+    |                                           ^
+408 | …     cl.addWidget(PlanProgressWidget()); cl.addWidget(ActiveSessionsWidget()); cl.addWidget(RecentActivityWidget()); cl.addStretch()
+409 | …     cs.setWidget(cc); splitter.addWidget(cs)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:407:117
+    |
+405 | …     # Centralni — scroll
+406 | …     cs = QScrollArea(); cs.setWidgetResizable(True); cs.setStyleSheet(f"QScrollArea {{ border: none; background: {BG_PRIMARY}; }}")
+407 | …     cc = QWidget(); cl = QVBoxLayout(cc); cl.setContentsMargins(SPACING_XXL, SPACING_XL, SPACING_XL, SPACING_XL); cl.setSpacing(SPA…
+    |                                                                                                                   ^
+408 | …     cl.addWidget(PlanProgressWidget()); cl.addWidget(ActiveSessionsWidget()); cl.addWidget(RecentActivityWidget()); cl.addStretch()
+409 | …     cs.setWidget(cc); splitter.addWidget(cs)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:408:43
+    |
+406 | …     cs = QScrollArea(); cs.setWidgetResizable(True); cs.setStyleSheet(f"QScrollArea {{ border: none; background: {BG_PRIMARY}; }}")
+407 | …     cc = QWidget(); cl = QVBoxLayout(cc); cl.setContentsMargins(SPACING_XXL, SPACING_XL, SPACING_XL, SPACING_XL); cl.setSpacing(SPA…
+408 | …     cl.addWidget(PlanProgressWidget()); cl.addWidget(ActiveSessionsWidget()); cl.addWidget(RecentActivityWidget()); cl.addStretch()
+    |                                         ^
+409 | …     cs.setWidget(cc); splitter.addWidget(cs)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:408:81
+    |
+406 | …     cs = QScrollArea(); cs.setWidgetResizable(True); cs.setStyleSheet(f"QScrollArea {{ border: none; background: {BG_PRIMARY}; }}")
+407 | …     cc = QWidget(); cl = QVBoxLayout(cc); cl.setContentsMargins(SPACING_XXL, SPACING_XL, SPACING_XL, SPACING_XL); cl.setSpacing(SPA…
+408 | …     cl.addWidget(PlanProgressWidget()); cl.addWidget(ActiveSessionsWidget()); cl.addWidget(RecentActivityWidget()); cl.addStretch()
+    |                                                                               ^
+409 | …     cs.setWidget(cc); splitter.addWidget(cs)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:408:119
+    |
+406 | …     cs = QScrollArea(); cs.setWidgetResizable(True); cs.setStyleSheet(f"QScrollArea {{ border: none; background: {BG_PRIMARY}; }}")
+407 | …     cc = QWidget(); cl = QVBoxLayout(cc); cl.setContentsMargins(SPACING_XXL, SPACING_XL, SPACING_XL, SPACING_XL); cl.setSpacing(SPA…
+408 | …     cl.addWidget(PlanProgressWidget()); cl.addWidget(ActiveSessionsWidget()); cl.addWidget(RecentActivityWidget()); cl.addStretch()
+    |                                                                                                                     ^
+409 | …     cs.setWidget(cc); splitter.addWidget(cs)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:409:25
+    |
+407 | …     cc = QWidget(); cl = QVBoxLayout(cc); cl.setContentsMargins(SPACING_XXL, SPACING_XL, SPACING_XL, SPACING_XL); cl.setSpacing(SPA…
+408 | …     cl.addWidget(PlanProgressWidget()); cl.addWidget(ActiveSessionsWidget()); cl.addWidget(RecentActivityWidget()); cl.addStretch()
+409 | …     cs.setWidget(cc); splitter.addWidget(cs)
+    |                       ^
+410 | …
+411 | …     # Desni — JEDAN QScrollArea sa svim karticama
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:412:27
+    |
+411 | …     # Desni — JEDAN QScrollArea sa svim karticama
+412 | …     rs = QScrollArea(); rs.setWidgetResizable(True); rs.setStyleSheet(f"QScrollArea {{ border: none; background: {BG_PRIMARY}; }}")
+    |                         ^
+413 | …     rc = QWidget(); rl = QVBoxLayout(rc); rl.setContentsMargins(0, SPACING_XL, SPACING_XXL, SPACING_XL); rl.setSpacing(SPACING_LG)
+414 | …     rl.addWidget(ProjectResumeWidget()); rl.addWidget(PlanItemDetailsWidget()); rl.addWidget(ReconciliationWidget()); rl.addStretch…
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:412:56
+    |
+411 | …     # Desni — JEDAN QScrollArea sa svim karticama
+412 | …     rs = QScrollArea(); rs.setWidgetResizable(True); rs.setStyleSheet(f"QScrollArea {{ border: none; background: {BG_PRIMARY}; }}")
+    |                                                      ^
+413 | …     rc = QWidget(); rl = QVBoxLayout(rc); rl.setContentsMargins(0, SPACING_XL, SPACING_XXL, SPACING_XL); rl.setSpacing(SPACING_LG)
+414 | …     rl.addWidget(ProjectResumeWidget()); rl.addWidget(PlanItemDetailsWidget()); rl.addWidget(ReconciliationWidget()); rl.addStretch…
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:413:23
+    |
+411 | …     # Desni — JEDAN QScrollArea sa svim karticama
+412 | …     rs = QScrollArea(); rs.setWidgetResizable(True); rs.setStyleSheet(f"QScrollArea {{ border: none; background: {BG_PRIMARY}; }}")
+413 | …     rc = QWidget(); rl = QVBoxLayout(rc); rl.setContentsMargins(0, SPACING_XL, SPACING_XXL, SPACING_XL); rl.setSpacing(SPACING_LG)
+    |                     ^
+414 | …     rl.addWidget(ProjectResumeWidget()); rl.addWidget(PlanItemDetailsWidget()); rl.addWidget(ReconciliationWidget()); rl.addStretch…
+415 | …     rs.setWidget(rc); splitter.addWidget(rs)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:413:45
+    |
+411 | …     # Desni — JEDAN QScrollArea sa svim karticama
+412 | …     rs = QScrollArea(); rs.setWidgetResizable(True); rs.setStyleSheet(f"QScrollArea {{ border: none; background: {BG_PRIMARY}; }}")
+413 | …     rc = QWidget(); rl = QVBoxLayout(rc); rl.setContentsMargins(0, SPACING_XL, SPACING_XXL, SPACING_XL); rl.setSpacing(SPACING_LG)
+    |                                           ^
+414 | …     rl.addWidget(ProjectResumeWidget()); rl.addWidget(PlanItemDetailsWidget()); rl.addWidget(ReconciliationWidget()); rl.addStretch…
+415 | …     rs.setWidget(rc); splitter.addWidget(rs)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:413:108
+    |
+411 | …     # Desni — JEDAN QScrollArea sa svim karticama
+412 | …     rs = QScrollArea(); rs.setWidgetResizable(True); rs.setStyleSheet(f"QScrollArea {{ border: none; background: {BG_PRIMARY}; }}")
+413 | …     rc = QWidget(); rl = QVBoxLayout(rc); rl.setContentsMargins(0, SPACING_XL, SPACING_XXL, SPACING_XL); rl.setSpacing(SPACING_LG)
+    |                                                                                                          ^
+414 | …     rl.addWidget(ProjectResumeWidget()); rl.addWidget(PlanItemDetailsWidget()); rl.addWidget(ReconciliationWidget()); rl.addStretch…
+415 | …     rs.setWidget(rc); splitter.addWidget(rs)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:414:44
+    |
+412 | …     rs = QScrollArea(); rs.setWidgetResizable(True); rs.setStyleSheet(f"QScrollArea {{ border: none; background: {BG_PRIMARY}; }}")
+413 | …     rc = QWidget(); rl = QVBoxLayout(rc); rl.setContentsMargins(0, SPACING_XL, SPACING_XXL, SPACING_XL); rl.setSpacing(SPACING_LG)
+414 | …     rl.addWidget(ProjectResumeWidget()); rl.addWidget(PlanItemDetailsWidget()); rl.addWidget(ReconciliationWidget()); rl.addStretch…
+    |                                          ^
+415 | …     rs.setWidget(rc); splitter.addWidget(rs)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:414:83
+    |
+412 | …     rs = QScrollArea(); rs.setWidgetResizable(True); rs.setStyleSheet(f"QScrollArea {{ border: none; background: {BG_PRIMARY}; }}")
+413 | …     rc = QWidget(); rl = QVBoxLayout(rc); rl.setContentsMargins(0, SPACING_XL, SPACING_XXL, SPACING_XL); rl.setSpacing(SPACING_LG)
+414 | …     rl.addWidget(ProjectResumeWidget()); rl.addWidget(PlanItemDetailsWidget()); rl.addWidget(ReconciliationWidget()); rl.addStretch…
+    |                                                                                 ^
+415 | …     rs.setWidget(rc); splitter.addWidget(rs)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:414:121
+    |
+412 | …     rs = QScrollArea(); rs.setWidgetResizable(True); rs.setStyleSheet(f"QScrollArea {{ border: none; background: {BG_PRIMARY}; }}")
+413 | …     rc = QWidget(); rl = QVBoxLayout(rc); rl.setContentsMargins(0, SPACING_XL, SPACING_XXL, SPACING_XL); rl.setSpacing(SPACING_LG)
+414 | …     rl.addWidget(ProjectResumeWidget()); rl.addWidget(PlanItemDetailsWidget()); rl.addWidget(ReconciliationWidget()); rl.addStretch…
+    |                                                                                                                       ^
+415 | …     rs.setWidget(rc); splitter.addWidget(rs)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:415:25
+    |
+413 | …     rc = QWidget(); rl = QVBoxLayout(rc); rl.setContentsMargins(0, SPACING_XL, SPACING_XXL, SPACING_XL); rl.setSpacing(SPACING_LG)
+414 | …     rl.addWidget(ProjectResumeWidget()); rl.addWidget(PlanItemDetailsWidget()); rl.addWidget(ReconciliationWidget()); rl.addStretch…
+415 | …     rs.setWidget(rc); splitter.addWidget(rs)
+    |                       ^
+416 | …
+417 | …     splitter.setSizes([SIDEBAR_DEFAULT, 700, RIGHT_PANEL_DEFAULT])
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:418:40
+    |
+417 |         splitter.setSizes([SIDEBAR_DEFAULT, 700, RIGHT_PANEL_DEFAULT])
+418 |         splitter.setStretchFactor(0, 0); splitter.setStretchFactor(1, 1); splitter.setStretchFactor(2, 0)
+    |                                        ^
+419 |         root.addWidget(splitter)
+420 |         root.addWidget(StatusBar())
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:418:73
+    |
+417 |         splitter.setSizes([SIDEBAR_DEFAULT, 700, RIGHT_PANEL_DEFAULT])
+418 |         splitter.setStretchFactor(0, 0); splitter.setStretchFactor(1, 1); splitter.setStretchFactor(2, 0)
+    |                                                                         ^
+419 |         root.addWidget(splitter)
+420 |         root.addWidget(StatusBar())
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:424:33
+    |
+423 | def main():
+424 |     app = QApplication(sys.argv); app.setApplicationName("FlowOS"); apply_dark_theme(app)
+    |                                 ^
+425 |     MainWindow().show(); sys.exit(app.exec())
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:424:67
+    |
+423 | def main():
+424 |     app = QApplication(sys.argv); app.setApplicationName("FlowOS"); apply_dark_theme(app)
+    |                                                                   ^
+425 |     MainWindow().show(); sys.exit(app.exec())
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> src\flowos\gui\views\overview_skeleton.py:425:24
+    |
+423 | def main():
+424 |     app = QApplication(sys.argv); app.setApplicationName("FlowOS"); apply_dark_theme(app)
+425 |     MainWindow().show(); sys.exit(app.exec())
+    |                        ^
+
+W292 [*] No newline at end of file
+   --> src\flowos\gui\views\overview_skeleton.py:429:11
+    |
+428 | if __name__ == "__main__":
+429 |     main()
+    |           ^
+help: Add trailing newline
+    |
+428 | if __name__ == "__main__":
+    -     main()
+429 +     main()
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src\flowos\service\composition_root.py:10:1
+   |
+ 8 |   """
+ 9 |
+10 | / from contextlib import asynccontextmanager
+11 | |
+12 | | from fastapi import FastAPI, HTTPException, Request
+13 | | from fastapi.responses import JSONResponse
+14 | |
+15 | | from flowos.service.controllers.http.plan_progress import router as plan_progress_router
+16 | | from flowos.service.controllers.http.project_resume import (
+17 | |     router as project_resume_router,
+18 | | )
+19 | | from flowos.service.controllers.http.sessions import (
+20 | |     router as sessions_router,
+21 | | )
+22 | | from flowos.service.controllers.http.projects import router as projects_router
+23 | | from flowos.service.controllers.http.system import router as system_router
+24 | | from flowos.service.controllers.http.tasks import router as tasks_router
+25 | | from flowos.service.services.infrastructure.persistence.engine import (
+26 | |     create_session_factory,
+27 | |     create_sqlite_engine,
+28 | | )
+29 | | from flowos.service.services.infrastructure.runtime import RuntimeManager
+   | |_________________________________________________________________________^
+help: Organize imports
+   |
+18 | )
+19 + from flowos.service.controllers.http.projects import router as projects_router
+20 | from flowos.service.controllers.http.sessions import (
+21 |     router as sessions_router,
+22 | )
+   - from flowos.service.controllers.http.projects import router as projects_router
+23 | from flowos.service.controllers.http.system import router as system_router
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src\flowos\service\composition_root.py:63:9
+   |
+61 |       @app.exception_handler(Exception)
+62 |       async def global_error_handler(request: Request, exc: Exception):
+63 | /         import uuid
+64 | |         from flowos.shared.contracts.errors import ApiErrorResponse
+65 | |         from flowos.shared.errors.codes import ErrorCode
+   | |________________________________________________________^
+66 |
+67 |           correlation_id = str(uuid.uuid4())
+   |
+help: Organize imports
+   |
+63 |         import uuid
+64 +
+65 |         from flowos.shared.contracts.errors import ApiErrorResponse
+   |
+
+W292 [*] No newline at end of file
+  --> src\flowos\service\controllers\http\projects.py:77:51
+   |
+75 |         raise HTTPException(status_code=404, detail="Projekat nije pronađen")
+76 |     session.commit()
+77 |     return {"status": "deleted", "id": project_id}
+   |                                                   ^
+help: Add trailing newline
+   |
+76 |     session.commit()
+   -     return {"status": "deleted", "id": project_id}
+77 +     return {"status": "deleted", "id": project_id}
+   |
+
+W292 [*] No newline at end of file
+  --> src\flowos\service\controllers\http\sessions.py:89:31
+   |
+87 |         raise HTTPException(status_code=404, detail="Sesija nije pronađena")
+88 |     session.commit()
+89 |     return _session_to_dict(s)
+   |                               ^
+help: Add trailing newline
+   |
+88 |     session.commit()
+   -     return _session_to_dict(s)
+89 +     return _session_to_dict(s)
+   |
+
+W292 [*] No newline at end of file
+  --> src\flowos\service\controllers\http\tasks.py:78:48
+   |
+76 |         raise HTTPException(status_code=404, detail="Zadatak nije pronađen")
+77 |     session.commit()
+78 |     return {"status": "deleted", "id": task_id}
+   |                                                ^
+help: Add trailing newline
+   |
+77 |     session.commit()
+   -     return {"status": "deleted", "id": task_id}
+78 +     return {"status": "deleted", "id": task_id}
+   |
+
+F401 [*] `dataclasses.field` imported but unused
+  --> src\flowos\service\services\attribution\service.py:11:36
+   |
+ 9 | """
+10 |
+11 | from dataclasses import dataclass, field
+   |                                    ^^^^^
+12 | from pathlib import Path
+   |
+help: Remove unused import: `dataclasses.field`
+   |
+10 |
+   - from dataclasses import dataclass, field
+11 + from dataclasses import dataclass
+12 | from pathlib import Path
+   |
+
+W292 [*] No newline at end of file
+  --> src\flowos\service\services\attribution\service.py:71:21
+   |
+69 |         return str(fp).startswith(str(wt))
+70 |     except Exception:
+71 |         return False
+   |                     ^
+help: Add trailing newline
+   |
+70 |     except Exception:
+   -         return False
+71 +         return False
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> src\flowos\service\services\infrastructure\agent_adapters\claude_code.py:14:1
+   |
+12 |   """
+13 |
+14 | / import os
+15 | | import subprocess
+16 | | import sys
+17 | | from dataclasses import dataclass, field
+18 | | from pathlib import Path
+19 | | from typing import Protocol
+   | |___________________________^
+help: Organize imports
+   |
+20 |
+   -
+21 | # ═══════════════════════════════════════════════════════════════════
+   |
+
+F401 [*] `pathlib.Path` imported but unused
+  --> src\flowos\service\services\infrastructure\agent_adapters\claude_code.py:18:21
+   |
+16 | import sys
+17 | from dataclasses import dataclass, field
+18 | from pathlib import Path
+   |                     ^^^^
+19 | from typing import Protocol
+   |
+help: Remove unused import: `pathlib.Path`
+   |
+17 | from dataclasses import dataclass, field
+   - from pathlib import Path
+18 | from typing import Protocol
+   |
+
+F401 [*] `ctypes.wintypes` imported but unused
+   --> src\flowos\service\services\infrastructure\agent_adapters\claude_code.py:211:44
+    |
+209 |         if sys.platform == "win32":
+210 |             try:
+211 |                 from ctypes import windll, wintypes
+    |                                            ^^^^^^^^
+212 |
+213 |                 kernel32 = windll.kernel32
+    |
+help: Remove unused import: `ctypes.wintypes`
+    |
+210 |             try:
+    -                 from ctypes import windll, wintypes
+211 +                 from ctypes import windll
+212 |
+    |
+
+W292 [*] No newline at end of file
+   --> src\flowos\service\services\infrastructure\agent_adapters\claude_code.py:219:21
+    |
+217 |                     kernel32.CloseHandle(handle)
+218 |             except Exception:
+219 |                 pass
+    |                     ^
+help: Add trailing newline
+    |
+218 |             except Exception:
+    -                 pass
+219 +                 pass
+    |
+
+W292 [*] No newline at end of file
+  --> src\flowos\service\services\infrastructure\app_paths.py:68:45
+   |
+66 |         get_settings_dir(),
+67 |     ]:
+68 |         d.mkdir(parents=True, exist_ok=True)
+   |                                             ^
+help: Add trailing newline
+   |
+67 |     ]:
+   -         d.mkdir(parents=True, exist_ok=True)
+68 +         d.mkdir(parents=True, exist_ok=True)
+   |
+
+F401 [*] `time` imported but unused
+  --> src\flowos\service\services\infrastructure\git_poller.py:8:8
+   |
+ 7 | import subprocess
+ 8 | import time
+   |        ^^^^
+ 9 | from dataclasses import dataclass, field
+10 | from datetime import UTC, datetime
+   |
+help: Remove unused import: `time`
+  |
+7 | import subprocess
+  - import time
+8 | from dataclasses import dataclass, field
+  |
+
+W292 [*] No newline at end of file
+   --> src\flowos\service\services\infrastructure\git_poller.py:125:29
+    |
+123 |         if result.returncode != 0:
+124 |             raise RuntimeError(result.stderr.strip())
+125 |         return result.stdout
+    |                             ^
+help: Add trailing newline
+    |
+124 |             raise RuntimeError(result.stderr.strip())
+    -         return result.stdout
+125 +         return result.stdout
+    |
+
+F401 [*] `collections.deque` imported but unused
+  --> src\flowos\service\services\infrastructure\watcher.py:9:25
+   |
+ 7 | import threading
+ 8 | import time
+ 9 | from collections import deque
+   |                         ^^^^^
+10 | from pathlib import Path
+11 | from typing import Callable
+   |
+help: Remove unused import: `collections.deque`
+  |
+8 | import time
+  - from collections import deque
+9 | from pathlib import Path
+  |
+
+UP035 [*] Import from `collections.abc` instead: `Callable`
+  --> src\flowos\service\services\infrastructure\watcher.py:11:1
+   |
+ 9 | from collections import deque
+10 | from pathlib import Path
+11 | from typing import Callable
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+12 |
+13 | from watchdog.events import FileSystemEventHandler
+   |
+help: Import from `collections.abc`
+   |
+10 | from pathlib import Path
+   - from typing import Callable
+11 + from collections.abc import Callable
+12 |
+   |
+
+SIM105 Use `contextlib.suppress(Exception)` instead of `try`-`except`-`pass`
+  --> src\flowos\service\services\infrastructure\watcher.py:91:13
+   |
+90 |           for event in events:
+91 | /             try:
+92 | |                 self._callback(event)
+93 | |             except Exception:
+94 | |                 pass  # Callback ne sme srušiti watcher
+   | |____________________^
+95 |
+96 |       def _should_ignore(self, file_path: str) -> bool:
+   |
+help: Replace `try`-`except`-`pass` with `with contextlib.suppress(Exception): ...`
+
+W292 [*] No newline at end of file
+   --> src\flowos\service\services\infrastructure\watcher.py:118:54
+    |
+116 |     def on_deleted(self, event):
+117 |         if not event.is_directory:
+118 |             self._callback("DELETED", event.src_path)
+    |                                                      ^
+help: Add trailing newline
+    |
+117 |         if not event.is_directory:
+    -             self._callback("DELETED", event.src_path)
+118 +             self._callback("DELETED", event.src_path)
+    |
+
+W292 [*] No newline at end of file
+  --> src\flowos\service\services\sessions\service.py:94:10
+   |
+92 |             .limit(limit)
+93 |             .all()
+94 |         )
+   |          ^
+help: Add trailing newline
+   |
+93 |             .all()
+   -         )
+94 +         )
+   |
+
+F401 [*] `os` imported but unused
+ --> tests\unit\test_agent_adapter.py:3:8
+  |
+1 | """Testovi za Claude Code adapter i AgentProcessLauncher."""
+2 |
+3 | import os
+  |        ^^
+4 | import sys
+  |
+help: Remove unused import: `os`
+  |
+2 |
+  - import os
+3 | import sys
+  |
+
+W292 [*] No newline at end of file
+  --> tests\unit\test_agent_adapter.py:78:48
+   |
+76 |         # Na Windows-u sa CREATE_NEW_PROCESS_GROUP, exit_code moze biti -1
+77 |         # Bitno je da je stdout ispravan
+78 |         assert "hello" in result.stdout_summary
+   |                                                ^
+help: Add trailing newline
+   |
+77 |         # Bitno je da je stdout ispravan
+   -         assert "hello" in result.stdout_summary
+78 +         assert "hello" in result.stdout_summary
+   |
+
+W292 [*] No newline at end of file
+   --> tests\unit\test_git_attribution.py:107:42
+    |
+105 |         result = AttributionService.attribute("C:/repo/src/test.py", sessions)
+106 |         assert result.attribution == "UNATTRIBUTED"
+107 |         assert result.confidence == "LOW"
+    |                                          ^
+help: Add trailing newline
+    |
+106 |         assert result.attribution == "UNATTRIBUTED"
+    -         assert result.confidence == "LOW"
+107 +         assert result.confidence == "LOW"
+    |
+
+F401 [*] `flowos.gui.theme.labels.STATUS_LABELS` imported but unused
+ --> tests\unit\test_translations.py:5:5
+  |
+3 | from flowos.gui.theme.labels import (
+4 |     OTHER_LABELS,
+5 |     STATUS_LABELS,
+  |     ^^^^^^^^^^^^^
+6 |     UI_LABELS,
+7 |     status_label,
+  |
+help: Remove unused import
+  |
+4 |     OTHER_LABELS,
+  -     STATUS_LABELS,
+  -     UI_LABELS,
+5 |     status_label,
+  |
+
+F401 [*] `flowos.gui.theme.labels.UI_LABELS` imported but unused
+ --> tests\unit\test_translations.py:6:5
+  |
+4 |     OTHER_LABELS,
+5 |     STATUS_LABELS,
+6 |     UI_LABELS,
+  |     ^^^^^^^^^
+7 |     status_label,
+8 |     ui_label,
+  |
+help: Remove unused import
+  |
+4 |     OTHER_LABELS,
+  -     STATUS_LABELS,
+  -     UI_LABELS,
+5 |     status_label,
+  |
+
+W292 [*] No newline at end of file
+  --> tests\unit\test_translations.py:54:58
+   |
+52 |         assert OTHER_LABELS["watcher"] == "Posmatrač"
+53 |         assert OTHER_LABELS["where_stopped"] == "Gdje si stao"
+54 |         assert OTHER_LABELS["confidence"] == "Pouzdanost"
+   |                                                          ^
+help: Add trailing newline
+   |
+53 |         assert OTHER_LABELS["where_stopped"] == "Gdje si stao"
+   -         assert OTHER_LABELS["confidence"] == "Pouzdanost"
+54 +         assert OTHER_LABELS["confidence"] == "Pouzdanost"
+   |
+
+Found 145 errors.
+[*] 32 fixable with the `--fix` option.

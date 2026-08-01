@@ -3,8 +3,8 @@
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event
-from sqlalchemy.pool import StaticPool
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from flowos.service.services.infrastructure.persistence.base import Base
 from flowos.service.services.infrastructure.persistence.models import Project

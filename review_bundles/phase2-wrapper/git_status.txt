@@ -1,0 +1,21 @@
+ D FlowOS-GUI-specifikacija-v3-gdje-si-stao.md
+ D FlowOS-kompletan-plan.md
+ D FlowOS-novi-detaljan-plan-PySide6-v2-plan-progress.md
+ D FlowOS-novi-detaljan-plan-PySide6-v3-project-resume.md
+ D FlowOS-novi-detaljan-plan-PySide6.md
+ D FolowOS-MOKAP-nove-3.png
+ D FolowOS-MOKAP-novi-gdje-si-stao.png
+ D FolowOS-MOKAP-novi-pracenje-plana.png
+ D FolowOS-MOKAP-novi.png
+ D PI_AGENT_REVIEW_BUNDLE_INSTRUCTIONS.md
+ M src/flowos/service/controllers/http/plan_progress.py
+ M src/flowos/service/controllers/http/project_resume.py
+ M src/flowos/shared/contracts/plan_progress.py
+ M tests/integration/test_plan_progress_api.py
+?? assets/
+?? docs/
+?? file
+?? review_bundles/phase1-backend.zip
+?? review_bundles/phase1-backend/
+?? review_bundles/phase2-wrapper/
+?? test_gui.py

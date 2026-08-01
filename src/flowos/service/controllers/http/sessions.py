@@ -1,11 +1,33 @@
-"""HTTP API Controllers — Sesije."""
+"""HTTP API Controllers — Sesije (Pydantic ugovori)."""
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 
 from flowos.service.services.sessions.service import SessionService
+from flowos.shared.enums.session import SessionStatus
 
 router = APIRouter(prefix="/sessions", tags=["Sessions"])
+
+
+class SessionCreateRequest(BaseModel):
+    project_id: str
+    agent_type: str
+    repo_path: str
+    task_id: str | None = None
+    model_name: str | None = None
+    execution_mode: str = "WRAPPED_TERMINAL"
+    branch_name: str | None = None
+    worktree_path: str | None = None
+    plan_item_id: str | None = None
+    base_commit_sha: str | None = None
+    pid: int | None = None
+
+
+class SessionEndRequest(BaseModel):
+    exit_code: int | None = None
+    result_commit_sha: str | None = None
+    status: str = "COMPLETED"
 
 
 def get_session(request: Request) -> Session:
@@ -24,41 +46,34 @@ def _session_to_dict(s) -> dict:
     return {
         "id": s.id, "task_id": s.task_id, "project_id": s.project_id,
         "agent_type": s.agent_type, "model_name": s.model_name,
-        "execution_mode": s.execution_mode, "terminal_label": s.terminal_label,
-        "working_directory": s.working_directory, "repo_path": s.repo_path,
-        "branch_name": s.branch_name, "worktree_path": s.worktree_path,
+        "execution_mode": s.execution_mode,
+        "repo_path": s.repo_path, "branch_name": s.branch_name,
+        "worktree_path": s.worktree_path,
         "plan_item_id": getattr(s, "plan_item_id", None),
-        "base_commit_sha": s.base_commit_sha, "pid": s.pid,
-        "status": s.status,
+        "base_commit_sha": s.base_commit_sha,
+        "pid": s.pid, "status": s.status,
         "started_at": s.started_at.isoformat() if s.started_at else None,
-        "last_activity_at": s.last_activity_at.isoformat() if s.last_activity_at else None,
         "ended_at": s.ended_at.isoformat() if s.ended_at else None,
         "exit_code": s.exit_code,
     }
 
 
 @router.post("")
-def create_session(data: dict, session: Session = Depends(get_session)):
+def create_session(data: SessionCreateRequest, session: Session = Depends(get_session)):
     svc = SessionService(session)
     s = svc.create_session(
-        project_id=data["project_id"],
-        agent_type=data["agent_type"],
-        repo_path=data["repo_path"],
-        task_id=data.get("task_id"),
-        model_name=data.get("model_name"),
-        execution_mode=data.get("execution_mode", "WRAPPED_TERMINAL"),
-        branch_name=data.get("branch_name"),
-        worktree_path=data.get("worktree_path"),
-        plan_item_id=data.get("plan_item_id"),
-        base_commit_sha=data.get("base_commit_sha"),
-        pid=data.get("pid"),
+        project_id=data.project_id, agent_type=data.agent_type,
+        repo_path=data.repo_path, task_id=data.task_id,
+        model_name=data.model_name, execution_mode=data.execution_mode,
+        branch_name=data.branch_name, worktree_path=data.worktree_path,
+        plan_item_id=data.plan_item_id,
+        base_commit_sha=data.base_commit_sha, pid=data.pid,
     )
-    session.commit()
     return _session_to_dict(s)
 
 
 @router.get("/active")
-def list_active_sessions(project_id: str, session: Session = Depends(get_session)):
+def list_active(project_id: str, session: Session = Depends(get_session)):
     return [_session_to_dict(s) for s in SessionService(session).list_active_sessions(project_id)]
 
 
@@ -76,14 +91,13 @@ def get_session_endpoint(session_id: str, session: Session = Depends(get_session
 
 
 @router.post("/{session_id}/end")
-def end_session(session_id: str, data: dict = {}, session: Session = Depends(get_session)):
+def end_session(session_id: str, data: SessionEndRequest | None = None, session: Session = Depends(get_session)):
+    if data is None:
+        data = SessionEndRequest()
     s = SessionService(session).end_session(
-        session_id,
-        exit_code=data.get("exit_code"),
-        base_commit_sha=data.get("base_commit_sha"),
-        status=data.get("status", "COMPLETED"),
+        session_id, exit_code=data.exit_code,
+        result_commit_sha=data.result_commit_sha, status=data.status,
     )
     if not s:
         raise HTTPException(status_code=404, detail="Sesija nije pronađena")
-    session.commit()
     return _session_to_dict(s)

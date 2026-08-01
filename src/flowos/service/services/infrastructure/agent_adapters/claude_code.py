@@ -187,9 +187,10 @@ class AgentProcessLauncher:
             proc.wait()  # Osiguraj da je returncode dostupan
 
             duration = time.monotonic() - start
+            exit_code = proc.returncode if proc.returncode is not None else -1
 
             return AgentResult(
-                exit_code=proc.returncode or -1,
+                exit_code=exit_code,
                 stdout_summary=stdout[-2000:] if stdout else "",
                 stderr_summary=stderr[-2000:] if stderr else "",
                 duration_seconds=duration,

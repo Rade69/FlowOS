@@ -1,0 +1,99 @@
+F401 [*] `fastapi.HTTPException` imported but unused
+ --> src\flowos\service\controllers\http\project_resume.py:3:41
+  |
+1 | """HTTP API Controllers — Project Resume (Gde si stao)."""
+2 |
+3 | from fastapi import APIRouter, Depends, HTTPException, Request
+  |                                         ^^^^^^^^^^^^^
+4 | from sqlalchemy.orm import Session
+  |
+help: Remove unused import: `fastapi.HTTPException`
+  |
+2 |
+  - from fastapi import APIRouter, Depends, HTTPException, Request
+3 + from fastapi import APIRouter, Depends, Request
+4 | from sqlalchemy.orm import Session
+  |
+
+E402 Module level import not at top of file
+  --> src\flowos\service\services\infrastructure\runtime.py:16:1
+   |
+15 | kernel32 = windll.kernel32
+16 | from pathlib import Path
+   | ^^^^^^^^^^^^^^^^^^^^^^^^
+17 | from typing import Any
+   |
+help: Move module level imports to top of file
+
+E402 Module level import not at top of file
+  --> src\flowos\service\services\infrastructure\runtime.py:17:1
+   |
+15 | kernel32 = windll.kernel32
+16 | from pathlib import Path
+17 | from typing import Any
+   | ^^^^^^^^^^^^^^^^^^^^^^
+18 |
+19 | if sys.platform != "win32":
+   |
+help: Move module level imports to top of file
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> src\flowos\shared\contracts\plan_progress.py:3:1
+  |
+1 |   """API ugovori za planove, stavke, kriterijume i progres."""
+2 |
+3 | / from datetime import datetime
+4 | |
+5 | | from pydantic import BaseModel, field_validator
+  | |_______________________________________________^
+help: Organize imports
+  |
+6 |
+  -
+7 | # ═══════════════════════════════════════════════════════════════════
+  |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests\integration\test_plan_progress_api.py:3:1
+   |
+ 1 |   """API testovi za Plan Progress endpoint-e."""
+ 2 |
+ 3 | / import pytest
+ 4 | | from fastapi.testclient import TestClient
+ 5 | | from sqlalchemy import create_engine, event
+ 6 | | from sqlalchemy.pool import StaticPool
+ 7 | | from sqlalchemy.orm import sessionmaker
+ 8 | |
+ 9 | | from flowos.service.services.infrastructure.persistence.base import Base
+10 | | from flowos.service.services.infrastructure.persistence.models import Project
+11 | | from flowos.service.services.infrastructure.persistence.plan_models import (
+12 | |     Plan,
+13 | |     PlanItem,
+14 | |     PlanItemCriterion,
+15 | |     PlanPhase,
+16 | | )
+17 | | from flowos.service.services.infrastructure.runtime import RuntimeManager
+   | |_________________________________________________________________________^
+help: Organize imports
+  |
+5 | from sqlalchemy import create_engine, event
+6 + from sqlalchemy.orm import sessionmaker
+7 | from sqlalchemy.pool import StaticPool
+  - from sqlalchemy.orm import sessionmaker
+8 |
+  |
+
+F841 Local variable `p` is assigned to but never used
+  --> tests\integration\test_project_resume_api.py:91:13
+   |
+89 |         factory = sessionmaker(bind=engine)
+90 |         with factory() as s:
+91 |             p = s.get(Project, project_id)
+   |             ^
+92 |             plan = Plan(project_id=project_id, title="Plan", status="ACTIVE")
+93 |             s.add(plan)
+   |
+help: Remove assignment to unused variable `p`
+
+Found 6 errors.
+[*] 3 fixable with the `--fix` option (1 hidden fix can be enabled with the `--unsafe-fixes` option).

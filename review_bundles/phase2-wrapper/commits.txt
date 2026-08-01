@@ -1,0 +1,10 @@
+bccf78b feat(FLOW-207, FLOW-208): Aktivne sesije GUI + Overview integracija
+45eea87 feat(FLOW-205, FLOW-206): Git polling + AttributionService
+4af7e4f fix(GUI): kompletna popravka — prevod na srpski, desni panel, sve ispravke
+4f72f35 feat(FLOW-203, FLOW-204): Claude Code adapter + Watcher pipeline
+444eca1 feat(FLOW-202): Session start/end/list — API + CLI
+b649473 feat(FLOW-201): CLI troslojni skeleton sa API integracijom
+61cbb9f feat(FLOW-106): prvi vertikalni GUI-Backend tok
+6151f6a chore: mypy — shared sloj prolazi strict (0 errors)
+ee22a35 fix: Pydantic request/response modeli + globalni error handler
+605df03 fix: AppPaths, atomski descriptor, CORS, Ruff -- preostale popravke

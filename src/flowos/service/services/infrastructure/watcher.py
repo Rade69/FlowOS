@@ -4,6 +4,7 @@ Koristi watchdog biblioteku za praćenje create/modify/delete događaja.
 Debounce 500ms, filtrira ignorisane foldere, emituje kroz queue.
 """
 
+import logging
 import threading
 import time
 from collections import deque
@@ -12,6 +13,8 @@ from typing import Callable
 
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
+
+logger = logging.getLogger("flowos.watcher")
 
 
 class ActivityEvent:
@@ -24,22 +27,11 @@ class ActivityEvent:
 
 
 class WatcherPipeline:
-    """Upravlja watchdog observer-om i debounce queue-om.
-
-    Karakteristike:
-    - Debounce 500ms (više događaja za isti fajl se spaja)
-    - Ignore lista: .git, node_modules, __pycache__, dist, build, .venv
-    - Thread-safe queue za emitovanje
-    """
+    """Upravlja watchdog observer-om i debounce queue-om."""
 
     DEFAULT_IGNORE = {".git", "node_modules", "__pycache__", "dist", "build", ".venv", "venv", "generated", "backups"}
 
-    def __init__(
-        self,
-        callback: Callable[[ActivityEvent], None],
-        debounce_ms: int = 500,
-        ignore_patterns: set[str] | None = None,
-    ) -> None:
+    def __init__(self, callback: Callable[[ActivityEvent], None], debounce_ms: int = 500, ignore_patterns: set[str] | None = None) -> None:
         self._callback = callback
         self._debounce = debounce_ms / 1000.0
         self._ignore = ignore_patterns or self.DEFAULT_IGNORE
@@ -47,24 +39,46 @@ class WatcherPipeline:
         self._pending: dict[str, ActivityEvent] = {}
         self._lock = threading.Lock()
         self._timer: threading.Timer | None = None
+        self._running = False
+
+    @property
+    def is_running(self) -> bool:
+        return self._running
 
     def start(self, repo_path: str) -> None:
-        """Pokreće watchdog observer na datoj putanji."""
+        """Pokreće watchdog observer."""
         path = Path(repo_path)
         if not path.exists():
             raise FileNotFoundError(f"Putanja ne postoji: {repo_path}")
-
+        if self._running:
+            logger.warning("Watcher već pokrenut, preskačem.")
+            return
         handler = _WatchdogHandler(self._on_event)
         self._observer = Observer()
         self._observer.schedule(handler, str(path), recursive=True)
         self._observer.start()
+        self._running = True
+        logger.info("Watcher pokrenut: %s", repo_path)
 
     def stop(self) -> None:
-        """Zaustavlja observer."""
+        """Bezbedno zaustavlja observer, otkazuje timer, flush-uje događaje."""
+        if not self._running:
+            return
+        self._running = False
         if self._observer:
             self._observer.stop()
+        with self._lock:
+            if self._timer:
+                self._timer.cancel()
+                self._timer = None
+            pending = list(self._pending.values())
+            self._pending.clear()
+        for event in pending:
+            self._safe_callback(event)
+        if self._observer:
             self._observer.join(timeout=5)
             self._observer = None
+        logger.info("Watcher zaustavljen.")
 
     def _on_event(self, event_type: str, file_path: str) -> None:
         """Prima događaj od watchdog-a, primenjuje debounce."""
@@ -86,12 +100,14 @@ class WatcherPipeline:
             events = list(self._pending.values())
             self._pending.clear()
             self._timer = None
-
         for event in events:
-            try:
-                self._callback(event)
-            except Exception:
-                pass  # Callback ne sme srušiti watcher
+            self._safe_callback(event)
+
+    def _safe_callback(self, event: ActivityEvent) -> None:
+        try:
+            self._callback(event)
+        except Exception:
+            logger.exception("Watcher callback nije uspio za %s", event.path)
 
     def _should_ignore(self, file_path: str) -> bool:
         """Proverava da li putanja sadrži ignorisani folder."""

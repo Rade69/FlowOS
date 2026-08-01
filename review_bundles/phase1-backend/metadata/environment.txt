@@ -1,0 +1,10 @@
+OS: Windows 11
+Python: 3.14.1 (tags/v3.14.1:57e0d17, Dec  2 2025, 14:05:07) [MSC v.1944 64 bit (AMD64)]
+PySide6: 6.11.1
+FastAPI: 0.139.0
+SQLAlchemy: 2.0.51
+Pydantic: 2.13.4
+Git: git version 2.52.0.windows.1
+Branch: main
+First commit: 02543b7
+Last commit: 5795169

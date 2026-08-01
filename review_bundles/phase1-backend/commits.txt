@@ -1,0 +1,12 @@
+5795169 feat(FLOW-104A): Project Resume API — 'Gde si stao' endpointi
+44fcd63 feat(FLOW-104): Projects/Tasks Services i API Controllers — prvi vertikalni tok
+7d6c02d feat(FLOW-103D): Project resume model i Service — trajno stanje, povratak i 'Gde si stao'
+a5f670d feat(FLOW-103C): Plan Progress API — 13 endpointa za planove, stavke, kriterijume i import
+436c030 feat(FLOW-103B): struktuirani Markdown parser za import FlowOS plana
+ff709d9 feat(FLOW-103A): Plan model i statusna masina — PlanItem, PlanProgressEvent, PlanProgressService
+387f67a feat(FLOW-103): FastAPI service runtime sa single-instance lock-om, descriptorom i logovima
+be2a3ad feat(FLOW-102): SQLAlchemy ORM modeli, SQLite/WAL engine, Alembic baseline migracija
+c2a4fca feat(FLOW-101): Pydantic validatori za sve API contracts + unit testovi
+9d5c03a chore: dodaj probe_* u .gitignore za throwaway prototipove
+2bffdd3 feat(PROBE): zavrsena sva tri PROBE zadatka — potvrda PySide6, FastAPI lifecycle-a i Windows Job Object-a
+74941ae feat(FLOW-000): bootstrap skeleton repozitorijuma sa PySide6 stackom

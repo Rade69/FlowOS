@@ -1,0 +1,40 @@
+Hronološke komande korišćene tokom implementacije Faze 1:
+
+--- FLOW-101 ---
+ruff format src/ tests/
+ruff check src/ tests/
+python -m pytest tests/unit/test_contracts.py tests/unit/test_error_response.py tests/architecture/ -v
+--- FLOW-102 ---
+alembic init alembic (konfiguracija env.py i alembic.ini)
+alembic revision --autogenerate -m "baseline_initial_schema"
+alembic upgrade head
+python -m pytest tests/integration/test_persistence.py tests/unit/ tests/architecture/ -v
+--- FLOW-103 ---
+ruff format src/flowos/service/
+ruff check src/flowos/service/
+python -m pytest tests/integration/test_service_runtime.py tests/unit/ tests/architecture/ -v
+--- FLOW-103A ---
+ruff format src/flowos/service/services/plan_progress.py src/flowos/service/services/infrastructure/persistence/plan_models.py
+ruff check src/ tests/
+alembic revision --autogenerate -m "plan_model_tables"
+alembic upgrade head
+python -m pytest tests/unit/test_plan_progress.py -v
+--- FLOW-103B ---
+ruff format src/flowos/service/services/plan_import.py tests/unit/test_plan_import.py
+python -m pytest tests/unit/test_plan_import.py -v
+--- FLOW-103C ---
+ruff format src/flowos/service/controllers/http/plan_progress.py tests/integration/test_plan_progress_api.py
+python -m pytest tests/integration/test_plan_progress_api.py -v
+--- FLOW-103D ---
+ruff format src/flowos/service/services/project_resume.py tests/unit/test_project_resume.py
+alembic revision --autogenerate -m "resume_models"
+alembic upgrade head
+python -m pytest tests/unit/test_project_resume.py -v
+--- FLOW-104 + FLOW-104A ---
+python -m pytest tests/integration/test_projects_tasks_api.py tests/integration/test_project_resume_api.py -v
+--- ZAVRŠNA VERIFIKACIJA ---
+ruff format src/ tests/
+ruff check src/ tests/
+python -m pytest tests/ -q (166 passed)
+python -m pytest tests/architecture/ -v (7 passed)
+git status --short (clean)

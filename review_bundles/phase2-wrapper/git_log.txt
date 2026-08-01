@@ -1,0 +1,25 @@
+bccf78b (HEAD -> main) feat(FLOW-207, FLOW-208): Aktivne sesije GUI + Overview integracija
+45eea87 feat(FLOW-205, FLOW-206): Git polling + AttributionService
+4af7e4f fix(GUI): kompletna popravka — prevod na srpski, desni panel, sve ispravke
+4f72f35 feat(FLOW-203, FLOW-204): Claude Code adapter + Watcher pipeline
+444eca1 feat(FLOW-202): Session start/end/list — API + CLI
+b649473 feat(FLOW-201): CLI troslojni skeleton sa API integracijom
+61cbb9f feat(FLOW-106): prvi vertikalni GUI-Backend tok
+6151f6a chore: mypy — shared sloj prolazi strict (0 errors)
+ee22a35 fix: Pydantic request/response modeli + globalni error handler
+605df03 fix: AppPaths, atomski descriptor, CORS, Ruff -- preostale popravke
+7da957e fix: korektivna runda — arhitektura, statusna masina, API kontroleri
+bbc857d feat(FLOW-105): GUI shell — Overview skeleton sa kompletnim layout-om
+5795169 feat(FLOW-104A): Project Resume API — 'Gde si stao' endpointi
+44fcd63 feat(FLOW-104): Projects/Tasks Services i API Controllers — prvi vertikalni tok
+7d6c02d feat(FLOW-103D): Project resume model i Service — trajno stanje, povratak i 'Gde si stao'
+a5f670d feat(FLOW-103C): Plan Progress API — 13 endpointa za planove, stavke, kriterijume i import
+436c030 feat(FLOW-103B): struktuirani Markdown parser za import FlowOS plana
+ff709d9 feat(FLOW-103A): Plan model i statusna masina — PlanItem, PlanProgressEvent, PlanProgressService
+387f67a feat(FLOW-103): FastAPI service runtime sa single-instance lock-om, descriptorom i logovima
+be2a3ad feat(FLOW-102): SQLAlchemy ORM modeli, SQLite/WAL engine, Alembic baseline migracija
+c2a4fca feat(FLOW-101): Pydantic validatori za sve API contracts + unit testovi
+9d5c03a chore: dodaj probe_* u .gitignore za throwaway prototipove
+2bffdd3 feat(PROBE): zavrsena sva tri PROBE zadatka — potvrda PySide6, FastAPI lifecycle-a i Windows Job Object-a
+74941ae (probe/windows-job-object, probe/pyside6-mockup-dpi, probe/gui-fastapi-lifecycle) feat(FLOW-000): bootstrap skeleton repozitorijuma sa PySide6 stackom
+02543b7 feat: inicijalni bootstrap FlowOS repozitorijuma

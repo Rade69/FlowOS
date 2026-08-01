@@ -88,9 +88,13 @@ class ClaudeCodeAdapter:
     """Adapter za Claude Code CLI alat.
 
     Komanda: claude [--model MODEL] [--workdir DIR] [task description]
-
     Environment: filtrira tajne, koristi samo bezbedne varijable.
+    Process control: TerminateProcess (ne pravi Windows Job Object u MVP-u).
     """
+
+    AGENT_TYPE = "claude-code"
+    SAFE_KEYS = {"PATH", "HOME", "USER", "USERNAME", "SYSTEMROOT", "TEMP", "TMP", "LANG", "TERM"}
+    BLOCKED_OVERRIDES = {"PATH", "SYSTEMROOT", "COMSPEC"}
 
     AGENT_TYPE = "claude-code"
 
@@ -134,7 +138,9 @@ class ClaudeCodeAdapter:
         for key, value in os.environ.items():
             if key in safe_keys or key.startswith("CLAUDE_") or key.startswith("ANTHROPIC_"):
                 env[key] = value
-        env.update(request.env)
+        for key, value in request.env.items():
+            if key not in self.BLOCKED_OVERRIDES:
+                env[key] = value
         return env
 
 

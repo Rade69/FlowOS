@@ -3,7 +3,7 @@
 Primarni tok:
     flowos session start --agent claude-code --task FLOW-42
 
-CLI nikad ne piše direktno u SQLite. Koristi API ili offline JSONL spool
+CLI nikad ne piše direktno u SQLite. Koristi API ili offline JSONL API (offline nije implementiran u MVP-u)
 kada backend nije dostupan.
 """
 
@@ -223,10 +223,10 @@ def session_start(
     agent: str = typer.Option(..., "--agent", "-a"),
     project: str = typer.Option(..., "--project", "-p"),
     repo: str = typer.Option(..., "--repo", "-r"),
-    task: Optional[str] = typer.Option(None, "--task", "-t"),
-    model: Optional[str] = typer.Option(None, "--model", "-m"),
-    worktree: Optional[str] = typer.Option(None, "--worktree", "-w"),
-    plan_item: Optional[str] = typer.Option(None, "--plan-item"),
+    task: str | None = typer.Option(None, "--task", "-t"),
+    model: str | None = typer.Option(None, "--model", "-m"),
+    worktree: str | None = typer.Option(None, "--worktree", "-w"),
+    plan_item: str | None = typer.Option(None, "--plan-item"),
 ):
     """Pokreni novu agentsku sesiju."""
     client = _get_client()
@@ -248,7 +248,7 @@ def session_start(
 @session_app.command("end")
 def session_end(
     session_id: str = typer.Argument(...),
-    exit_code: Optional[int] = typer.Option(None, "--exit-code", "-e"),
+    exit_code: int | None = typer.Option(None, "--exit-code", "-e"),
 ):
     """Završi sesiju."""
     client = _get_client()

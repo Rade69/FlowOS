@@ -140,14 +140,14 @@ def plan_data(app, project_id):
 
 class TestPlanProgress:
     def test_get_project_progress_empty(self, client: TestClient, project_id: str):
-        resp = client.get(f"/plans/projects/{project_id}/plan-progress")
+        resp = client.get(f"/projects/{project_id}/plan-progress")
         assert resp.status_code == 200
         data = resp.json()
         assert data["total_items"] == 0
 
     def test_get_project_progress_with_plan(self, client: TestClient, plan_data: dict):
         pid = plan_data["project_id"]
-        resp = client.get(f"/plans/projects/{pid}/plan-progress")
+        resp = client.get(f"/projects/{pid}/plan-progress")
         assert resp.status_code == 200
         data = resp.json()
         assert data["plan"] is not None
@@ -164,12 +164,12 @@ class TestPlanProgress:
 
     def test_get_plan_item(self, client: TestClient, plan_data: dict):
         item_id = plan_data["item_ids"][0]
-        resp = client.get(f"/plans/items/{item_id}")
+        resp = client.get(f"/plan-items/{item_id}")
         assert resp.status_code == 200
         assert resp.json()["item_key"] == "FLOW-001"
 
     def test_get_plan_item_404(self, client: TestClient):
-        resp = client.get("/plans/items/nepostojeci")
+        resp = client.get("/plan-items/nepostojeci")
         assert resp.status_code == 404
 
 
@@ -181,50 +181,50 @@ class TestPlanProgress:
 class TestStatusActions:
     def test_start_item(self, client: TestClient, plan_data: dict):
         item_id = plan_data["item_ids"][0]
-        resp = client.post(f"/plans/items/{item_id}/start", json={"reason": "Pocinje sesija"})
+        resp = client.post(f"/plan-items/{item_id}/start", json={"reason": "Pocinje sesija"})
         assert resp.status_code == 200
         assert resp.json()["status"] == "IN_PROGRESS"
 
     def test_mark_implemented(self, client: TestClient, plan_data: dict):
         item_id = plan_data["item_ids"][0]
-        client.post(f"/plans/items/{item_id}/start")
+        client.post(f"/plan-items/{item_id}/start")
         resp = client.post(
-            f"/plans/items/{item_id}/mark-implemented", json={"reason": "Agent zavrsio"}
+            f"/plan-items/{item_id}/mark-implemented", json={"reason": "Agent zavrsio"}
         )
         assert resp.status_code == 200
         assert resp.json()["status"] == "IMPLEMENTED"
 
     def test_verify(self, client: TestClient, plan_data: dict):
         item_id = plan_data["item_ids"][0]
-        client.post(f"/plans/items/{item_id}/start")
-        client.post(f"/plans/items/{item_id}/mark-implemented")
-        resp = client.post(f"/plans/items/{item_id}/verify", json={"reason": "Testovi prolaze"})
+        client.post(f"/plan-items/{item_id}/start")
+        client.post(f"/plan-items/{item_id}/mark-implemented")
+        resp = client.post(f"/plan-items/{item_id}/verify", json={"reason": "Testovi prolaze"})
         assert resp.status_code == 200
         assert resp.json()["status"] == "VERIFIED"
 
     def test_accept(self, client: TestClient, plan_data: dict):
         item_id = plan_data["item_ids"][0]
-        client.post(f"/plans/items/{item_id}/start")
-        client.post(f"/plans/items/{item_id}/mark-implemented")
-        client.post(f"/plans/items/{item_id}/verify")
-        resp = client.post(f"/plans/items/{item_id}/accept", json={"reason": "Korisnik potvrdio"})
+        client.post(f"/plan-items/{item_id}/start")
+        client.post(f"/plan-items/{item_id}/mark-implemented")
+        client.post(f"/plan-items/{item_id}/verify")
+        resp = client.post(f"/plan-items/{item_id}/accept", json={"reason": "Korisnik potvrdio"})
         assert resp.status_code == 200
         assert resp.json()["status"] == "ACCEPTED"
 
     def test_block_and_unblock(self, client: TestClient, plan_data: dict):
         item_id = plan_data["item_ids"][0]
-        client.post(f"/plans/items/{item_id}/start")
-        resp = client.post(f"/plans/items/{item_id}/block", json={"reason": "Blokirano"})
+        client.post(f"/plan-items/{item_id}/start")
+        resp = client.post(f"/plan-items/{item_id}/block", json={"reason": "Blokirano"})
         assert resp.status_code == 200
         assert resp.json()["status"] == "BLOCKED"
 
-        resp = client.post(f"/plans/items/{item_id}/unblock")
+        resp = client.post(f"/plan-items/{item_id}/unblock")
         assert resp.status_code == 200
         assert resp.json()["status"] == "IN_PROGRESS"
 
     def test_invalid_transition_returns_409(self, client: TestClient, plan_data: dict):
         item_id = plan_data["item_ids"][0]
-        resp = client.post(f"/plans/items/{item_id}/accept", json={"reason": "Skoci"})
+        resp = client.post(f"/plan-items/{item_id}/accept", json={"reason": "Skoci"})
         assert resp.status_code == 409
 
 
@@ -236,17 +236,17 @@ class TestStatusActions:
 class TestCriteriaAndEvents:
     def test_list_criteria(self, client: TestClient, plan_data: dict):
         item_id = plan_data["item_ids"][0]
-        resp = client.get(f"/plans/items/{item_id}/criteria")
+        resp = client.get(f"/plan-items/{item_id}/criteria")
         assert resp.status_code == 200
         assert len(resp.json()) >= 1
 
     def test_update_criterion(self, client: TestClient, plan_data: dict):
         item_id = plan_data["item_ids"][0]
-        resp = client.get(f"/plans/items/{item_id}/criteria")
+        resp = client.get(f"/plan-items/{item_id}/criteria")
         crit_id = resp.json()[0]["id"]
 
         resp = client.patch(
-            f"/plans/criteria/{crit_id}",
+            f"/plan-item-criteria/{crit_id}",
             json={"status": "PASSED", "verification_summary": "Sve OK"},
         )
         assert resp.status_code == 200
@@ -254,10 +254,10 @@ class TestCriteriaAndEvents:
 
     def test_progress_events(self, client: TestClient, plan_data: dict):
         item_id = plan_data["item_ids"][0]
-        client.post(f"/plans/items/{item_id}/start")
-        client.post(f"/plans/items/{item_id}/mark-implemented")
+        client.post(f"/plan-items/{item_id}/start")
+        client.post(f"/plan-items/{item_id}/mark-implemented")
 
-        resp = client.get(f"/plans/items/{item_id}/progress-events")
+        resp = client.get(f"/plan-items/{item_id}/progress-events")
         assert resp.status_code == 200
         data = resp.json()
         assert len(data) >= 2
@@ -279,7 +279,7 @@ Opis stavke.
 
     def test_import_plan(self, client: TestClient, project_id: str):
         resp = client.post(
-            f"/plans/projects/{project_id}/import",
+            f"/projects/{project_id}/import-plan",
             json={"markdown_text": self.SAMPLE_MD},
         )
         assert resp.status_code == 200
@@ -289,14 +289,14 @@ Opis stavke.
 
     def test_import_empty_returns_400(self, client: TestClient, project_id: str):
         resp = client.post(
-            f"/plans/projects/{project_id}/import",
+            f"/projects/{project_id}/import-plan",
             json={"markdown_text": ""},
         )
         assert resp.status_code == 400
 
     def test_activate_plan(self, client: TestClient, project_id: str):
         resp = client.post(
-            f"/plans/projects/{project_id}/import",
+            f"/projects/{project_id}/import-plan",
             json={"markdown_text": self.SAMPLE_MD},
         )
         plan_id = resp.json()["plan_id"]

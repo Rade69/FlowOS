@@ -359,7 +359,7 @@ class TestPhaseStatusDerivation:
             PlanItem(id="1", plan_phase_id="p", item_key="A", title="A", status="VERIFIED"),  # type: ignore[call-arg]
             PlanItem(id="2", plan_phase_id="p", item_key="B", title="B", status="ACCEPTED"),  # type: ignore[call-arg]
         ]
-        assert PlanProgressService.derive_phase_status(items) == "IMPLEMENTED"
+        assert PlanProgressService.derive_phase_status(items) == "VERIFIED"
 
 
 # ═══════════════════════════════════════════════════════════════════

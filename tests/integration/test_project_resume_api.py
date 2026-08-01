@@ -103,6 +103,7 @@ class TestResumeAPI:
             s.add(sess)
             s.commit()
 
+        client.post(f"/projects/{project_id}/resume/regenerate")
         resp = client.get(f"/projects/{project_id}/resume")
         assert resp.status_code == 200
         data = resp.json()

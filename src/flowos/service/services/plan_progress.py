@@ -200,10 +200,10 @@ class PlanProgressService:
             return "BLOCKED"
         if statuses.issubset({"NOT_STARTED"}):
             return "NOT_STARTED"
-        if statuses.issubset({"IMPLEMENTED", "VERIFIED", "ACCEPTED"}):
-            return "IMPLEMENTED"
         if statuses.issubset({"VERIFIED", "ACCEPTED"}):
             return "VERIFIED"
+        if statuses.issubset({"IMPLEMENTED", "VERIFIED", "ACCEPTED"}):
+            return "IMPLEMENTED"
 
         return "NOT_STARTED"
 
@@ -216,3 +216,225 @@ class PlanProgressService:
     @staticmethod
     def is_valid_status(status: str) -> bool:
         return status in ALL_STATUSES
+
+    # ── Query metodi za API kontrolere ─────────────────
+
+    def get_project_plan_progress(self, project_id: str) -> dict:
+        """Vraća sažetak napretka za projekat (za API)."""
+        from flowos.service.services.infrastructure.persistence.plan_models import (
+            Plan,
+            PlanItem,
+            PlanPhase,
+        )
+
+        plan = (
+            self._session.query(Plan)
+            .filter(Plan.project_id == project_id, Plan.status.in_(("ACTIVE", "DRAFT")))
+            .order_by(Plan.created_at.desc())
+            .first()
+        )
+
+        if not plan:
+            return {"plan": None, "phases": [], "total_items": 0, "completed_items": 0, "blocked_items": 0}
+
+        phases = (
+            self._session.query(PlanPhase)
+            .filter(PlanPhase.plan_id == plan.id)
+            .order_by(PlanPhase.sequence)
+            .all()
+        )
+
+        total = 0
+        completed = 0
+        blocked = 0
+        phase_dicts = []
+        for phase in phases:
+            items = (
+                self._session.query(PlanItem)
+                .filter(PlanItem.plan_phase_id == phase.id)
+                .order_by(PlanItem.sequence)
+                .all()
+            )
+            total += len(items)
+            completed += sum(1 for i in items if i.status == "ACCEPTED")
+            blocked += sum(1 for i in items if i.status == "BLOCKED")
+            phase.status = self.derive_phase_status(items)
+            phase_dicts.append({
+                "id": phase.id, "plan_id": phase.plan_id, "phase_key": phase.phase_key,
+                "title": phase.title, "sequence": phase.sequence, "status": phase.status,
+            })
+
+        return {
+            "plan": {
+                "id": plan.id, "project_id": plan.project_id, "title": plan.title,
+                "status": plan.status,
+                "activated_at": plan.activated_at.isoformat() if plan.activated_at else None,
+                "created_at": plan.created_at.isoformat() if plan.created_at else None,
+            },
+            "phases": phase_dicts,
+            "total_items": total,
+            "completed_items": completed,
+            "blocked_items": blocked,
+        }
+
+    def list_plan_items_grouped(self, plan_id: str) -> list[dict]:
+        from flowos.service.services.infrastructure.persistence.plan_models import (
+            Plan,
+            PlanItem,
+            PlanPhase,
+        )
+
+        plan = self._session.get(Plan, plan_id)
+        if not plan:
+            return []
+        phases = (
+            self._session.query(PlanPhase)
+            .filter(PlanPhase.plan_id == plan_id)
+            .order_by(PlanPhase.sequence)
+            .all()
+        )
+        result = []
+        for phase in phases:
+            items = (
+                self._session.query(PlanItem)
+                .filter(PlanItem.plan_phase_id == phase.id)
+                .order_by(PlanItem.sequence)
+                .all()
+            )
+            result.append({
+                "phase": {"id": phase.id, "plan_id": phase.plan_id, "phase_key": phase.phase_key,
+                           "title": phase.title, "sequence": phase.sequence, "status": phase.status},
+                "items": [_item_to_dict(i) for i in items],
+            })
+        return result
+
+    def get_plan_item(self, item_id: str):
+        from flowos.service.services.infrastructure.persistence.plan_models import PlanItem
+        return self._session.get(PlanItem, item_id)
+
+    def update_plan_item(self, item_id: str, data: dict):
+        from flowos.service.services.infrastructure.persistence.plan_models import PlanItem
+        item = self._session.get(PlanItem, item_id)
+        if not item:
+            return None
+        allowed = {"title", "description", "risk_level"}
+        for key, value in data.items():
+            if key in allowed and value is not None:
+                setattr(item, key, value)
+        return item
+
+    def get_item_criteria(self, item_id: str) -> list:
+        from flowos.service.services.infrastructure.persistence.plan_models import (
+            PlanItemCriterion,
+        )
+        return (
+            self._session.query(PlanItemCriterion)
+            .filter(PlanItemCriterion.plan_item_id == item_id)
+            .all()
+        )
+
+    def update_criterion(self, criterion_id: str, data: dict):
+        from flowos.service.services.infrastructure.persistence.plan_models import (
+            PlanItemCriterion,
+        )
+        criterion = self._session.get(PlanItemCriterion, criterion_id)
+        if not criterion:
+            return None
+        allowed = {"status", "evidence_artifact_id", "verification_summary", "verified_by"}
+        for key, value in data.items():
+            if key in allowed:
+                setattr(criterion, key, value)
+        return criterion
+
+    def get_progress_events(self, item_id: str, limit: int = 50) -> list:
+        from flowos.service.services.infrastructure.persistence.plan_models import (
+            PlanProgressEvent,
+        )
+        return (
+            self._session.query(PlanProgressEvent)
+            .filter(PlanProgressEvent.plan_item_id == item_id)
+            .order_by(PlanProgressEvent.occurred_at.desc())
+            .limit(limit)
+            .all()
+        )
+
+    def import_plan(self, project_id: str, markdown: str, source_artifact_id: str | None = None) -> tuple[dict, str | None]:
+        from flowos.service.services.plan_import import PlanImportService
+        svc = PlanImportService(self._session)
+        result = svc.import_plan(project_id, markdown, source_artifact_id=source_artifact_id)
+        from flowos.service.services.infrastructure.persistence.plan_models import Plan
+        plan = (
+            self._session.query(Plan)
+            .filter(Plan.project_id == project_id, Plan.status == "DRAFT")
+            .order_by(Plan.created_at.desc())
+            .first()
+        )
+        plan_id = plan.id if plan else None
+        return {
+            "plan_id": plan_id or "",
+            "phases": result.stats["phases"],
+            "items": result.stats["items"],
+            "criteria": result.stats["criteria"],
+            "dependencies": result.stats["dependencies"],
+            "unclear_count": result.stats["unclear"],
+            "unclear_sections": result.unclear_sections,
+        }, plan_id
+
+    def activate_plan(self, plan_id: str) -> dict:
+        from flowos.service.services.infrastructure.persistence.plan_models import Plan
+        plan = self._session.get(Plan, plan_id)
+        if not plan:
+            return None
+        if plan.status != "DRAFT":
+            return {"error": f"Plan nije u DRAFT statusu (trenutno: {plan.status})"}
+        from datetime import UTC, datetime
+        # Deaktiviraj prethodni aktivni plan
+        prev = (
+            self._session.query(Plan)
+            .filter(Plan.project_id == plan.project_id, Plan.status == "ACTIVE")
+            .first()
+        )
+        if prev:
+            prev.status = "SUPERSEDED"
+        plan.status = "ACTIVE"
+        plan.activated_at = datetime.now(tz=UTC)
+        return {"plan_id": plan.id, "status": "ACTIVE", "activated_at": plan.activated_at.isoformat()}
+
+# ═══════════════════════════════════════════════════════════════════
+# Helper funkcije za serijalizaciju (koriste ih API kontroleri)
+# ═══════════════════════════════════════════════════════════════════
+
+def _item_to_dict(item) -> dict:
+    return {
+        "id": item.id, "plan_phase_id": item.plan_phase_id,
+        "item_key": item.item_key, "title": item.title,
+        "description": item.description, "sequence": item.sequence,
+        "risk_level": item.risk_level, "status": item.status,
+        "progress_source": item.progress_source,
+        "started_at": item.started_at.isoformat() if item.started_at else None,
+        "implemented_at": item.implemented_at.isoformat() if item.implemented_at else None,
+        "verified_at": item.verified_at.isoformat() if item.verified_at else None,
+        "accepted_at": item.accepted_at.isoformat() if item.accepted_at else None,
+        "blocked_reason": item.blocked_reason,
+        "created_at": item.created_at.isoformat() if item.created_at else None,
+    }
+
+def _criterion_to_dict(c) -> dict:
+    return {
+        "id": c.id, "plan_item_id": c.plan_item_id,
+        "criterion_key": c.criterion_key, "description": c.description,
+        "status": c.status, "evidence_artifact_id": c.evidence_artifact_id,
+        "verification_summary": c.verification_summary,
+        "verified_at": c.verified_at.isoformat() if c.verified_at else None,
+        "verified_by": c.verified_by,
+    }
+
+def _event_to_dict(e) -> dict:
+    return {
+        "id": e.id, "plan_item_id": e.plan_item_id,
+        "session_id": e.session_id, "agent_report_id": e.agent_report_id,
+        "from_status": e.from_status, "to_status": e.to_status,
+        "reason": e.reason, "evidence_artifact_ids_json": e.evidence_artifact_ids_json,
+        "source": e.source,
+        "occurred_at": e.occurred_at.isoformat() if e.occurred_at else None,
+    }

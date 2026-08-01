@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-SRC = Path(__file__).resolve().parent.parent.parent / "src" / "flowos"
+SRC = Path(__file__).resolve().parent.parent.parent / "src"
 
 # Granice iz §4.5 — svaka je (izvorni_modul, zabranjeni_import_prefixi)
 BOUNDARIES: list[tuple[str, tuple[str, ...]]] = [
@@ -70,6 +70,10 @@ def test_boundary_no_forbidden_imports(source: str, forbidden: tuple[str, ...]) 
                         f"{module_path.relative_to(SRC.parent)}: "
                         f"zabranjen import '{imp}' (iz '{fb}')"
                     )
+
+    # Guard: test mora pasti ako nije pronasao nijedan modul
+    paths = _collect_module_paths(source)
+    assert paths, f"Nijedan modul nije pronadjen za '{source}' — proveri SRC putanju"
 
     assert not violations, (
         f"\nArhitektonske granice narušene u '{source}':\n"

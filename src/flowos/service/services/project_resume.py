@@ -15,6 +15,7 @@ from flowos.service.services.infrastructure.persistence.plan_models import (
     PlanItem,
 )
 from flowos.service.services.infrastructure.persistence.resume_models import (
+    ExternalActivity,
     ProjectResumeState,
     ProjectWorkspaceState,
 )
@@ -216,6 +217,69 @@ class ProjectResumeService:
         resume.generated_at = datetime.now(tz=UTC)
         self._session.flush()
         return resume
+
+    def get_current_resume(self, project_id: str):
+        """Vraća postojeći resume state bez regeneracije (read-only)."""
+        return (
+            self._session.query(ProjectResumeState)
+            .filter(ProjectResumeState.project_id == project_id)
+            .first()
+        )
+
+    def get_workspace_state(self, project_id: str) -> dict | None:
+        ws = (
+            self._session.query(ProjectWorkspaceState)
+            .filter(ProjectWorkspaceState.project_id == project_id)
+            .first()
+        )
+        if not ws:
+            return None
+        return {
+            "id": ws.id, "project_id": ws.project_id,
+            "last_known_commit_sha": ws.last_known_commit_sha,
+            "last_known_branch": ws.last_known_branch,
+            "reconciliation_status": ws.reconciliation_status,
+            "external_change_summary": ws.external_change_summary,
+            "last_observed_at": ws.last_observed_at.isoformat() if ws.last_observed_at else None,
+            "last_reconciled_at": ws.last_reconciled_at.isoformat() if ws.last_reconciled_at else None,
+        }
+
+    def create_external_activity(self, project_id: str, data: dict) -> dict:
+        activity = ExternalActivity(
+            project_id=project_id,
+            plan_item_id=data.get("plan_item_id"),
+            task_id=data.get("task_id"),
+            source=data.get("source", "UNKNOWN"),
+            summary=data.get("summary", "Nepoznata eksterna izmena"),
+            commit_shas_json=data.get("commit_shas_json"),
+            changed_files_json=data.get("changed_files_json"),
+            user_note=data.get("user_note"),
+        )
+        self._session.add(activity)
+        self._session.flush()
+        return {
+            "id": activity.id, "project_id": activity.project_id,
+            "source": activity.source, "summary": activity.summary,
+            "attribution": activity.attribution,
+            "created_at": activity.created_at.isoformat() if activity.created_at else None,
+        }
+
+    def list_external_activities(self, project_id: str, limit: int = 50) -> list[dict]:
+        activities = (
+            self._session.query(ExternalActivity)
+            .filter(ExternalActivity.project_id == project_id)
+            .order_by(ExternalActivity.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+        return [
+            {
+                "id": a.id, "source": a.source, "summary": a.summary,
+                "attribution": a.attribution, "user_note": a.user_note,
+                "created_at": a.created_at.isoformat() if a.created_at else None,
+            }
+            for a in activities
+        ]
 
     @staticmethod
     def _compute_confidence(

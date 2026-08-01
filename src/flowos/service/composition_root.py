@@ -9,7 +9,8 @@ se prosleđuje eksplicitno kroz konstruktor.
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 
 from flowos.service.controllers.http.plan_progress import router as plan_progress_router
 from flowos.service.controllers.http.project_resume import (
@@ -52,12 +53,38 @@ def create_app(runtime: RuntimeManager, engine=None) -> FastAPI:
     if engine is None:
         engine = create_sqlite_engine()
     app.state.session_factory = create_session_factory(engine)
-    # Buduće rute — dodaju se kako servisi postanu dostupni
-    # app.include_router(projects_router, prefix="/projects", tags=["Projects"])
-    # app.include_router(tasks_router, prefix="/tasks", tags=["Tasks"])
-    # app.include_router(sessions_router, prefix="/sessions", tags=["Sessions"])
+    # Globalni error handler — ApiErrorResponse format
+    @app.exception_handler(Exception)
+    async def global_error_handler(request: Request, exc: Exception):
+        import uuid
+        from flowos.shared.contracts.errors import ApiErrorResponse
+        from flowos.shared.errors.codes import ErrorCode
+
+        correlation_id = str(uuid.uuid4())
+        if isinstance(exc, HTTPException):
+            return JSONResponse(
+                status_code=exc.status_code,
+                content=ApiErrorResponse(
+                    code=_http_to_error_code(exc.status_code),
+                    message=str(exc.detail),
+                    correlation_id=correlation_id,
+                ).model_dump(),
+            )
+        return JSONResponse(
+            status_code=500,
+            content=ApiErrorResponse(
+                code=ErrorCode.INTERNAL_ERROR,
+                message="Interna greška servisa.",
+                correlation_id=correlation_id,
+            ).model_dump(),
+        )
 
     return app
+
+
+def _http_to_error_code(status: int) -> str:
+    mapping = {400: "VALIDATION_ERROR", 404: "NOT_FOUND", 409: "CONFLICT", 422: "VALIDATION_ERROR"}
+    return mapping.get(status, "INTERNAL_ERROR")
 
 
 def _make_lifespan(runtime: RuntimeManager):

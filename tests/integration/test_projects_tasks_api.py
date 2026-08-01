@@ -81,11 +81,11 @@ class TestProjectsAPI:
 
     def test_create_missing_name(self, client: TestClient):
         resp = client.post("/projects", json={"repo_path": "C:/test"})
-        assert resp.status_code == 400
+        assert resp.status_code == 422
 
     def test_create_invalid_repo_path(self, client: TestClient):
         resp = client.post("/projects", json={"name": "Test", "repo_path": "relative"})
-        assert resp.status_code == 400
+        assert resp.status_code == 422
 
     def test_list(self, client: TestClient):
         client.post("/projects", json={"name": "A", "repo_path": "C:/a"})
@@ -147,7 +147,7 @@ class TestTasksAPI:
 
     def test_create_missing_project(self, client: TestClient):
         resp = client.post("/tasks", json={"title": "Test"})
-        assert resp.status_code == 400
+        assert resp.status_code == 422
 
     def test_list(self, client: TestClient, project_id: str):
         client.post("/tasks", json={"project_id": project_id, "title": "A"})

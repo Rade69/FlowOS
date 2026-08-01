@@ -88,7 +88,7 @@ class TestResumeAPI:
         # Dodaj plan kroz bazu direktno
         factory = sessionmaker(bind=engine)
         with factory() as s:
-            p = s.get(Project, project_id)
+            _ = s.get(Project, project_id)
             plan = Plan(project_id=project_id, title="Plan", status="ACTIVE")
             s.add(plan)
             s.flush()

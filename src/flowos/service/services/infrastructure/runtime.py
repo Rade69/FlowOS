@@ -10,11 +10,13 @@ import json
 import os
 import socket
 import sys
+import uuid
 from ctypes import windll, wintypes
+from typing import Any
+
+from flowos.service.services.infrastructure.app_paths import get_runtime_dir
 
 kernel32 = windll.kernel32
-from pathlib import Path
-from typing import Any
 
 if sys.platform != "win32":
     import fcntl  # pragma: no cover
@@ -38,11 +40,7 @@ class RuntimeManager:
     """
 
     MUTEX_NAME = "Global\\FlowOS_Service_Mutex"
-    DESCRIPTOR_DIR = (
-        Path(os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local")))
-        / "FlowOS"
-        / "runtime"
-    )
+    DESCRIPTOR_DIR = get_runtime_dir()
     DESCRIPTOR_FILE = DESCRIPTOR_DIR / "service.json"
     DEFAULT_PORT = 9100
 
@@ -127,22 +125,21 @@ class RuntimeManager:
     # ── Runtime descriptor ──────────────────────────────────
 
     def write_descriptor(self, port: int) -> None:
-        """Upisuje runtime descriptor JSON fajl.
-
-        Args:
-            port: Port na kojem servis sluša.
-        """
+        """Upisuje runtime descriptor JSON fajl atomski (tmp → rename)."""
         self.DESCRIPTOR_DIR.mkdir(parents=True, exist_ok=True)
         descriptor = {
             "pid": self._pid,
             "port": port,
             "version": "0.1.0",
             "api_version": 1,
+            "instance_id": str(uuid.uuid4()),
             "started_at": self._utcnow_iso(),
             "data_directory": str(self.DESCRIPTOR_DIR.parent / "data"),
             "status": "running",
         }
-        self.DESCRIPTOR_FILE.write_text(json.dumps(descriptor, indent=2))
+        tmp = self.DESCRIPTOR_FILE.with_suffix(".tmp")
+        tmp.write_text(json.dumps(descriptor, indent=2))
+        tmp.replace(self.DESCRIPTOR_FILE)
 
     def delete_descriptor(self) -> None:
         """Briše runtime descriptor JSON fajl (graceful shutdown)."""

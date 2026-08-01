@@ -10,7 +10,6 @@ se prosleđuje eksplicitno kroz konstruktor.
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 
 from flowos.service.controllers.http.plan_progress import router as plan_progress_router
 from flowos.service.controllers.http.project_resume import (
@@ -40,15 +39,6 @@ def create_app(runtime: RuntimeManager, engine=None) -> FastAPI:
         version="0.1.0",
         description="Lokalni lični operativni sistem za koordinaciju agentskih sesija",
         lifespan=_make_lifespan(runtime),
-    )
-
-    # CORS — dozvoli samo loopback
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["http://127.0.0.1:*", "http://localhost:*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
     )
 
     # Rute

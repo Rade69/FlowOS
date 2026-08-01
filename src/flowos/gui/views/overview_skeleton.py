@@ -8,10 +8,9 @@ Pokreni: python src/flowos/gui/views/overview_skeleton.py
 """
 
 import sys
-from datetime import datetime, timedelta
 
-from PySide6.QtCore import QSize, Qt, Signal, QTimer
-from PySide6.QtGui import QColor, QFont, QPainter, QPen, QLinearGradient, QBrush, QPalette
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QColor, QFont, QPalette
 from PySide6.QtWidgets import (
     QApplication,
     QFrame,
@@ -20,13 +19,11 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QPushButton,
     QScrollArea,
-    QSizePolicy,
     QSplitter,
-    QStackedWidget,
-    QVBoxLayout,
-    QWidget,
     QTreeWidget,
     QTreeWidgetItem,
+    QVBoxLayout,
+    QWidget,
 )
 
 # ═══════════════════════════════════════════════════════════════════
@@ -146,7 +143,7 @@ def _status_badge(status: str) -> str:
         "REJECTED": STATUS_REJECTED,
         "ACTIVE": GREEN, "READY_TO_CONTINUE": GREEN, "NEEDS_REVIEW": YELLOW,
         "HIGH": GREEN, "MEDIUM": YELLOW, "LOW": RED,
-        "PASSED": GREEN, "PENDING": GRAY, "FAILED": RED, "IN_PROGRESS": YELLOW,
+        "PASSED": GREEN, "PENDING": GRAY, "FAILED": RED, "IN_PROGRESS_CRITERION": YELLOW,
     }
     return colors.get(status, GRAY)
 
@@ -295,7 +292,7 @@ class Sidebar(QFrame):
 class PlanProgressWidget(QFrame):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setStyleSheet(f"background: transparent; border: none;")
+        self.setStyleSheet("background: transparent; border: none;")
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)

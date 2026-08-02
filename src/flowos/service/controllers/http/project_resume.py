@@ -11,7 +11,7 @@ from flowos.service.services.project_resume import ProjectResumeService
 router = APIRouter(prefix="/projects", tags=["Project Resume"])
 
 
-def get_session(request: Request) -> Session:
+def get_session(request: Request) -> Session:  # type: ignore[misc]  # FastAPI generator dependency
     session = request.app.state.session_factory()
     try:
         yield session
@@ -67,11 +67,14 @@ def create_external_activity(project_id: str, data: dict, session: Session = Dep
 
 def _resume_to_dict(r) -> dict:
     return {
-        "id": r.id, "project_id": r.project_id,
+        "id": r.id,
+        "project_id": r.project_id,
         "active_plan_id": r.active_plan_id,
         "last_plan_item_id": r.last_plan_item_id,
-        "last_task_id": r.last_task_id, "last_session_id": r.last_session_id,
-        "last_report_id": r.last_report_id, "last_commit_sha": r.last_commit_sha,
+        "last_task_id": r.last_task_id,
+        "last_session_id": r.last_session_id,
+        "last_report_id": r.last_report_id,
+        "last_commit_sha": r.last_commit_sha,
         "last_activity_at": r.last_activity_at.isoformat() if r.last_activity_at else None,
         "resume_status": r.resume_status,
         "where_stopped": r.where_stopped,

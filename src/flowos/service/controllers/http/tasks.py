@@ -12,7 +12,7 @@ from flowos.shared.contracts.tasks import TaskCreate, TaskResponse, TaskUpdate
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
 
-def get_session(request: Request) -> Session:
+def get_session(request: Request) -> Session:  # type: ignore[misc]  # FastAPI generator dependency
     session = request.app.state.session_factory()
     try:
         yield session

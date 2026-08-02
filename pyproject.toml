@@ -83,7 +83,7 @@ ignore = ["E501"]  # line-length handled by formatter
 "src/flowos/shared/contracts/*.py" = ["B904"]  # raise ValueError from validator je standardna Pydantic praksa
 "src/flowos/service/controllers/**/*.py" = ["B008", "B006"]  # FastAPI standardni patterni
 "src/flowos/cli/**/*.py" = ["B904"]  # raise typer.Exit je standardni CLI pattern
-"src/flowos/gui/views/overview_skeleton.py" = ["E701", "E702", "F401"]  # pi agent stil — multiple statements, unused imports
+"src/flowos/gui/views/overview_skeleton.py" = ["E701", "E702", "E741", "F401"]  # pi agent stil
 
 [tool.ruff.format]
 quote-style = "double"
@@ -94,12 +94,13 @@ python_version = "3.12"
 warn_unused_configs = false
 warn_redundant_casts = true
 warn_unreachable = true
+warn_unused_ignores = true
 strict_equality = true
 disallow_untyped_defs = false
 disallow_any_unimported = false
 no_implicit_optional = true
 check_untyped_defs = true
-disable_error_code = ["misc"]  # FastAPI generator dependency pattern — dozvoljen
+mypy_path = "src"
 
 [[tool.mypy.overrides]]
 module = [
@@ -115,14 +116,13 @@ module = [
 ]
 ignore_missing_imports = true
 
-# GUI sloj — PySide6 nema type stubove, dozvoli netipizirane definicije
+# GUI sloj — PySide6 nema type stubove
 [[tool.mypy.overrides]]
 module = [
     "flowos.gui.*",
 ]
 disallow_untyped_defs = false
 check_untyped_defs = false
-ignore_errors = true
 
 # ORM modeli — SQLAlchemy mapped_column prirodno bez eksplicitnih tipova
 [[tool.mypy.overrides]]
@@ -130,7 +130,6 @@ module = [
     "flowos.service.services.infrastructure.persistence.*",
 ]
 disallow_untyped_defs = false
-ignore_errors = true
 
 # HTTP Controllers — tanke rute sa FastAPI generator dependency patternom
 [[tool.mypy.overrides]]
@@ -145,7 +144,6 @@ module = [
     "flowos.cli.*",
 ]
 disallow_untyped_defs = false
-ignore_errors = true
 
 # Testovi
 [[tool.mypy.overrides]]

@@ -183,7 +183,7 @@ class ReportService:
         q = self._session.query(AgentReport)
         if session_id:
             q = q.filter(AgentReport.session_id == session_id)
-        return q.order_by(AgentReport.created_at.desc()).limit(limit).all()  # type: ignore[no-any-return]
+        return q.order_by(AgentReport.created_at.desc()).limit(limit).all()
 
     def to_markdown(self, report: AgentReport) -> str:
         """Izvoz izveštaja u Markdown format po agent_report_template.md.

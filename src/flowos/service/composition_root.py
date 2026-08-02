@@ -170,7 +170,7 @@ def _make_lifespan(runtime: RuntimeManager):
         app.state.runtime = runtime
 
         # Watcher kolekcija — jedan watcher po projektu
-        app.state.watchers: dict[str, WatcherPipeline] = {}
+        app.state.watchers: dict[str, WatcherPipeline] = {}  # type: ignore[misc]  # starlette State je netipiziran
 
         # Watcher callback — povezuje watcher → ActivityService → baza
         def _make_watcher_callback(project_id: str, repo_path: str):

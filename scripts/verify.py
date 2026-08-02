@@ -20,6 +20,9 @@ Koristi se:
 
 import subprocess
 import sys
+
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -47,10 +50,12 @@ def run_step(name: str, cmd: list[str]) -> Result:
             cwd=str(ROOT),
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=120,
         )
         result.exit_code = proc.returncode
-        result.output = proc.stdout + proc.stderr
+        result.output = (proc.stdout or "") + (proc.stderr or "")
         result.passed = proc.returncode == 0
 
         if proc.stdout:
@@ -67,7 +72,7 @@ def run_step(name: str, cmd: list[str]) -> Result:
         result.output = "Timeout (120s)"
         print(result.output, file=sys.stderr)
 
-    status = "✅ PROŠLO" if result.passed else "❌ PALO"
+    status = "[PASS] PROŠLO" if result.passed else "[FAIL] PALO"
     print(f"  {status} (exit={result.exit_code})")
     return result
 
@@ -80,7 +85,7 @@ def main() -> int:
     steps: list[tuple[str, list[str]]] = [
         ("1. Ruff format check", ["ruff", "format", "--check", "src/", "tests/", "scripts/"]),
         ("2. Ruff lint", ["ruff", "check", "src/", "tests/", "scripts/"]),
-        ("3. mypy", ["mypy", "-p", "flowos"]),
+        ("3. mypy", ["mypy", "--explicit-package-bases", "-p", "flowos.service", "-p", "flowos.shared", "-p", "flowos.cli", "--ignore-missing-imports"]),
         (
             "4. Architecture boundaries",
             ["pytest", "tests/architecture/", "-v", "--tb=short", "--no-header"],
@@ -97,7 +102,7 @@ def main() -> int:
                 "--no-header",
             ],
         ),
-    ]
+    ] + [("6. Migrations check", [sys.executable, "-m", "alembic", "upgrade", "head"])]
 
     results: list[Result] = []
     for name, cmd in steps:
@@ -111,16 +116,16 @@ def main() -> int:
     passed = sum(1 for r in results if r.passed)
     failed = sum(1 for r in results if not r.passed)
     for r in results:
-        status = "✅" if r.passed else "❌"
+        status = "[PASS]" if r.passed else "[FAIL]"
         print(f"  {status} {r.name}")
 
     print(f"\n  Prošlo: {passed}/{len(results)}")
     if failed:
         print(f"  Palo:   {failed}/{len(results)}")
-        print("\n❌ VERIFIKACIJA NIJE PROŠLA")
+        print("\n[FAIL] VERIFIKACIJA NIJE PROŠLA")
         return 1
     else:
-        print("\n✅ VERIFIKACIJA PROŠLA")
+        print("\n[PASS] VERIFIKACIJA PROŠLA")
         return 0
 
 

@@ -69,8 +69,8 @@ class WatcherPipeline:
             return
         handler = _WatchdogHandler(self._on_event)
         self._observer = Observer()
-        self._observer.schedule(handler, str(path), recursive=True)  # type: ignore[attr-defined]
-        self._observer.start()  # type: ignore[attr-defined]
+        self._observer.schedule(handler, str(path), recursive=True)
+        self._observer.start()
         self._running = True
         logger.info("Watcher pokrenut: %s", repo_path)
 

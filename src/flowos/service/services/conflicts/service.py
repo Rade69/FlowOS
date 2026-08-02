@@ -385,7 +385,7 @@ class ConflictDetectionService:
 
     def list_open(self, project_id: str) -> list[Conflict]:
         """Vraća sve otvorene (OPEN) konflikte za projekat."""
-        return (  # type: ignore[no-any-return]
+        return (
             self._session.query(Conflict)
             .filter(
                 Conflict.project_id == project_id,
@@ -400,4 +400,4 @@ class ConflictDetectionService:
         q = self._session.query(Conflict).filter(Conflict.project_id == project_id)
         if status:
             q = q.filter(Conflict.status == status)
-        return q.order_by(Conflict.detected_at.desc()).all()  # type: ignore[no-any-return]
+        return q.order_by(Conflict.detected_at.desc()).all()

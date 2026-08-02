@@ -46,7 +46,7 @@ class GuiApiClient(QObject):
 
     def create_project(self, name: str, repo_path: str):
         body = {"name": name, "repo_path": repo_path}
-        self._post("/projects", body, self.project_created)
+        self._post("/projects", body, self.project_created)  # type: ignore[arg-type]  # PySide6 SignalInstance
 
     def delete_project(self, project_id: str):
         self._delete(f"/projects/{project_id}", lambda data: self.project_deleted.emit(project_id))
@@ -54,20 +54,20 @@ class GuiApiClient(QObject):
     # ── Plan ───────────────────────────────────────────
 
     def get_plan_progress(self, project_id: str):
-        self._get(f"/projects/{project_id}/plan-progress", self.plan_progress_received)
+        self._get(f"/projects/{project_id}/plan-progress", self.plan_progress_received)  # type: ignore[arg-type]
 
     # ── Resume ─────────────────────────────────────────
 
     def get_resume(self, project_id: str):
-        self._get(f"/projects/{project_id}/resume", self.resume_received)
+        self._get(f"/projects/{project_id}/resume", self.resume_received)  # type: ignore[arg-type]
 
     def regenerate_resume(self, project_id: str):
-        self._post(f"/projects/{project_id}/resume/regenerate", {}, self.resume_received)
+        self._post(f"/projects/{project_id}/resume/regenerate", {}, self.resume_received)  # type: ignore[arg-type]
 
     # ── Sessions ───────────────────────────────────────
 
     def get_active_sessions(self, project_id: str):
-        self._get(f"/sessions/active?project_id={project_id}", self.sessions_received)
+        self._get(f"/sessions/active?project_id={project_id}", self.sessions_received)  # type: ignore[arg-type]
 
     # ── HTTP helpers ───────────────────────────────────
 
@@ -98,9 +98,9 @@ class GuiApiClient(QObject):
     def _handle_response(self, reply: QNetworkReply, signal: Signal | None, callback=None):
         if reply.error() == QNetworkReply.NetworkError.NoError:
             try:
-                data = json.loads(reply.readAll().data().decode())
+                data = json.loads(reply.readAll().data().decode())  # type: ignore[union-attr]  # PySide6 QByteArray
                 if signal:
-                    signal.emit(data)
+                    signal.emit(data)  # type: ignore[attr-defined]  # PySide6 Signal
                 elif callback:
                     callback(data)
             except json.JSONDecodeError:
@@ -110,5 +110,5 @@ class GuiApiClient(QObject):
             msg = reply.errorString()
             self.error_occurred.emit(code, msg)
             if signal:
-                signal.emit({"error": msg})
+                signal.emit({"error": msg})  # type: ignore[attr-defined]  # PySide6 Signal
         reply.deleteLater()

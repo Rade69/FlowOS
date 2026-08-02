@@ -75,8 +75,8 @@ def health():
     try:
         resp = client.get("/health")
         typer.echo(f"✅ Servis dostupan na {client.base_url}")
-        typer.echo(f"   Status: {resp.get('status', '?')}")
-        typer.echo(f"   Uptime: {resp.get('uptime', 0):.0f}s")
+        typer.echo(f"   Status: {resp.get('status', '?')}")  # type: ignore[union-attr]
+        typer.echo(f"   Uptime: {resp.get('uptime', 0):.0f}s")  # type: ignore[union-attr]
     except Exception as e:
         typer.echo(f"❌ Servis nije dostupan: {e}", err=True)
         raise typer.Exit(code=1)
@@ -176,13 +176,13 @@ def plan_progress(project_id: str = typer.Option(..., "--project", "-p")):
     client = _get_client()
     try:
         data = client.get(f"/projects/{project_id}/plan-progress")
-        plan = data.get("plan")
+        plan = data.get("plan")  # type: ignore[union-attr]
         if not plan:
             typer.echo("Nema aktivnog plana.")
             return
         typer.echo(f"Plan: {plan['title']} [{plan['status']}]")
         typer.echo(
-            f"Stavke: {data['total_items']} ukupno, {data['completed_items']} završeno, {data['blocked_items']} blokirano"
+            f"Stavke: {data['total_items']} ukupno, {data['completed_items']} završeno, {data['blocked_items']} blokirano"  # type: ignore[call-overload]
         )
     except Exception as e:
         typer.echo(f"Greška: {e}", err=True)
@@ -200,12 +200,12 @@ def resume(project_id: str = typer.Option(..., "--project", "-p")):
     client = _get_client()
     try:
         data = client.get(f"/projects/{project_id}/resume")
-        typer.echo(f"Status: {data.get('resume_status', '?')}")
-        typer.echo(f"Pouzdanost: {data.get('confidence', '?')}")
-        where = data.get("where_stopped", "")
+        typer.echo(f"Status: {data.get('resume_status', '?')}")  # type: ignore[union-attr]
+        typer.echo(f"Pouzdanost: {data.get('confidence', '?')}")  # type: ignore[union-attr]
+        where = data.get("where_stopped", "")  # type: ignore[union-attr]
         if where:
             typer.echo(f"Gde si stao: {where}")
-        next_step = data.get("next_concrete_step", "")
+        next_step = data.get("next_concrete_step", "")  # type: ignore[union-attr]
         if next_step:
             typer.echo(f"Sledeći korak: {next_step}")
     except Exception as e:

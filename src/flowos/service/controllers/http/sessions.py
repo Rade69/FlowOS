@@ -1,11 +1,10 @@
 """HTTP API Controllers — Sesije (Pydantic ugovori)."""
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy.orm import Session
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from flowos.service.services.sessions.service import SessionService
-from flowos.shared.enums.session import SessionStatus
 
 router = APIRouter(prefix="/sessions", tags=["Sessions"])
 
@@ -30,7 +29,7 @@ class SessionEndRequest(BaseModel):
     status: str = "COMPLETED"
 
 
-def get_session(request: Request) -> Session:
+def get_session(request: Request) -> Session:  # type: ignore[misc]  # FastAPI generator dependency
     session = request.app.state.session_factory()
     try:
         yield session
@@ -44,14 +43,19 @@ def get_session(request: Request) -> Session:
 
 def _session_to_dict(s) -> dict:
     return {
-        "id": s.id, "task_id": s.task_id, "project_id": s.project_id,
-        "agent_type": s.agent_type, "model_name": s.model_name,
+        "id": s.id,
+        "task_id": s.task_id,
+        "project_id": s.project_id,
+        "agent_type": s.agent_type,
+        "model_name": s.model_name,
         "execution_mode": s.execution_mode,
-        "repo_path": s.repo_path, "branch_name": s.branch_name,
+        "repo_path": s.repo_path,
+        "branch_name": s.branch_name,
         "worktree_path": s.worktree_path,
         "plan_item_id": getattr(s, "plan_item_id", None),
         "base_commit_sha": s.base_commit_sha,
-        "pid": s.pid, "status": s.status,
+        "pid": s.pid,
+        "status": s.status,
         "started_at": s.started_at.isoformat() if s.started_at else None,
         "ended_at": s.ended_at.isoformat() if s.ended_at else None,
         "exit_code": s.exit_code,
@@ -62,12 +66,17 @@ def _session_to_dict(s) -> dict:
 def create_session(data: SessionCreateRequest, session: Session = Depends(get_session)):
     svc = SessionService(session)
     s = svc.create_session(
-        project_id=data.project_id, agent_type=data.agent_type,
-        repo_path=data.repo_path, task_id=data.task_id,
-        model_name=data.model_name, execution_mode=data.execution_mode,
-        branch_name=data.branch_name, worktree_path=data.worktree_path,
+        project_id=data.project_id,
+        agent_type=data.agent_type,
+        repo_path=data.repo_path,
+        task_id=data.task_id,
+        model_name=data.model_name,
+        execution_mode=data.execution_mode,
+        branch_name=data.branch_name,
+        worktree_path=data.worktree_path,
         plan_item_id=data.plan_item_id,
-        base_commit_sha=data.base_commit_sha, pid=data.pid,
+        base_commit_sha=data.base_commit_sha,
+        pid=data.pid,
     )
     return _session_to_dict(s)
 
@@ -91,12 +100,16 @@ def get_session_endpoint(session_id: str, session: Session = Depends(get_session
 
 
 @router.post("/{session_id}/end")
-def end_session(session_id: str, data: SessionEndRequest | None = None, session: Session = Depends(get_session)):
+def end_session(
+    session_id: str, data: SessionEndRequest | None = None, session: Session = Depends(get_session)
+):
     if data is None:
         data = SessionEndRequest()
     s = SessionService(session).end_session(
-        session_id, exit_code=data.exit_code,
-        result_commit_sha=data.result_commit_sha, status=data.status,
+        session_id,
+        exit_code=data.exit_code,
+        result_commit_sha=data.result_commit_sha,
+        status=data.status,
     )
     if not s:
         raise HTTPException(status_code=404, detail="Sesija nije pronađena")

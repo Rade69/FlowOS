@@ -18,7 +18,7 @@ from flowos.service.services.plan_progress import (
 router = APIRouter(tags=["Plan Progress"])
 
 
-def get_session(request: Request) -> Session:
+def get_session(request: Request) -> Session:  # type: ignore[misc]  # FastAPI generator dependency
     session = request.app.state.session_factory()
     try:
         yield session

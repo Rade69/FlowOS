@@ -13,7 +13,7 @@ from flowos.shared.contracts.projects import ProjectCreate, ProjectResponse, Pro
 router = APIRouter(prefix="/projects", tags=["Projects"])
 
 
-def get_session(request: Request) -> Session:
+def get_session(request: Request) -> Session:  # type: ignore[misc]  # FastAPI generator dependency
     session = request.app.state.session_factory()
     try:
         yield session
@@ -27,8 +27,11 @@ def get_session(request: Request) -> Session:
 
 def _project_to_response(p) -> ProjectResponse:
     return ProjectResponse(
-        id=p.id, name=p.name, repo_path=p.repo_path,
-        status=p.status, notes=p.notes,
+        id=p.id,
+        name=p.name,
+        repo_path=p.repo_path,
+        status=p.status,
+        notes=p.notes,
         created_at=p.created_at,
         updated_at=p.updated_at,
     )
@@ -59,8 +62,10 @@ def get_project(project_id: str, session: Session = Depends(get_session)):
 def update_project(project_id: str, data: ProjectUpdate, session: Session = Depends(get_session)):
     p = ProjectService(session).update_project(
         project_id,
-        name=data.name, repo_path=data.repo_path,
-        notes=data.notes, status=data.status,
+        name=data.name,
+        repo_path=data.repo_path,
+        notes=data.notes,
+        status=data.status,
     )
     if not p:
         raise HTTPException(status_code=404, detail="Projekat nije pronađen")

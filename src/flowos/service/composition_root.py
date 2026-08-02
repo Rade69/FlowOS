@@ -102,32 +102,6 @@ def create_app(runtime: RuntimeManager, engine=None) -> FastAPI:
 
     app.state.complete_session = _make_complete_session()
 
-    # Background task fabrika za job launch
-    def _make_launch_job_bg():
-        def _launch(job_id: str) -> None:
-            from flowos.service.services.job_execution import JobExecutionService
-
-            bg_engine = create_sqlite_engine()
-            bg_factory = create_session_factory(bg_engine)
-            bg_db = bg_factory()
-            try:
-                bg_svc = JobExecutionService(bg_db)
-                bg_svc.launch(job_id)
-                bg_db.commit()
-            except Exception:
-                bg_db.rollback()
-                import logging
-
-                logging.getLogger("flowos.job_execution").exception(
-                    "Job launch failed for %s", job_id
-                )
-            finally:
-                bg_db.close()
-
-        return _launch
-
-    app.state.launch_job_bg = _make_launch_job_bg()
-
     # Globalni error handler — ApiErrorResponse format
     @app.exception_handler(Exception)
     async def global_error_handler(request: Request, exc: Exception):

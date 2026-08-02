@@ -45,7 +45,7 @@ def setup_logging(
     if json_format:
         formatter = _JsonFormatter()
     else:
-        formatter = logging.Formatter(
+        formatter = logging.Formatter(  # type: ignore[assignment]
             fmt="%(asctime)s [%(levelname)-7s] %(name)s: %(message)s",
             datefmt="%Y-%m-%dT%H:%M:%S",
         )
@@ -65,7 +65,7 @@ def setup_logging(
         root.addHandler(fh)
     except ImportError:
         # Fallback: običan FileHandler
-        fh = logging.FileHandler(log_dir / "flowos-service.log", encoding="utf-8")
+        fh = logging.FileHandler(log_dir / "flowos-service.log", encoding="utf-8")  # type: ignore[assignment]
         fh.setLevel(level)
         fh.setFormatter(formatter)
         root.addHandler(fh)

@@ -235,7 +235,13 @@ class PlanProgressService:
         )
 
         if not plan:
-            return {"plan": None, "phases": [], "total_items": 0, "completed_items": 0, "blocked_items": 0}
+            return {
+                "plan": None,
+                "phases": [],
+                "total_items": 0,
+                "completed_items": 0,
+                "blocked_items": 0,
+            }
 
         phases = (
             self._session.query(PlanPhase)
@@ -259,14 +265,22 @@ class PlanProgressService:
             completed += sum(1 for i in items if i.status == "ACCEPTED")
             blocked += sum(1 for i in items if i.status == "BLOCKED")
             phase.status = self.derive_phase_status(items)
-            phase_dicts.append({
-                "id": phase.id, "plan_id": phase.plan_id, "phase_key": phase.phase_key,
-                "title": phase.title, "sequence": phase.sequence, "status": phase.status,
-            })
+            phase_dicts.append(
+                {
+                    "id": phase.id,
+                    "plan_id": phase.plan_id,
+                    "phase_key": phase.phase_key,
+                    "title": phase.title,
+                    "sequence": phase.sequence,
+                    "status": phase.status,
+                }
+            )
 
         return {
             "plan": {
-                "id": plan.id, "project_id": plan.project_id, "title": plan.title,
+                "id": plan.id,
+                "project_id": plan.project_id,
+                "title": plan.title,
                 "status": plan.status,
                 "activated_at": plan.activated_at.isoformat() if plan.activated_at else None,
                 "created_at": plan.created_at.isoformat() if plan.created_at else None,
@@ -301,19 +315,29 @@ class PlanProgressService:
                 .order_by(PlanItem.sequence)
                 .all()
             )
-            result.append({
-                "phase": {"id": phase.id, "plan_id": phase.plan_id, "phase_key": phase.phase_key,
-                           "title": phase.title, "sequence": phase.sequence, "status": phase.status},
-                "items": [_item_to_dict(i) for i in items],
-            })
+            result.append(
+                {
+                    "phase": {
+                        "id": phase.id,
+                        "plan_id": phase.plan_id,
+                        "phase_key": phase.phase_key,
+                        "title": phase.title,
+                        "sequence": phase.sequence,
+                        "status": phase.status,
+                    },
+                    "items": [_item_to_dict(i) for i in items],
+                }
+            )
         return result
 
     def get_plan_item(self, item_id: str):
         from flowos.service.services.infrastructure.persistence.plan_models import PlanItem
+
         return self._session.get(PlanItem, item_id)
 
     def update_plan_item(self, item_id: str, data: dict):
         from flowos.service.services.infrastructure.persistence.plan_models import PlanItem
+
         item = self._session.get(PlanItem, item_id)
         if not item:
             return None
@@ -327,6 +351,7 @@ class PlanProgressService:
         from flowos.service.services.infrastructure.persistence.plan_models import (
             PlanItemCriterion,
         )
+
         return (
             self._session.query(PlanItemCriterion)
             .filter(PlanItemCriterion.plan_item_id == item_id)
@@ -337,6 +362,7 @@ class PlanProgressService:
         from flowos.service.services.infrastructure.persistence.plan_models import (
             PlanItemCriterion,
         )
+
         criterion = self._session.get(PlanItemCriterion, criterion_id)
         if not criterion:
             return None
@@ -350,6 +376,7 @@ class PlanProgressService:
         from flowos.service.services.infrastructure.persistence.plan_models import (
             PlanProgressEvent,
         )
+
         return (
             self._session.query(PlanProgressEvent)
             .filter(PlanProgressEvent.plan_item_id == item_id)
@@ -358,11 +385,15 @@ class PlanProgressService:
             .all()
         )
 
-    def import_plan(self, project_id: str, markdown: str, source_artifact_id: str | None = None) -> tuple[dict, str | None]:
+    def import_plan(
+        self, project_id: str, markdown: str, source_artifact_id: str | None = None
+    ) -> tuple[dict, str | None]:
         from flowos.service.services.plan_import import PlanImportService
+
         svc = PlanImportService(self._session)
         result = svc.import_plan(project_id, markdown, source_artifact_id=source_artifact_id)
         from flowos.service.services.infrastructure.persistence.plan_models import Plan
+
         plan = (
             self._session.query(Plan)
             .filter(Plan.project_id == project_id, Plan.status == "DRAFT")
@@ -382,12 +413,14 @@ class PlanProgressService:
 
     def activate_plan(self, plan_id: str) -> dict:
         from flowos.service.services.infrastructure.persistence.plan_models import Plan
+
         plan = self._session.get(Plan, plan_id)
         if not plan:
-            return None
+            return None  # type: ignore[return-value]
         if plan.status != "DRAFT":
             return {"error": f"Plan nije u DRAFT statusu (trenutno: {plan.status})"}
         from datetime import UTC, datetime
+
         # Deaktiviraj prethodni aktivni plan
         prev = (
             self._session.query(Plan)
@@ -398,18 +431,28 @@ class PlanProgressService:
             prev.status = "SUPERSEDED"
         plan.status = "ACTIVE"
         plan.activated_at = datetime.now(tz=UTC)
-        return {"plan_id": plan.id, "status": "ACTIVE", "activated_at": plan.activated_at.isoformat()}
+        return {
+            "plan_id": plan.id,
+            "status": "ACTIVE",
+            "activated_at": plan.activated_at.isoformat(),
+        }
+
 
 # ═══════════════════════════════════════════════════════════════════
 # Helper funkcije za serijalizaciju (koriste ih API kontroleri)
 # ═══════════════════════════════════════════════════════════════════
 
+
 def _item_to_dict(item) -> dict:
     return {
-        "id": item.id, "plan_phase_id": item.plan_phase_id,
-        "item_key": item.item_key, "title": item.title,
-        "description": item.description, "sequence": item.sequence,
-        "risk_level": item.risk_level, "status": item.status,
+        "id": item.id,
+        "plan_phase_id": item.plan_phase_id,
+        "item_key": item.item_key,
+        "title": item.title,
+        "description": item.description,
+        "sequence": item.sequence,
+        "risk_level": item.risk_level,
+        "status": item.status,
         "progress_source": item.progress_source,
         "started_at": item.started_at.isoformat() if item.started_at else None,
         "implemented_at": item.implemented_at.isoformat() if item.implemented_at else None,
@@ -419,22 +462,31 @@ def _item_to_dict(item) -> dict:
         "created_at": item.created_at.isoformat() if item.created_at else None,
     }
 
+
 def _criterion_to_dict(c) -> dict:
     return {
-        "id": c.id, "plan_item_id": c.plan_item_id,
-        "criterion_key": c.criterion_key, "description": c.description,
-        "status": c.status, "evidence_artifact_id": c.evidence_artifact_id,
+        "id": c.id,
+        "plan_item_id": c.plan_item_id,
+        "criterion_key": c.criterion_key,
+        "description": c.description,
+        "status": c.status,
+        "evidence_artifact_id": c.evidence_artifact_id,
         "verification_summary": c.verification_summary,
         "verified_at": c.verified_at.isoformat() if c.verified_at else None,
         "verified_by": c.verified_by,
     }
 
+
 def _event_to_dict(e) -> dict:
     return {
-        "id": e.id, "plan_item_id": e.plan_item_id,
-        "session_id": e.session_id, "agent_report_id": e.agent_report_id,
-        "from_status": e.from_status, "to_status": e.to_status,
-        "reason": e.reason, "evidence_artifact_ids_json": e.evidence_artifact_ids_json,
+        "id": e.id,
+        "plan_item_id": e.plan_item_id,
+        "session_id": e.session_id,
+        "agent_report_id": e.agent_report_id,
+        "from_status": e.from_status,
+        "to_status": e.to_status,
+        "reason": e.reason,
+        "evidence_artifact_ids_json": e.evidence_artifact_ids_json,
         "source": e.source,
         "occurred_at": e.occurred_at.isoformat() if e.occurred_at else None,
     }

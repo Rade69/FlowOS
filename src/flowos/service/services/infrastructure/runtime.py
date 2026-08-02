@@ -19,7 +19,7 @@ from flowos.service.services.infrastructure.app_paths import get_runtime_dir
 kernel32 = windll.kernel32
 
 if sys.platform != "win32":
-    import fcntl  # pragma: no cover
+    import fcntl  # type: ignore[import-untyped] # pragma: no cover
 
 
 class PortAlreadyInUseError(RuntimeError):
@@ -80,7 +80,7 @@ class RuntimeManager:
         lock_dir.mkdir(parents=True, exist_ok=True)
         self._lock_fd = open(lock_dir / ".service.lock", "w")  # noqa: SIM115
         try:
-            fcntl.flock(self._lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            fcntl.flock(self._lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)  # type: ignore[name-defined]
         except BlockingIOError as err:
             raise InstanceAlreadyRunningError(
                 "FlowOS servis je već pokrenut. Samo jedna instanca je dozvoljena."

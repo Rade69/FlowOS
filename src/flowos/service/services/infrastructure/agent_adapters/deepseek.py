@@ -10,14 +10,11 @@ Isti AgentAdapter protokol kao Claude Code.
 import json
 import os
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from flowos.service.services.infrastructure.agent_adapters.claude_code import (
     AdapterCapabilities,
-    AgentAdapter,
-    AgentProcessLauncher,
     AgentRequest,
-    AgentResult,
 )
 
 
@@ -69,7 +66,17 @@ class DeepSeekAdapter:
 
     def get_environment(self, request: AgentRequest) -> dict[str, str]:
         """Prosleđuje DEEPSEEK_API_KEY u environment."""
-        safe_keys = {"PATH", "HOME", "USER", "USERNAME", "SYSTEMROOT", "TEMP", "TMP", "LANG", "TERM"}
+        safe_keys = {
+            "PATH",
+            "HOME",
+            "USER",
+            "USERNAME",
+            "SYSTEMROOT",
+            "TEMP",
+            "TMP",
+            "LANG",
+            "TERM",
+        }
         env = {k: v for k, v in os.environ.items() if k in safe_keys or k.startswith("DEEPSEEK_")}
         env["DEEPSEEK_API_KEY"] = self._config.api_key
         env["DEEPSEEK_BASE_URL"] = self._config.base_url
@@ -125,7 +132,7 @@ def create_deepseek_adapter(api_key: str | None = None) -> DeepSeekAdapter:
 
 
 # Registracija adaptera po imenu
-ADAPTER_REGISTRY: dict[str, type] = {
+ADAPTER_REGISTRY: dict[str, str] = {
     "claude-code": "ClaudeCodeAdapter",
     "deepseek": "DeepSeekAdapter",
     "pi": "PiAdapter",  # TODO: FLOW-307

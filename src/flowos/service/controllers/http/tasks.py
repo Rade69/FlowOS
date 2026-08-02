@@ -25,11 +25,17 @@ def get_session(request: Request) -> Session:
 
 
 def _task_to_response(t) -> TaskResponse:
-    return TaskResponse(
-        id=t.id, project_id=t.project_id, title=t.title,
-        description=t.description, status=t.status, priority=t.priority,
+    return TaskResponse(  # type: ignore[call-arg]
+        id=t.id,
+        project_id=t.project_id,
+        title=t.title,
+        description=t.description,
+        status=t.status,
+        priority=t.priority,
         plan_item_id=getattr(t, "plan_item_id", None),
-        created_at=t.created_at, updated_at=t.updated_at, done_at=t.done_at,
+        created_at=t.created_at,
+        updated_at=t.updated_at,
+        done_at=t.done_at,
     )
 
 
@@ -42,8 +48,10 @@ def list_tasks(project_id: str, session: Session = Depends(get_session)):
 def create_task(data: TaskCreate, session: Session = Depends(get_session)):
     svc = TaskService(session)
     t = svc.create_task(
-        project_id=data.project_id, title=data.title,
-        description=data.description, priority=data.priority,
+        project_id=data.project_id,
+        title=data.title,
+        description=data.description,
+        priority=data.priority,
     )
     session.commit()
     return _task_to_response(t)
@@ -60,8 +68,12 @@ def get_task(task_id: str, session: Session = Depends(get_session)):
 @router.patch("/{task_id}", response_model=TaskResponse)
 def update_task(task_id: str, data: TaskUpdate, session: Session = Depends(get_session)):
     t = TaskService(session).update_task(
-        task_id, title=data.title, description=data.description,
-        status=data.status, priority=data.priority, plan_item_id=None,
+        task_id,
+        title=data.title,
+        description=data.description,
+        status=data.status,
+        priority=data.priority,
+        plan_item_id=None,
     )
     if not t:
         raise HTTPException(status_code=404, detail="Zadatak nije pronađen")

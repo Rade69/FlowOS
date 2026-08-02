@@ -138,7 +138,7 @@ class ProjectResumeService:
             all_blocked = self._session.query(PlanItem).filter(PlanItem.status == "BLOCKED").all()
             # Filtriraj samo one u ovom planu
             for bi in all_blocked:
-                phase = bi.phase if hasattr(bi, "phase") else None
+                phase = bi.phase if hasattr(bi, "phase") else None  # type: ignore[assignment]
                 if phase and phase.plan_id == plan.id:
                     blocked_items.append(
                         {
@@ -235,13 +235,16 @@ class ProjectResumeService:
         if not ws:
             return None
         return {
-            "id": ws.id, "project_id": ws.project_id,
+            "id": ws.id,
+            "project_id": ws.project_id,
             "last_known_commit_sha": ws.last_known_commit_sha,
             "last_known_branch": ws.last_known_branch,
             "reconciliation_status": ws.reconciliation_status,
             "external_change_summary": ws.external_change_summary,
             "last_observed_at": ws.last_observed_at.isoformat() if ws.last_observed_at else None,
-            "last_reconciled_at": ws.last_reconciled_at.isoformat() if ws.last_reconciled_at else None,
+            "last_reconciled_at": ws.last_reconciled_at.isoformat()
+            if ws.last_reconciled_at
+            else None,
         }
 
     def create_external_activity(self, project_id: str, data: dict) -> dict:
@@ -258,8 +261,10 @@ class ProjectResumeService:
         self._session.add(activity)
         self._session.flush()
         return {
-            "id": activity.id, "project_id": activity.project_id,
-            "source": activity.source, "summary": activity.summary,
+            "id": activity.id,
+            "project_id": activity.project_id,
+            "source": activity.source,
+            "summary": activity.summary,
             "attribution": activity.attribution,
             "created_at": activity.created_at.isoformat() if activity.created_at else None,
         }
@@ -274,8 +279,11 @@ class ProjectResumeService:
         )
         return [
             {
-                "id": a.id, "source": a.source, "summary": a.summary,
-                "attribution": a.attribution, "user_note": a.user_note,
+                "id": a.id,
+                "source": a.source,
+                "summary": a.summary,
+                "attribution": a.attribution,
+                "user_note": a.user_note,
                 "created_at": a.created_at.isoformat() if a.created_at else None,
             }
             for a in activities

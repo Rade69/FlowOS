@@ -80,7 +80,7 @@ def main() -> int:
     steps: list[tuple[str, list[str]]] = [
         ("1. Ruff format check", ["ruff", "format", "--check", "src/", "tests/", "scripts/"]),
         ("2. Ruff lint", ["ruff", "check", "src/", "tests/", "scripts/"]),
-        ("3. mypy", ["mypy", "src/"]),
+        ("3. mypy", ["mypy", "-p", "flowos"]),
         (
             "4. Architecture boundaries",
             ["pytest", "tests/architecture/", "-v", "--tb=short", "--no-header"],

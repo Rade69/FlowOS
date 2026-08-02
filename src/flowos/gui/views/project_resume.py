@@ -44,8 +44,8 @@ class ProjectResumeView(QFrame):
         self._content.addWidget(_lbl("GDJE SI STAO", FONT_LG, True))
 
     def _clear(self):
-        while self._content.count() > 1:
-            it = self._content.takeAt(1)
+        while self._content.count() > 1:  # type: ignore[union-attr]
+            it = self._content.takeAt(1)  # type: ignore[union-attr]
             if it.widget():
                 it.widget().deleteLater()
             elif it.layout():
@@ -59,39 +59,39 @@ class ProjectResumeView(QFrame):
             elif it.layout():
                 self._clear_layout(it.layout())
 
-    def render(self, data):
+    def render(self, data):  # type: ignore[override]
         self._clear()
         if not data or data.get("status") == "NO_HISTORY":
-            self._content.addWidget(_lbl("Nema prethodne istorije.", FONT_SM, False, TEXT_MUTED))
-            self._content.addStretch()
+            self._content.addWidget(_lbl("Nema prethodne istorije.", FONT_SM, False, TEXT_MUTED))  # type: ignore[union-attr]
+            self._content.addStretch()  # type: ignore[union-attr]
             return
         item_key = data.get("plan_item_key", "")
         item_title = data.get("plan_item_title", "")
         if item_key or item_title:
-            self._content.addWidget(
+            self._content.addWidget(  # type: ignore[union-attr]
                 _lbl(f"{item_key} — {item_title}" if item_key else item_title, FONT_MD, True)
             )
         ist = data.get("plan_item_status", "")
         if ist:
-            self._content.addWidget(_lbl(status_label(ist), FONT_SM, True, PURPLE))
+            self._content.addWidget(_lbl(status_label(ist), FONT_SM, True, PURPLE))  # type: ignore[union-attr]
         where = data.get("where_stopped", "")
         if where:
-            self._content.addWidget(_sec("Gdje je rad stao"))
+            self._content.addWidget(_sec("Gdje je rad stao"))  # type: ignore[union-attr]
             w = _lbl(where, FONT_SM, False, TEXT_SECONDARY)
             w.setWordWrap(True)
-            self._content.addWidget(w)
+            self._content.addWidget(w)  # type: ignore[union-attr]
         ns_text = data.get("next_step", "")
         if ns_text:
-            self._content.addWidget(_sec("Sljedeci konkretan korak"))
+            self._content.addWidget(_sec("Sljedeci konkretan korak"))  # type: ignore[union-attr]
             ns = _lbl(ns_text, FONT_SM, True, TEXT_PRIMARY)
             ns.setWordWrap(True)
-            self._content.addWidget(ns)
+            self._content.addWidget(ns)  # type: ignore[union-attr]
         prec = data.get("preconditions", "")
         if prec:
-            self._content.addWidget(_sec("Prije nastavka provjeriti"))
+            self._content.addWidget(_sec("Prije nastavka provjeriti"))  # type: ignore[union-attr]
             pc = _lbl(prec, FONT_SM, False, TEXT_SECONDARY)
             pc.setWordWrap(True)
-            self._content.addWidget(pc)
+            self._content.addWidget(pc)  # type: ignore[union-attr]
         confidence = data.get("confidence", "LOW")
         conf_colors = {"HIGH": GREEN, "MEDIUM": YELLOW, "LOW": RED}
         conf_labels = {"HIGH": "Visoka", "MEDIUM": "Srednja", "LOW": "Niska"}
@@ -106,8 +106,8 @@ class ProjectResumeView(QFrame):
             )
         )
         cr.addStretch()
-        self._content.addLayout(cr)
-        self._content.addStretch()
+        self._content.addLayout(cr)  # type: ignore[union-attr]
+        self._content.addStretch()  # type: ignore[union-attr]
 
 
 class PlanItemDetailsView(QFrame):
@@ -127,16 +127,16 @@ class PlanItemDetailsView(QFrame):
         self._content.addWidget(_lbl("DETALJI STAVKE PLANA", FONT_LG, True))
 
     def _clear(self):
-        while self._content.count() > 1:
-            it = self._content.takeAt(1)
+        while self._content.count() > 1:  # type: ignore[union-attr]
+            it = self._content.takeAt(1)  # type: ignore[union-attr]
             if it.widget():
                 it.widget().deleteLater()
 
-    def render(self, data):
+    def render(self, data):  # type: ignore[override]
         self._clear()
         if not data:
-            self._content.addWidget(_lbl("Izaberite stavku plana.", FONT_SM, False, TEXT_MUTED))
-            self._content.addStretch()
+            self._content.addWidget(_lbl("Izaberite stavku plana.", FONT_SM, False, TEXT_MUTED))  # type: ignore[union-attr]
+            self._content.addStretch()  # type: ignore[union-attr]
             return
         criteria = data.get("criteria", [])
         for c in criteria:
@@ -151,8 +151,8 @@ class PlanItemDetailsView(QFrame):
             rl.addWidget(cl)
             rl.addWidget(_lbl(c.get("description", ""), FONT_SM, False, TEXT_SECONDARY))
             rl.addStretch()
-            self._content.addLayout(rl)
-        self._content.addStretch()
+            self._content.addLayout(rl)  # type: ignore[union-attr]
+        self._content.addStretch()  # type: ignore[union-attr]
 
 
 class ReconciliationView(QFrame):
@@ -172,24 +172,24 @@ class ReconciliationView(QFrame):
         self._content.addWidget(_lbl("⚠ PROMJENE VAN FLOWOS-A", FONT_MD, True, YELLOW))
 
     def _clear(self):
-        while self._content.count() > 1:
-            it = self._content.takeAt(1)
+        while self._content.count() > 1:  # type: ignore[union-attr]
+            it = self._content.takeAt(1)  # type: ignore[union-attr]
             if it.widget():
                 it.widget().deleteLater()
 
-    def render(self, data):
+    def render(self, data):  # type: ignore[override]
         self._clear()
         if not data:
             self.hide()
             return
         self.show()
-        self._content.addWidget(
+        self._content.addWidget(  # type: ignore[union-attr]
             _lbl("Projekat je mijenjan van FlowOS-a.", FONT_SM, False, TEXT_SECONDARY)
         )
         nc = data.get("new_commits", 0)
         df = data.get("dirty_files", 0)
-        self._content.addWidget(_lbl(f"{nc} nova commita · {df} neupisana fajla", FONT_SM, True))
+        self._content.addWidget(_lbl(f"{nc} nova commita · {df} neupisana fajla", FONT_SM, True))  # type: ignore[union-attr]
         br = data.get("current_branch", "")
         if br:
-            self._content.addWidget(_lbl(f"Grana: {br}", FONT_XS, False, TEXT_MUTED))
-        self._content.addWidget(_lbl("Autor nije potvrđen.", FONT_XS, False, RED))
+            self._content.addWidget(_lbl(f"Grana: {br}", FONT_XS, False, TEXT_MUTED))  # type: ignore[union-attr]
+        self._content.addWidget(_lbl("Autor nije potvrđen.", FONT_XS, False, RED))  # type: ignore[union-attr]

@@ -87,16 +87,16 @@ class PlanProgressView(QFrame):
         self._tree.setColumnWidth(4, 110)
         lo.addWidget(self._tree)
 
-    def render(self, data):
-        self._plan_label.setText(
+    def render(self, data):  # type: ignore[override]
+        self._plan_label.setText(  # type: ignore[union-attr]
             "Nema aktivnog plana" if not data else f"Aktivni plan: {data.get('plan_title', '')}"
         )
         self._clear_status()
-        self._tree.clear()
+        self._tree.clear()  # type: ignore[union-attr]
         if not data:
             return
         phases = data.get("phases", [])
-        counts = {}
+        counts = {}  # type: ignore[var-annotated]
         for ph in phases:
             for it in ph.get("items", []):
                 counts[it.get("status", "NOT_STARTED")] = (
@@ -108,11 +108,12 @@ class PlanProgressView(QFrame):
                 lbl = QLabel(f"{c} {STATUS_COUNT_LABELS.get(sk, sk)}")
                 lbl.setFont(QFont("Segoe UI", FONT_SM, QFont.Weight.Bold))
                 lbl.setStyleSheet(f"color:{STATUS_COUNT_COLORS.get(sk, GRAY)};border:none;")
-                self._status_row.addWidget(lbl)
-        self._status_row.addStretch()
+                self._status_row.addWidget(lbl)  # type: ignore[union-attr]
+        self._status_row.addStretch()  # type: ignore[union-attr]
         for ph in phases:
             pi = QTreeWidgetItem(
-                self._tree, [ph.get("title", ph.get("phase_key", "")), "", "", "", ""]
+                self._tree,  # type: ignore[arg-type]
+                [ph.get("title", ph.get("phase_key", "")), "", "", "", ""],
             )
             pi.setExpanded(True)
             pi.setFont(0, QFont("Segoe UI", FONT_MD, QFont.Weight.Bold))

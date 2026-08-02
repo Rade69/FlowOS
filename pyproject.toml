@@ -122,7 +122,7 @@ module = [
     "flowos.gui.*",
 ]
 disallow_untyped_defs = false
-check_untyped_defs = false
+check_untyped_defs = true
 
 # ORM modeli — SQLAlchemy mapped_column prirodno bez eksplicitnih tipova
 [[tool.mypy.overrides]]

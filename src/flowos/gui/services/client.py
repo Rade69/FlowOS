@@ -37,12 +37,12 @@ class GuiApiClient(QObject):
     # ── System ─────────────────────────────────────────
 
     def check_health(self):
-        self._get("/health", self.health_received)
+        self._get("/health", self.health_received)  # type: ignore[arg-type]
 
     # ── Projects ───────────────────────────────────────
 
     def get_projects(self):
-        self._get("/projects", self.projects_received)
+        self._get("/projects", self.projects_received)  # type: ignore[arg-type]
 
     def create_project(self, name: str, repo_path: str):
         body = {"name": name, "repo_path": repo_path}

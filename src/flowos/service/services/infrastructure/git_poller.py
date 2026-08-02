@@ -105,9 +105,7 @@ class GitStateReader:
             new_untracked_files=tuple(
                 f for f in fresh.untracked_files if f not in prev.untracked_files
             ),
-            changed_files=tuple(
-                f for f in fresh.changed_files if f not in prev.changed_files
-            ),
+            changed_files=tuple(f for f in fresh.changed_files if f not in prev.changed_files),
             previous_commit_sha=prev.commit_sha,
             current_commit_sha=fresh.commit_sha,
             previous_branch=prev.branch,

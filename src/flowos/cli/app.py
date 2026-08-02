@@ -233,11 +233,19 @@ def session_start(
     import os
 
     try:
-        s = client.post("/sessions", {
-            "project_id": project, "agent_type": agent, "repo_path": repo,
-            "task_id": task, "model_name": model, "worktree_path": worktree,
-            "plan_item_id": plan_item, "pid": os.getpid(),
-        })
+        s = client.post(
+            "/sessions",
+            {
+                "project_id": project,
+                "agent_type": agent,
+                "repo_path": repo,
+                "task_id": task,
+                "model_name": model,
+                "worktree_path": worktree,
+                "plan_item_id": plan_item,
+                "pid": os.getpid(),
+            },
+        )
         typer.echo(f"✅ Sesija pokrenuta: {s['id']}")
         typer.echo(f"   Status: {s['status']}")
     except Exception as e:
@@ -269,13 +277,19 @@ def session_list(
     """Prikaži sesije za projekat."""
     client = _get_client()
     try:
-        path = f"/sessions/active?project_id={project}" if active_only else f"/sessions?project_id={project}"
+        path = (
+            f"/sessions/active?project_id={project}"
+            if active_only
+            else f"/sessions?project_id={project}"
+        )
         sessions = client.get(path)
         if not sessions:
             typer.echo("Nema sesija.")
             return
         for s in sessions:
-            typer.echo(f"  {s['id'][:8]}... {s['agent_type']} [{s['status']}] {s.get('started_at', '')[:16]}")
+            typer.echo(
+                f"  {s['id'][:8]}... {s['agent_type']} [{s['status']}] {s.get('started_at', '')[:16]}"
+            )
     except Exception as e:
         typer.echo(f"Greška: {e}", err=True)
         raise typer.Exit(code=1)

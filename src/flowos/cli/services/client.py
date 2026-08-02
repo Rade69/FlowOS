@@ -6,7 +6,6 @@ Kada backend nije dostupan, upisuje događaje u JSONL spool:
 Svaki zapis ima idempotency ključ za siguran ponovni uvoz.
 """
 
-
 import httpx
 
 

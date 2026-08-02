@@ -85,7 +85,7 @@ def main() -> int:
     steps: list[tuple[str, list[str]]] = [
         ("1. Ruff format check", ["ruff", "format", "--check", "src/", "tests/", "scripts/"]),
         ("2. Ruff lint", ["ruff", "check", "src/", "tests/", "scripts/"]),
-        ("3. mypy", ["mypy", "--explicit-package-bases", "-p", "flowos.service", "-p", "flowos.shared", "-p", "flowos.cli", "--ignore-missing-imports"]),
+        ("3. mypy", [sys.executable, "-m", "mypy", "src", "--explicit-package-bases"]),
         (
             "4. Architecture boundaries",
             ["pytest", "tests/architecture/", "-v", "--tb=short", "--no-header"],

@@ -2,8 +2,6 @@
 
 from flowos.gui.theme.labels import (
     OTHER_LABELS,
-    STATUS_LABELS,
-    UI_LABELS,
     status_label,
     ui_label,
 )

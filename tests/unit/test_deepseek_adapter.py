@@ -19,7 +19,12 @@ class TestDeepSeekAdapter:
         adapter = DeepSeekAdapter(DeepSeekConfig(api_key="test"))
         from flowos.service.services.infrastructure.agent_adapters.claude_code import AgentRequest
 
-        req = AgentRequest(agent_type="deepseek", working_directory=".", repo_path=".", task_description="Test task")
+        req = AgentRequest(
+            agent_type="deepseek",
+            working_directory=".",
+            repo_path=".",
+            task_description="Test task",
+        )
         cmd = adapter.get_command(req)
         assert "deepseek-chat" in cmd[2]
 
@@ -27,7 +32,13 @@ class TestDeepSeekAdapter:
         adapter = DeepSeekAdapter(DeepSeekConfig(api_key="test"))
         from flowos.service.services.infrastructure.agent_adapters.claude_code import AgentRequest
 
-        req = AgentRequest(agent_type="deepseek", working_directory=".", repo_path=".", model_name="deepseek-reasoner", task_description="Test")
+        req = AgentRequest(
+            agent_type="deepseek",
+            working_directory=".",
+            repo_path=".",
+            model_name="deepseek-reasoner",
+            task_description="Test",
+        )
         cmd = adapter.get_command(req)
         assert "deepseek-reasoner" in cmd[2]
 

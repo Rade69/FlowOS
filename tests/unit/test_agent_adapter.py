@@ -1,6 +1,5 @@
 """Testovi za Claude Code adapter i AgentProcessLauncher."""
 
-import os
 import sys
 
 from flowos.service.services.infrastructure.agent_adapters.claude_code import (

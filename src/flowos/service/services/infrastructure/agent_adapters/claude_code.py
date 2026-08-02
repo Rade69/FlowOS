@@ -15,9 +15,7 @@ import os
 import subprocess
 import sys
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Protocol
-
 
 # ═══════════════════════════════════════════════════════════════════
 # Capability model
@@ -133,7 +131,17 @@ class ClaudeCodeAdapter:
         Zadržava: PATH, HOME, USER, SYSTEMROOT, TEMP, TMP.
         Uklanja: API ključeve, tokene, secrets.
         """
-        safe_keys = {"PATH", "HOME", "USER", "USERNAME", "SYSTEMROOT", "TEMP", "TMP", "LANG", "TERM"}
+        safe_keys = {
+            "PATH",
+            "HOME",
+            "USER",
+            "USERNAME",
+            "SYSTEMROOT",
+            "TEMP",
+            "TMP",
+            "LANG",
+            "TERM",
+        }
         env = {}
         for key, value in os.environ.items():
             if key in safe_keys or key.startswith("CLAUDE_") or key.startswith("ANTHROPIC_"):
@@ -215,7 +223,7 @@ class AgentProcessLauncher:
         """Ubija celo stablo procesa koristeći Windows Job Object."""
         if sys.platform == "win32":
             try:
-                from ctypes import windll, wintypes
+                from ctypes import windll
 
                 kernel32 = windll.kernel32
                 handle = kernel32.OpenProcess(1, False, pid)

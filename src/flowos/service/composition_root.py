@@ -27,6 +27,7 @@ from flowos.service.controllers.http.tasks import router as tasks_router
 from flowos.service.controllers.http.verification import (
     router as verification_router,
 )
+from flowos.service.controllers.websocket.events import ws_endpoint
 from flowos.service.services.infrastructure.persistence.engine import (
     create_session_factory,
     create_sqlite_engine,
@@ -60,6 +61,9 @@ def create_app(runtime: RuntimeManager, engine=None) -> FastAPI:
     app.include_router(project_resume_router, tags=["Project Resume"])
     app.include_router(reports_router, tags=["Reports"])
     app.include_router(verification_router, tags=["Verification"])
+
+    # WebSocket
+    app.add_api_websocket_route("/ws", ws_endpoint)
 
     # Session factory
     if engine is None:

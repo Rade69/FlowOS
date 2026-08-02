@@ -116,7 +116,7 @@ module = [
 ]
 ignore_missing_imports = true
 
-# GUI sloj — PySide6 nema type stubove
+# GUI sloj — PySide6 nema type stubove, mockup nije tipiziran
 [[tool.mypy.overrides]]
 module = [
     "flowos.gui.*",

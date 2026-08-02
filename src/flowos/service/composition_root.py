@@ -13,8 +13,6 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from flowos.service.controllers.http.conflicts import router as conflicts_router
-from flowos.service.controllers.http.jobs import router as jobs_router
-from flowos.service.controllers.http.phase5 import router as phase5_router
 from flowos.service.controllers.http.plan_progress import router as plan_progress_router
 from flowos.service.controllers.http.project_resume import (
     router as project_resume_router,
@@ -26,7 +24,6 @@ from flowos.service.controllers.http.sessions import (
 )
 from flowos.service.controllers.http.system import router as system_router
 from flowos.service.controllers.http.tasks import router as tasks_router
-from flowos.service.controllers.http.usage import router as usage_router
 from flowos.service.controllers.http.verification import (
     router as verification_router,
 )
@@ -59,12 +56,9 @@ def create_app(runtime: RuntimeManager, engine=None) -> FastAPI:
     app.include_router(tasks_router, tags=["Tasks"])
     app.include_router(sessions_router, tags=["Sessions"])
     app.include_router(conflicts_router, tags=["Conflicts"])
-    app.include_router(jobs_router, tags=["Managed Execution"])
-    app.include_router(phase5_router, tags=["Phase 5"])
     app.include_router(plan_progress_router, tags=["Plan Progress"])
     app.include_router(project_resume_router, tags=["Project Resume"])
     app.include_router(reports_router, tags=["Reports"])
-    app.include_router(usage_router, tags=["Observability"])
     app.include_router(verification_router, tags=["Verification"])
 
     # Session factory

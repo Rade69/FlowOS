@@ -33,9 +33,6 @@ from flowos.service.services.infrastructure.persistence.engine import (  # noqa:
 import flowos.service.services.infrastructure.persistence.activity_models  # noqa: E402, F401
 import flowos.service.services.infrastructure.persistence.conflict_models  # noqa: E402, F401
 import flowos.service.services.infrastructure.persistence.models  # noqa: E402, F401
-import flowos.service.services.infrastructure.persistence.phase5_models  # noqa: E402, F401
-import flowos.service.services.infrastructure.persistence.phase6_models  # noqa: E402, F401
-import flowos.service.services.infrastructure.persistence.phase7_models  # noqa: E402, F401
 import flowos.service.services.infrastructure.persistence.plan_models  # noqa: E402, F401
 import flowos.service.services.infrastructure.persistence.report_models  # noqa: E402, F401
 import flowos.service.services.infrastructure.persistence.resume_models  # noqa: E402, F401

@@ -30,9 +30,6 @@ from flowos.service.controllers.http.usage import router as usage_router
 from flowos.service.controllers.http.verification import (
     router as verification_router,
 )
-from flowos.service.controllers.http.worktrees import (
-    router as worktrees_router,
-)
 from flowos.service.services.infrastructure.persistence.engine import (
     create_session_factory,
     create_sqlite_engine,
@@ -69,7 +66,6 @@ def create_app(runtime: RuntimeManager, engine=None) -> FastAPI:
     app.include_router(reports_router, tags=["Reports"])
     app.include_router(usage_router, tags=["Observability"])
     app.include_router(verification_router, tags=["Verification"])
-    app.include_router(worktrees_router, tags=["Worktrees"])
 
     # Session factory
     if engine is None:

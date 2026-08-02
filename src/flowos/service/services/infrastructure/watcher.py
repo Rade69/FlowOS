@@ -7,9 +7,8 @@ Debounce 500ms, filtrira ignorisane foldere, emituje kroz queue.
 import logging
 import threading
 import time
-from collections import deque
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
@@ -29,13 +28,28 @@ class ActivityEvent:
 class WatcherPipeline:
     """Upravlja watchdog observer-om i debounce queue-om."""
 
-    DEFAULT_IGNORE = {".git", "node_modules", "__pycache__", "dist", "build", ".venv", "venv", "generated", "backups"}
+    DEFAULT_IGNORE = {
+        ".git",
+        "node_modules",
+        "__pycache__",
+        "dist",
+        "build",
+        ".venv",
+        "venv",
+        "generated",
+        "backups",
+    }
 
-    def __init__(self, callback: Callable[[ActivityEvent], None], debounce_ms: int = 500, ignore_patterns: set[str] | None = None) -> None:
+    def __init__(
+        self,
+        callback: Callable[[ActivityEvent], None],
+        debounce_ms: int = 500,
+        ignore_patterns: set[str] | None = None,
+    ) -> None:
         self._callback = callback
         self._debounce = debounce_ms / 1000.0
         self._ignore = ignore_patterns or self.DEFAULT_IGNORE
-        self._observer: Observer | None = None
+        self._observer: object | None = None  # watchdog Observer (object zbog mypy valid-type)
         self._pending: dict[str, ActivityEvent] = {}
         self._lock = threading.Lock()
         self._timer: threading.Timer | None = None
@@ -55,8 +69,8 @@ class WatcherPipeline:
             return
         handler = _WatchdogHandler(self._on_event)
         self._observer = Observer()
-        self._observer.schedule(handler, str(path), recursive=True)
-        self._observer.start()
+        self._observer.schedule(handler, str(path), recursive=True)  # type: ignore[attr-defined]
+        self._observer.start()  # type: ignore[attr-defined]
         self._running = True
         logger.info("Watcher pokrenut: %s", repo_path)
 
@@ -66,7 +80,7 @@ class WatcherPipeline:
             return
         self._running = False
         if self._observer:
-            self._observer.stop()
+            self._observer.stop()  # type: ignore[attr-defined]
         with self._lock:
             if self._timer:
                 self._timer.cancel()
@@ -76,7 +90,7 @@ class WatcherPipeline:
         for event in pending:
             self._safe_callback(event)
         if self._observer:
-            self._observer.join(timeout=5)
+            self._observer.join(timeout=5)  # type: ignore[attr-defined]
             self._observer = None
         logger.info("Watcher zaustavljen.")
 

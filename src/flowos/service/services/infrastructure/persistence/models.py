@@ -129,6 +129,7 @@ class AgentSession(Base):
     )
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     exit_code: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    result_commit_sha: Mapped[str | None] = mapped_column(String(40), nullable=True)
     plan_item_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("plan_items.id", ondelete="SET NULL"), nullable=True
     )

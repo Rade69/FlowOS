@@ -55,6 +55,8 @@ Desktop.ini
 # FlowOS interni
 .flowos/
 worktrees/
+review_bundles/
+metadata/
 
 # Probe fajlovi (throwaway prototipovi)
 probe_*

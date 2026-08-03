@@ -3,8 +3,12 @@
 Jedini vlasnik baze, watchera, Git operacija i agentskih procesa.
 Sluša samo na 127.0.0.1. Komunicira sa GUI-jem preko REST + WebSocket,
 sa CLI-jem preko REST (+ offline JSONL spool).
+
+Pri startup-u automatski pokreće alembic upgrade head.
 """
 
+import contextlib
+import os
 import sys
 
 import uvicorn
@@ -13,13 +17,30 @@ from flowos.service.composition_root import create_app
 from flowos.service.services.infrastructure.runtime import RuntimeManager
 
 
-def main() -> int:
-    """Glavna ulazna tačka za flowos-service.exe.
+def _run_migrations() -> None:
+    """Pokreće alembic upgrade head pre pokretanja servisa."""
+    exe_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+    alembic_ini = os.path.join(exe_dir, "alembic", "alembic.ini")
+    if not os.path.isfile(alembic_ini):
+        src_dir = os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        )
+        alembic_ini = os.path.join(src_dir, "alembic", "alembic.ini")
 
-    1. Kreira RuntimeManager (lock + port + descriptor)
-    2. Kreira FastAPI aplikaciju sa lifespan handlerom
-    3. Pokreće uvicorn server
-    """
+    if not os.path.isfile(alembic_ini):
+        return
+
+    with contextlib.suppress(Exception):
+        from alembic.config import Config
+
+        from alembic import command
+
+        cfg = Config(alembic_ini)
+        command.upgrade(cfg, "head")
+
+
+def main() -> int:
+    """Glavna ulazna tačka za flowos-service.exe."""
     runtime = RuntimeManager()
 
     try:
@@ -31,6 +52,7 @@ def main() -> int:
     port = runtime.find_free_port()
     runtime.write_descriptor(port)
 
+    _run_migrations()
     app = create_app(runtime)
 
     print(f"FlowOS Service — pokrenut na http://127.0.0.1:{port}")

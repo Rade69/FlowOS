@@ -35,6 +35,9 @@ class Conflict(Base):
         String(36), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
     )
     file_path: Mapped[str] = mapped_column(String(2000), nullable=False)
+    conflict_key: Mapped[str | None] = mapped_column(
+        String(128), nullable=True
+    )  # dedup ključ (SHA-256)
     session_ids_json: Mapped[str] = mapped_column(
         Text, nullable=False, default="[]"
     )  # JSON lista ID-jeva sesija
@@ -49,6 +52,13 @@ class Conflict(Base):
     status: Mapped[str] = mapped_column(
         String(20), nullable=False, default="OPEN"
     )  # OPEN, ACKNOWLEDGED, RESOLVED
+    first_seen_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utcnow
+    )
+    last_seen_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utcnow
+    )
+    occurrence_count: Mapped[int] = mapped_column(default=1)
     acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     detected_at: Mapped[datetime] = mapped_column(
@@ -60,4 +70,5 @@ class Conflict(Base):
         Index("ix_conflicts_status", "status"),
         Index("ix_conflicts_level", "conflict_level"),
         Index("ix_conflicts_detected_at", "detected_at"),
+        Index("ix_conflicts_conflict_key", "conflict_key", unique=True),
     )

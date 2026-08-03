@@ -39,7 +39,6 @@ class SessionCompletionService:
     def complete_session(
         self,
         session_id: str,
-        repo_path: str,
         *,
         exit_code: int | None = None,
         result_commit_sha: str | None = None,
@@ -48,7 +47,6 @@ class SessionCompletionService:
 
         Args:
             session_id: ID sesije koja se završava.
-            repo_path: Putanja do repozitorijuma.
             exit_code: Izlazni kod agentskog procesa.
             result_commit_sha: Završni commit SHA (ako je agent commit-ovao).
         """
@@ -60,9 +58,13 @@ class SessionCompletionService:
             logger.error("SessionCompletion: sesija %s ne postoji", session_id)
             return
 
-        project_id = session.project_id or ""
+        project_id = session.project_id
+        if not project_id:
+            logger.error("SessionCompletion: sesija %s nema project_id — prekidanje", session_id)
+            return
+
+        repo_path = session.worktree_path or session.repo_path
         task_title = None
-        plan_item_name = None
 
         if session.task_id:
             from flowos.service.services.infrastructure.persistence.models import Task
@@ -75,8 +77,7 @@ class SessionCompletionService:
         if session.plan_item_id:
             plan_item = self._db.get(PlanItem, session.plan_item_id)
             if plan_item:
-                plan_item_name = plan_item.title
-                logger.info("SessionCompletion: plan_item=%s", plan_item_name)
+                logger.info("SessionCompletion: plan_item=%s", plan_item.title)
 
         logger.info(
             "SessionCompletion: sesija=%s agent=%s repo=%s worktree=%s branch=%s",
@@ -89,10 +90,12 @@ class SessionCompletionService:
 
         # 2. Očitaj Git stanje
         git_state = None
+        git_verified = False
         dirty_files: list[str] = []
         try:
             reader = GitStateReader(repo_path)
-            git_state = reader._read_state()
+            git_state = reader.read_state()
+            git_verified = True
             dirty_files = git_state.changed_files + git_state.untracked_files
             logger.info(
                 "SessionCompletion: Git stanje — commit=%s, branch=%s, dirty=%s, promena=%d",
@@ -109,13 +112,8 @@ class SessionCompletionService:
         session.ended_at = now
         session.exit_code = exit_code
 
-        # Izvedi status iz exit code-a, verify rezultata i timeout/cancel signala
-        session.status = self._derive_status(exit_code)
-
         if result_commit_sha:
             session.result_commit_sha = result_commit_sha
-
-        self._db.flush()
 
         # 4. Verifikacija
         verify_result = None
@@ -130,6 +128,32 @@ class SessionCompletionService:
                 verify_result.success,
             )
 
+            # Zabeleži VERIFY_RESULT kao SessionEvent za timeline
+            import json as _json
+
+            from flowos.service.services.infrastructure.persistence.models import SessionEvent
+
+            verify_metadata = {
+                "artifact_id": verify_result.artifact_id,
+                "exit_code": verify_result.exit_code,
+                "duration_seconds": verify_result.duration_seconds,
+                "timed_out": verify_result.timed_out,
+                "success": verify_result.success,
+                "verify_path": verify_result.verify_path,
+            }
+            verify_event = SessionEvent(
+                session_id=session_id,
+                event_type="VERIFY_RESULT",
+                summary=f"Verify.py: {'PASS' if verify_result.success else 'FAIL'} (exit={verify_result.exit_code})",
+                source="VERIFICATION_SERVICE",
+                payload_json=_json.dumps(verify_metadata),
+            )
+            self._db.add(verify_event)
+
+        # Izvedi status — uzima u obzir exit code, verify
+        session.status = self._derive_status(exit_code, verify_result)
+        self._db.flush()
+
         # 5. Draft izveštaja
         verification_summary = None
         if verify_result:
@@ -141,21 +165,29 @@ class SessionCompletionService:
             )
 
         report_svc = ReportService(self._db)
+        git_note = ""
+        git_verification_status = "OK" if git_verified else "NOT_VERIFIED"
+        if not git_verified:
+            git_note = " (Git stanje NIJE provjereno)"
         report = report_svc.create_draft(
             session_id=session_id,
-            summary=f"Sesija završena. Exit code: {exit_code}.",
+            summary=f"Sesija završena. Exit code: {exit_code}.{git_note}",
             commit_shas=[result_commit_sha] if result_commit_sha else None,
-            verification_summary=verification_summary,
+            verification_summary=(
+                f"Git verification: {git_verification_status}\n{verification_summary}"
+                if verification_summary
+                else f"Git verification: {git_verification_status}"
+            ),
         )
         logger.info("SessionCompletion: draft izvestaja kreiran %s", report.id)
 
-        # 6. NO_COMMIT detekcija — koristi stvarne Git podatke
-        if dirty_files and not result_commit_sha:
+        # 6. NO_COMMIT detekcija — samo ako je Git stanje uspešno pročitano
+        if git_verified and dirty_files and not result_commit_sha:
             conflict_svc = ConflictDetectionService(self._db)
             conflict = conflict_svc.detect_no_commit(
                 project_id=project_id,
-                session={"id": session_id},
-                dirty_files=dirty_files,
+                session=session,
+                dirty_files=[str(f) for f in dirty_files],
             )
             if conflict:
                 logger.info(
@@ -167,17 +199,19 @@ class SessionCompletionService:
         logger.info("SessionCompletion: zavrseno za %s", session_id)
 
     @staticmethod
-    def _derive_status(exit_code: int | None) -> str:
-        """Izvedi status sesije iz exit code-a.
+    def _derive_status(exit_code: int | None, verify_result=None) -> str:
+        """Izvedi status sesije iz exit code-a i verify rezultata.
 
-        Pravila (iz centralne statusne mašine):
-        - exit_code 0 → COMPLETED
+        - exit_code 0 + verify OK → COMPLETED
+        - exit_code 0 + verify FAIL → NEEDS_REVIEW
         - exit_code != 0 → FAILED
-        - exit_code is None → COMPLETED (nije dostupan, ali sesija je završena)
+        - exit_code is None → NEEDS_REVIEW (nepoznato stanje)
         """
         if exit_code is None:
-            return "COMPLETED"
+            return "NEEDS_REVIEW"
         if exit_code == 0:
+            if verify_result is not None and not verify_result.success:
+                return "NEEDS_REVIEW"
             return "COMPLETED"
         return "FAILED"
 

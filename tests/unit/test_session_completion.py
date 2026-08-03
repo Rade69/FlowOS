@@ -71,18 +71,19 @@ def _mock_git_state(changed=None, untracked=None, commit="abc123", branch="main"
 
 
 def _mock_verify_result(success=True, exit_code=0):
-    """Fabrika za mock VerifyResult."""
-    from flowos.service.services.verification.service import VerifyResult
+    """Fabrika za mock VerificationResult."""
+    from flowos.service.services.verification.service import VerificationResult
 
-    return VerifyResult(
+    return VerificationResult(
+        artifact_id="mock-artifact-id",
+        verify_path="scripts/verify.py",
         success=success,
         exit_code=exit_code,
         stdout="All tests passed.",
         stderr="",
         duration_seconds=1.5,
-        command="python scripts/verify.py",
-        started_at="2026-08-02T12:00:00Z",
-        finished_at="2026-08-02T12:00:02Z",
+        timed_out=False,
+        verified_at="2026-08-02T12:00:00Z",
     )
 
 
@@ -100,14 +101,13 @@ class TestSessionCompletion:
             patch("flowos.service.services.sessions.completion.GitStateReader") as mock_reader,
             patch("flowos.service.services.sessions.completion.VerificationService") as mock_verify,
         ):
-            mock_reader.return_value._read_state.return_value = _mock_git_state(
+            mock_reader.return_value.read_state.return_value = _mock_git_state(
                 changed=["src/a.py"], dirty=True
             )
             mock_verify.return_value.run_verify.return_value = None  # verify ne postoji
 
             svc.complete_session(
                 session_id=active_session.id,
-                repo_path="C:/test/repo",
                 exit_code=0,
                 result_commit_sha="def456",
             )
@@ -127,7 +127,7 @@ class TestSessionCompletion:
             patch("flowos.service.services.sessions.completion.GitStateReader") as mock_reader,
             patch("flowos.service.services.sessions.completion.VerificationService") as mock_verify,
         ):
-            mock_reader.return_value._read_state.return_value = _mock_git_state(
+            mock_reader.return_value.read_state.return_value = _mock_git_state(
                 changed=["src/a.py", "src/b.py"],
                 untracked=["new_file.py"],
                 dirty=True,
@@ -136,7 +136,6 @@ class TestSessionCompletion:
 
             svc.complete_session(
                 session_id=active_session.id,
-                repo_path="C:/test/repo",
                 exit_code=0,
                 result_commit_sha=None,  # nema commita!
             )
@@ -167,12 +166,11 @@ class TestSessionCompletion:
             patch("flowos.service.services.sessions.completion.GitStateReader") as mock_reader,
             patch("flowos.service.services.sessions.completion.VerificationService") as mock_verify,
         ):
-            mock_reader.return_value._read_state.return_value = _mock_git_state(dirty=False)
+            mock_reader.return_value.read_state.return_value = _mock_git_state(dirty=False)
             mock_verify.return_value.run_verify.return_value = None
 
             svc.complete_session(
                 session_id=active_session.id,
-                repo_path="C:/test/repo",
                 exit_code=1,
             )
 
@@ -187,12 +185,11 @@ class TestSessionCompletion:
         # Ne sme da baci izuzetak
         svc.complete_session(
             session_id="nepostojeca-sesija",
-            repo_path="C:/test/repo",
             exit_code=0,
         )
         # Samo loguje grešku, ne baca izuzetak
 
-    def test_exit_code_none_defaults_to_completed(
+    def test_exit_code_none_defaults_to_needs_review(
         self, db_session: Session, active_session: AgentSession
     ):
         """Nepoznat exit code → COMPLETED."""
@@ -202,17 +199,16 @@ class TestSessionCompletion:
             patch("flowos.service.services.sessions.completion.GitStateReader") as mock_reader,
             patch("flowos.service.services.sessions.completion.VerificationService") as mock_verify,
         ):
-            mock_reader.return_value._read_state.return_value = _mock_git_state(dirty=False)
+            mock_reader.return_value.read_state.return_value = _mock_git_state(dirty=False)
             mock_verify.return_value.run_verify.return_value = None
 
             svc.complete_session(
                 session_id=active_session.id,
-                repo_path="C:/test/repo",
                 exit_code=None,
             )
 
         db_session.refresh(active_session)
-        assert active_session.status == "COMPLETED"
+        assert active_session.status == "NEEDS_REVIEW"
 
     def test_clean_session_no_no_commit_conflict(
         self, db_session: Session, active_session: AgentSession
@@ -224,14 +220,13 @@ class TestSessionCompletion:
             patch("flowos.service.services.sessions.completion.GitStateReader") as mock_reader,
             patch("flowos.service.services.sessions.completion.VerificationService") as mock_verify,
         ):
-            mock_reader.return_value._read_state.return_value = _mock_git_state(
+            mock_reader.return_value.read_state.return_value = _mock_git_state(
                 changed=[], untracked=[], dirty=False
             )
             mock_verify.return_value.run_verify.return_value = None
 
             svc.complete_session(
                 session_id=active_session.id,
-                repo_path="C:/test/repo",
                 exit_code=0,
                 result_commit_sha=None,
             )
@@ -245,4 +240,4 @@ class TestSessionCompletion:
         assert SessionCompletionService._derive_status(1) == "FAILED"
         assert SessionCompletionService._derive_status(127) == "FAILED"
         assert SessionCompletionService._derive_status(-1) == "FAILED"
-        assert SessionCompletionService._derive_status(None) == "COMPLETED"
+        assert SessionCompletionService._derive_status(None) == "NEEDS_REVIEW"

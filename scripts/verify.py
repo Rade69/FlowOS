@@ -102,7 +102,13 @@ def main() -> int:
                 "--no-header",
             ],
         ),
-    ] + [("6. Migrations check", [sys.executable, "-m", "alembic", "upgrade", "head"])]
+    ] + [
+        ("6. Migrations check", [sys.executable, "-m", "alembic", "upgrade", "head"]),
+        (
+            "7. Alembic round-trip",
+            [sys.executable, str(ROOT / "scripts" / "verify_roundtrip.py")],
+        ),
+    ]
 
     results: list[Result] = []
     for name, cmd in steps:

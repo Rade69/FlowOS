@@ -40,10 +40,25 @@ import flowos.service.services.infrastructure.persistence.resume_models  # noqa:
 target_metadata = Base.metadata
 
 # Postavi SQLite URL programski — ${LOCALAPPDATA} nije dostupan u ini fajlu
-db_path = get_data_directory() / "flowos.db"
-config.set_main_option(
-    "sqlalchemy.url", f"sqlite:///{db_path}"
-)
+# -x parametar (npr. round-trip test) ima prednost
+import sys as _sys
+
+_x_url = None
+for _i, _arg in enumerate(_sys.argv):
+    if _arg == "-x" and _i + 1 < len(_sys.argv):
+        _pair = _sys.argv[_i + 1]
+        if "=" in _pair:
+            _k, _v = _pair.split("=", 1)
+            if _k == "sqlalchemy.url":
+                _x_url = _v
+                break
+if _x_url:
+    config.set_main_option("sqlalchemy.url", _x_url)
+elif not config.get_main_option("sqlalchemy.url"):
+    db_path = get_data_directory() / "flowos.db"
+    config.set_main_option(
+        "sqlalchemy.url", f"sqlite:///{db_path}"
+    )
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

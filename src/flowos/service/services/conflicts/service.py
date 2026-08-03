@@ -7,24 +7,27 @@ Pravila (iz plana §11.4 / §7.3):
 4. STALE_SESSION: Sesija bez aktivnosti i bez živog procesa >30 min → INFO
 5. NO_COMMIT: Završetak ima izmene bez commita → INFO
 
-Konfigurabilni pragovi se čuvaju kao parametri servisa.
+Koristi FileActivity ORM objekte (autoritativni izvor), ne dict-ove.
 """
 
+import hashlib
 import json
+import logging
+import sys
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
+from flowos.service.services.attribution.service import ActiveSession
+from flowos.service.services.infrastructure.persistence.activity_models import FileActivity
 from flowos.service.services.infrastructure.persistence.conflict_models import Conflict
+from flowos.service.services.infrastructure.persistence.models import AgentSession
+
+logger = logging.getLogger("flowos.conflicts")
 
 
 class ConflictDetectionService:
-    """Detektuje konflikte među aktivnim sesijama na osnovu
-    filesystem/Git događaja i pravila iz plana.
-
-    Ne zavisi od konkretnog adaptera — koristi samo
-    strukturisane podatke (FileActivity, GitChangeSet, AgentSession).
-    """
+    """Detektuje konflikte koristeći FileActivity ORM modele."""
 
     def __init__(
         self,
@@ -39,68 +42,60 @@ class ConflictDetectionService:
         self.overlap_window = timedelta(minutes=overlap_window_minutes)
         self.stale_window = timedelta(minutes=stale_minutes)
 
+    def on_file_activity(
+        self, activity: FileActivity, active_sessions: list[ActiveSession]
+    ) -> None:
+        """Callback za ActivityService — pokreće WRITE_WRITE i LATE_OVERLAP detekciju."""
+        if len(active_sessions) < 2:
+            return
+        recent = self._get_recent_activities(activity.project_id, minutes=30)
+        self.detect_write_write(activity.project_id, recent, active_sessions)
+        self.detect_late_overlap(activity.project_id, recent, active_sessions)
+
+    def _get_recent_activities(self, project_id: str, minutes: int) -> list[FileActivity]:
+        cutoff = datetime.now(tz=UTC) - timedelta(minutes=minutes)
+        return (
+            self._session.query(FileActivity)
+            .filter(FileActivity.project_id == project_id, FileActivity.occurred_at >= cutoff)
+            .order_by(FileActivity.occurred_at.desc())
+            .all()
+        )
+
     # ── Pravilo 1: WRITE_WRITE ──────────────────────────────────
 
     def detect_write_write(
         self,
         project_id: str,
-        activities: list[dict],
-        active_sessions: list[dict],
+        activities: list[FileActivity],
+        active_sessions: list[ActiveSession],
     ) -> list[Conflict]:
-        """Dve aktivne sesije upisuju isti fajl u istom treeju unutar write_window.
-
-        WRITE_WRITE konflikt nastaje samo kada su ispunjeni svi uslovi:
-        - isti project_id
-        - isti normalized_path
-        - isti tree_identity (isti worktree ili isti repo bez worktree-ja)
-        - različite aktivne sesije
-        - vremenski prozori se preklapaju
-
-        Ako su sesije u različitim worktree-ovima → nema konflikta.
-
-        activities: lista dict-ova sa {file_path, session_id, observed_at, repo_path}
-        active_sessions: lista dict-ova sa {id, worktree_path, repo_path}
-        """
-        import hashlib
-
+        """Dve aktivne sesije upisuju isti fajl u istom treeju unutar write_window."""
         conflicts: list[Conflict] = []
         now = datetime.now(tz=UTC)
         cutoff = now - self.write_window
 
-        # Izgradi mapu sesija: id → {worktree_path, repo_path}
-        active_map = {s["id"]: s for s in active_sessions}
+        active_map = {s.session_id: s for s in active_sessions}
+        by_tree_and_file: dict[tuple[str, str], list[FileActivity]] = {}
 
-        # Grupisanje po (normalized_path, tree_identity)
-        # tree_identity = worktree_path ako sesija ima worktree, inače repo_path
-        by_tree_and_file: dict[tuple[str, str], list[dict]] = {}
         for a in activities:
-            observed = a.get("observed_at")
-            if isinstance(observed, str):
-                observed = datetime.fromisoformat(observed.replace("Z", "+00:00"))
-            if isinstance(observed, datetime) and observed.tzinfo is None:
-                observed = observed.replace(tzinfo=UTC)
-            if not observed or observed < cutoff:
+            if not a.session_id or a.session_id not in active_map:
+                continue
+            occurred = a.occurred_at
+            if occurred is None:
+                continue  # type: ignore[unreachable]
+            if occurred.tzinfo is None:
+                occurred = occurred.replace(tzinfo=UTC)
+            if occurred < cutoff:
                 continue
 
-            sid = a.get("session_id")
-            if not sid:
-                continue
-
-            s_info = active_map.get(sid)
-            if not s_info:
-                continue
-
-            # Odredi tree_identity
-            wt = s_info.get("worktree_path")
-            tree_id = wt if wt else s_info.get("repo_path", "")
-
-            key = (a["file_path"], tree_id)
+            tree_id = a.tree_identity or a.repository_path
+            key = (a.normalized_path or a.file_path, tree_id)
             by_tree_and_file.setdefault(key, []).append(a)
 
         seen_keys: set[str] = set()
 
         for (file_path, tree_id), acts in by_tree_and_file.items():
-            session_ids = list({a["session_id"] for a in acts})
+            session_ids = list({a.session_id for a in acts if a.session_id})
             if len(session_ids) < 2:
                 continue
 
@@ -108,14 +103,11 @@ class ConflictDetectionService:
             worktrees = set()
             for sid in session_ids:
                 s_info = active_map.get(sid)
-                if s_info and s_info.get("worktree_path"):
-                    worktrees.add(s_info["worktree_path"])
-
-            # Ako sesije imaju različite worktree putanje → nisu u istom tree-u → nema konflikta
+                if s_info and s_info.worktree_path:
+                    worktrees.add(s_info.worktree_path)
             if len(worktrees) > 1:
                 continue
 
-            # Stabilan conflict_key za deduplikaciju
             sorted_ids = sorted(session_ids)
             raw_key = f"{project_id}:{file_path}:{tree_id}:{':'.join(sorted_ids)}:WRITE_WRITE"
             conflict_key = hashlib.sha256(raw_key.encode()).hexdigest()
@@ -124,24 +116,26 @@ class ConflictDetectionService:
                 continue
             seen_keys.add(conflict_key)
 
-            # Proveri da li konflikt već postoji (OPEN)
             existing = self._find_existing_conflict(
                 project_id, file_path, "WRITE_WRITE", session_ids
             )
             if existing:
+                existing.last_seen_at = datetime.now(tz=UTC)
+                existing.occurrence_count += 1
+                self._update_conflict_evidence(
+                    existing,
+                    {"activity_event_ids": [a.event_id for a in acts if a.event_id]},
+                )
                 continue
 
             conflict = Conflict(
                 project_id=project_id,
                 file_path=file_path,
+                conflict_key=conflict_key,
                 session_ids_json=json.dumps(sorted_ids),
                 conflict_level="HIGH",
                 conflict_type="WRITE_WRITE",
-                description=(
-                    f"Fajl {file_path} menjaju sesije {', '.join(sorted_ids)} "
-                    f"u istom tree-u ({tree_id}) unutar "
-                    f"{self.write_window.total_seconds() / 60:.0f} min."
-                ),
+                description=f"Fajl {file_path} menjaju sesije {', '.join(sorted_ids)} u istom tree-u ({tree_id}) unutar {self.write_window.total_seconds() / 60:.0f} min.",
                 evidence_json=json.dumps(
                     {
                         "session_ids": sorted_ids,
@@ -150,8 +144,12 @@ class ConflictDetectionService:
                         "window_minutes": self.write_window.total_seconds() / 60,
                         "detected_at": now.isoformat(),
                         "conflict_key": conflict_key,
+                        "activity_event_ids": [a.event_id for a in acts if a.event_id],
                     }
                 ),
+                first_seen_at=now,
+                last_seen_at=now,
+                occurrence_count=1,
             )
             self._session.add(conflict)
             conflicts.append(conflict)
@@ -165,33 +163,33 @@ class ConflictDetectionService:
     def detect_late_overlap(
         self,
         project_id: str,
-        activities: list[dict],
-        active_sessions: list[dict],
+        activities: list[FileActivity],
+        active_sessions: list[ActiveSession],
     ) -> list[Conflict]:
         """Sesija upisuje fajl koji je druga menjala u zadnjih overlap_window min."""
         conflicts: list[Conflict] = []
         now = datetime.now(tz=UTC)
         cutoff = now - self.overlap_window
 
-        active_ids = {s["id"] for s in active_sessions}
+        active_ids = {s.session_id for s in active_sessions}
+        by_file: dict[str, list[FileActivity]] = {}
 
-        # Grupisanje po file_path
-        by_file: dict[str, list[dict]] = {}
         for a in activities:
-            observed = a.get("observed_at")
-            if isinstance(observed, str):
-                observed = datetime.fromisoformat(observed.replace("Z", "+00:00"))
-            if isinstance(observed, datetime) and observed.tzinfo is None:
-                observed = observed.replace(tzinfo=UTC)
-            if observed and observed >= cutoff:
-                by_file.setdefault(a["file_path"], []).append(a)
+            if not a.session_id:
+                continue
+            occurred = a.occurred_at
+            if occurred is None:
+                continue  # type: ignore[unreachable]
+            if occurred.tzinfo is None:
+                occurred = occurred.replace(tzinfo=UTC)
+            if occurred >= cutoff:
+                by_file.setdefault(a.normalized_path or a.file_path, []).append(a)
 
         for file_path, acts in by_file.items():
-            session_ids = list({a["session_id"] for a in acts if a.get("session_id")})
+            session_ids = list({a.session_id for a in acts if a.session_id})
             if len(session_ids) < 2:
                 continue
 
-            # Ako je jedan od njih već završio, to je overlap
             finished = [sid for sid in session_ids if sid not in active_ids]
             if not finished:
                 continue
@@ -200,11 +198,20 @@ class ConflictDetectionService:
                 project_id, file_path, "LATE_OVERLAP", session_ids
             )
             if existing:
+                existing.last_seen_at = datetime.now(tz=UTC)
+                existing.occurrence_count += 1
+                self._update_conflict_evidence(
+                    existing,
+                    {"activity_event_ids": [a.event_id for a in acts if a.event_id]},
+                )
                 continue
 
+            raw_key = f"{project_id}:{file_path}:LATE_OVERLAP:{':'.join(sorted(session_ids))}"
+            conflict_key = hashlib.sha256(raw_key.encode()).hexdigest()
             conflict = Conflict(
                 project_id=project_id,
                 file_path=file_path,
+                conflict_key=conflict_key,
                 session_ids_json=json.dumps(sorted(session_ids)),
                 conflict_level="MEDIUM",
                 conflict_type="LATE_OVERLAP",
@@ -215,8 +222,13 @@ class ConflictDetectionService:
                         "finished_sessions": finished,
                         "window_minutes": self.overlap_window.total_seconds() / 60,
                         "detected_at": now.isoformat(),
+                        "conflict_key": conflict_key,
+                        "activity_event_ids": [a.event_id for a in acts if a.event_id],
                     }
                 ),
+                first_seen_at=now,
+                last_seen_at=now,
+                occurrence_count=1,
             )
             self._session.add(conflict)
             conflicts.append(conflict)
@@ -230,32 +242,44 @@ class ConflictDetectionService:
     def detect_branch_change(
         self,
         project_id: str,
-        session: dict,
+        session: AgentSession,
         previous_branch: str,
         current_branch: str,
     ) -> Conflict | None:
         """Branch/HEAD promenjen ispod aktivne sesije."""
         file_path = f"branch:{previous_branch}→{current_branch}"
+        raw_key = f"{project_id}:{file_path}:BRANCH_CHANGE:{session.id}"
+        conflict_key = hashlib.sha256(raw_key.encode()).hexdigest()
         existing = self._find_existing_conflict(
-            project_id, file_path, "BRANCH_CHANGE", [session["id"]]
+            project_id, file_path, "BRANCH_CHANGE", [session.id]
         )
         if existing:
+            existing.last_seen_at = datetime.now(tz=UTC)
+            existing.occurrence_count += 1
+            self._update_conflict_evidence(
+                existing,
+                {"branch": f"{previous_branch}→{current_branch}"},
+            )
             return None
 
         conflict = Conflict(
             project_id=project_id,
             file_path=file_path,
-            session_ids_json=json.dumps([session["id"]]),
+            conflict_key=conflict_key,
+            session_ids_json=json.dumps([session.id]),
             conflict_level="MEDIUM",
             conflict_type="BRANCH_CHANGE",
-            description=f"Branch promenjen ispod aktivne sesije {session['id']}: {previous_branch} → {current_branch}.",
+            description=f"Branch promenjen ispod aktivne sesije {session.id}: {previous_branch} → {current_branch}.",
             evidence_json=json.dumps(
                 {
-                    "session_id": session["id"],
+                    "session_id": session.id,
                     "previous_branch": previous_branch,
                     "current_branch": current_branch,
                 }
             ),
+            first_seen_at=datetime.now(tz=UTC),
+            last_seen_at=datetime.now(tz=UTC),
+            occurrence_count=1,
         )
         self._session.add(conflict)
         self._session.flush()
@@ -266,39 +290,91 @@ class ConflictDetectionService:
     def detect_stale_session(
         self,
         project_id: str,
-        session: dict,
+        session: AgentSession,
     ) -> Conflict | None:
-        """Sesija bez fs aktivnosti i bez živog procesa > stale_window min."""
-        last_activity = session.get("last_activity_at")
-        if isinstance(last_activity, str):
-            last_activity = datetime.fromisoformat(last_activity.replace("Z", "+00:00"))
+        """Sesija bez fs aktivnosti, bez heartbeata, bez živog procesa > stale_window min.
 
+        Provera uključuje: last_activity_at, last_heartbeat_at, PID, status.
+        """
         now = datetime.now(tz=UTC)
-        if last_activity is None or (now - last_activity) <= self.stale_window:
+
+        # Proveri da li je sesija još uvek aktivna
+        if session.status not in ("ACTIVE", "IDLE"):
             return None
 
-        file_path = f"session:{session['id']}"
+        # Heartbeat je svež — sesija je živa
+        if session.last_heartbeat_at and (now - session.last_heartbeat_at) <= self.stale_window:
+            return None
+
+        # Poslednja fs aktivnost je sveža — sesija je aktivna
+        last_activity = session.last_activity_at
+        if last_activity and (now - last_activity) <= self.stale_window:
+            return None
+
+        # Ako nema ni activity ni heartbeat podataka, preskoči
+        if last_activity is None and session.last_heartbeat_at is None:
+            return None
+
+        # PID provera — proveri da li je proces još živ
+        pid = session.pid
+        if pid is not None:
+            import ctypes as _ctypes
+
+            if sys.platform == "win32":
+                try:
+                    kernel32 = _ctypes.windll.kernel32
+                    handle = kernel32.OpenProcess(0x0400, False, pid)
+                    if handle:
+                        kernel32.CloseHandle(handle)
+                        return None  # Proces je živ — nije stale
+                except Exception:
+                    pass
+
+        file_path = f"session:{session.id}"
+        raw_key = f"{project_id}:{file_path}:STALE_SESSION:{session.id}"
+        conflict_key = hashlib.sha256(raw_key.encode()).hexdigest()
         existing = self._find_existing_conflict(
-            project_id, file_path, "STALE_SESSION", [session["id"]]
+            project_id, file_path, "STALE_SESSION", [session.id]
         )
         if existing:
+            existing.last_seen_at = datetime.now(tz=UTC)
+            existing.occurrence_count += 1
+            self._update_conflict_evidence(
+                existing,
+                {
+                    "last_activity_at": last_activity.isoformat() if last_activity else None,
+                    "last_heartbeat_at": session.last_heartbeat_at.isoformat()
+                    if session.last_heartbeat_at
+                    else None,
+                    "pid": pid,
+                },
+            )
             return None
 
-        idle_minutes = (now - last_activity).total_seconds() / 60
+        idle_minutes = (now - last_activity).total_seconds() / 60 if last_activity else 0
         conflict = Conflict(
             project_id=project_id,
             file_path=file_path,
-            session_ids_json=json.dumps([session["id"]]),
+            conflict_key=conflict_key,
+            session_ids_json=json.dumps([session.id]),
             conflict_level="INFO",
             conflict_type="STALE_SESSION",
-            description=f"Sesija {session['id']} bez aktivnosti {idle_minutes:.0f} min — predloži ABANDONED.",
+            description=f"Sesija {session.id} bez aktivnosti {idle_minutes:.0f} min — predloži ABANDONED.",
             evidence_json=json.dumps(
                 {
-                    "session_id": session["id"],
-                    "last_activity_at": last_activity.isoformat(),
+                    "session_id": session.id,
+                    "last_activity_at": last_activity.isoformat() if last_activity else None,
+                    "last_heartbeat_at": session.last_heartbeat_at.isoformat()
+                    if session.last_heartbeat_at
+                    else None,
                     "idle_minutes": idle_minutes,
+                    "pid": pid,
+                    "session_status": session.status,
                 }
             ),
+            first_seen_at=now,
+            last_seen_at=now,
+            occurrence_count=1,
         )
         self._session.add(conflict)
         self._session.flush()
@@ -309,32 +385,48 @@ class ConflictDetectionService:
     def detect_no_commit(
         self,
         project_id: str,
-        session: dict,
+        session: AgentSession,
         dirty_files: list[str],
     ) -> Conflict | None:
         """Sesija završena sa izmenama bez commita."""
         if not dirty_files:
             return None
 
-        file_path = f"session:{session['id']}"
-        existing = self._find_existing_conflict(project_id, file_path, "NO_COMMIT", [session["id"]])
+        file_path = f"session:{session.id}"
+        raw_key = f"{project_id}:{file_path}:NO_COMMIT:{session.id}"
+        conflict_key = hashlib.sha256(raw_key.encode()).hexdigest()
+        existing = self._find_existing_conflict(project_id, file_path, "NO_COMMIT", [session.id])
         if existing:
+            existing.last_seen_at = datetime.now(tz=UTC)
+            existing.occurrence_count += 1
+            self._update_conflict_evidence(
+                existing,
+                {"dirty_files": dirty_files[:50], "total_dirty": len(dirty_files)},
+            )
             return None
 
         conflict = Conflict(
             project_id=project_id,
             file_path=file_path,
-            session_ids_json=json.dumps([session["id"]]),
+            conflict_key=conflict_key,
+            session_ids_json=json.dumps([session.id]),
             conflict_level="INFO",
             conflict_type="NO_COMMIT",
-            description=f"Sesija {session['id']} završena sa {len(dirty_files)} izmenjenih fajlova bez commita.",
+            description=f"Sesija {session.id} završena sa {len(dirty_files)} izmenjenih fajlova bez commita.",
             evidence_json=json.dumps(
                 {
-                    "session_id": session["id"],
-                    "dirty_files": dirty_files[:50],  # max 50
+                    "session_id": session.id,
+                    "base_commit": session.base_commit_sha,
+                    "result_commit": session.result_commit_sha,
+                    "dirty_files": dirty_files[:50],
                     "total_dirty": len(dirty_files),
+                    "repo_path": session.repo_path,
+                    "worktree_path": session.worktree_path,
                 }
             ),
+            first_seen_at=datetime.now(tz=UTC),
+            last_seen_at=datetime.now(tz=UTC),
+            occurrence_count=1,
         )
         self._session.add(conflict)
         self._session.flush()
@@ -349,8 +441,21 @@ class ConflictDetectionService:
         conflict_type: str,
         session_ids: list[str],
     ) -> Conflict | None:
-        """Pronalazi postojeći OPEN konflikt istog tipa za isti fajl i sesije."""
+        """Pronalazi postojeći otvoreni konflikt po conflict_key ili kompozitnom ključu."""
         session_ids_json = json.dumps(sorted(session_ids))
+        raw_key = f"{project_id}:{file_path}:{conflict_type}:{':'.join(sorted(session_ids))}"
+        conflict_key = hashlib.sha256(raw_key.encode()).hexdigest()
+
+        # Primarno: conflict_key
+        existing = (
+            self._session.query(Conflict)
+            .filter(Conflict.conflict_key == conflict_key, Conflict.status == "OPEN")
+            .first()
+        )
+        if existing:
+            return existing
+
+        # Fallback: kompozitni upit (za konflikte kreirane pre uvođenja conflict_key)
         return (
             self._session.query(Conflict)
             .filter(
@@ -363,8 +468,29 @@ class ConflictDetectionService:
             .first()
         )
 
+    def _update_conflict_evidence(self, conflict: Conflict, new_data: dict) -> None:
+        """Ažurira evidence_json postojećeg konflikta novim podacima.
+
+        Postojeći evidence se čuva, a novi podaci se dodaju u listu
+        `additional_observations` unutar evidence JSON-a.
+        """
+        try:
+            existing = json.loads(conflict.evidence_json or "{}")
+        except (json.JSONDecodeError, TypeError):
+            existing = {}
+
+        observations: list = existing.get("additional_observations", [])
+        observations.append(
+            {
+                "observed_at": datetime.now(tz=UTC).isoformat(),
+                "data": new_data,
+            }
+        )
+        existing["additional_observations"] = observations
+        existing["last_updated_at"] = datetime.now(tz=UTC).isoformat()
+        conflict.evidence_json = json.dumps(existing)
+
     def acknowledge(self, conflict_id: str) -> Conflict | None:
-        """Označava konflikt kao ACKNOWLEDGED."""
         conflict = self._session.get(Conflict, conflict_id)
         if not conflict or conflict.status != "OPEN":
             return None
@@ -374,7 +500,6 @@ class ConflictDetectionService:
         return conflict
 
     def resolve(self, conflict_id: str) -> Conflict | None:
-        """Označava konflikt kao RESOLVED."""
         conflict = self._session.get(Conflict, conflict_id)
         if not conflict or conflict.status not in ("OPEN", "ACKNOWLEDGED"):
             return None
@@ -384,20 +509,9 @@ class ConflictDetectionService:
         return conflict
 
     def list_open(self, project_id: str) -> list[Conflict]:
-        """Vraća sve otvorene (OPEN) konflikte za projekat."""
         return (
             self._session.query(Conflict)
-            .filter(
-                Conflict.project_id == project_id,
-                Conflict.status == "OPEN",
-            )
+            .filter(Conflict.project_id == project_id, Conflict.status == "OPEN")
             .order_by(Conflict.detected_at.desc())
             .all()
         )
-
-    def list_by_project(self, project_id: str, status: str | None = None) -> list[Conflict]:
-        """Vraća konflikte za projekat, opciono filtrirane po statusu."""
-        q = self._session.query(Conflict).filter(Conflict.project_id == project_id)
-        if status:
-            q = q.filter(Conflict.status == status)
-        return q.order_by(Conflict.detected_at.desc()).all()

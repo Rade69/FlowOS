@@ -121,7 +121,7 @@ class TestPhase3E2E:
 
             # 3. Sačuvaj base commit
             reader = GitStateReader(repo_str)
-            git_state = reader._read_state()
+            git_state = reader.read_state()
             base_commit = git_state.commit_sha
             session_a.base_commit_sha = base_commit
             db.flush()
@@ -214,21 +214,52 @@ class TestPhase3E2E:
                 )
                 db.commit()
 
-                # 9. Potvrdi da imamo FileActivity zapise iz obe sesije
-                # (WRITE_WRITE detaljno testiran u test_conflicts.py)
-                all_file_activities = (
-                    db.query(FileActivity).filter(FileActivity.project_id == project.id).all()
+                # 9. Detektuj WRITE_WRITE kroz pravi conflict callback lanac
+                conflict_svc = ConflictDetectionService(db)
+                activity_svc.register_conflict_callback(
+                    lambda act: conflict_svc.on_file_activity(
+                        act,
+                        [
+                            ActiveSession(session_id=session_a.id, repo_path=repo_str),
+                            ActiveSession(session_id=session_b.id, repo_path=repo_str),
+                        ],
+                    )
                 )
-                assert len(all_file_activities) >= 2, (
-                    f"Očekuju se bar 2 FileActivity zapisa (watcher + ručni). "
-                    f"Dobijeno: {len(all_file_activities)}"
+                # Zabeleži aktivnost za session_b na istom fajlu
+                activity_svc.record_file_event(
+                    file_path=str(test_file),
+                    event_type="MODIFIED",
+                    project_id=project.id,
+                    repo_path=repo_str,
+                    active_sessions=[
+                        ActiveSession(session_id=session_b.id, repo_path=repo_str),
+                    ],
                 )
+                db.commit()
+
+                # Potvrdi WRITE_WRITE konflikt je detektovan
+                ww_conflicts = (
+                    db.query(Conflict)
+                    .filter(
+                        Conflict.project_id == project.id,
+                        Conflict.conflict_type == "WRITE_WRITE",
+                    )
+                    .all()
+                )
+                assert len(ww_conflicts) >= 1, (
+                    f"Očekuje se WRITE_WRITE konflikt. Dobijeno: {len(ww_conflicts)}"
+                )
+                ww = ww_conflicts[0]
+                assert ww.conflict_key is not None, "WRITE_WRITE konflikt treba da ima conflict_key"
+                assert ww.conflict_level == "HIGH"
+                assert ww.first_seen_at is not None
+                assert ww.last_seen_at is not None
+                assert ww.occurrence_count >= 1
 
                 # 10 + 11. Završi sesiju bez commita + očitaj Git stanje
                 completion_svc = SessionCompletionService(db)
                 completion_svc.complete_session(
                     session_id=session_a.id,
-                    repo_path=repo_str,
                     exit_code=0,
                     result_commit_sha=None,  # nema commita!
                 )
@@ -272,13 +303,21 @@ class TestPhase3E2E:
                 assert report.id is not None
                 assert report.status == "DRAFT"
 
-                # 17. Potvrdi timeline događaje
+                # 17. Potvrdi timeline sa svim očekivanim izvorima
                 timeline_svc = TimelineService(db)
                 tl = timeline_svc.get_timeline(
                     session_a.id, level="technical", page=1, page_size=200
                 )
                 assert tl["total"] >= 1, f"Timeline treba da ima bar 1 događaj. Dobijeno: {tl}"
                 assert tl["level"] == "technical"
+                origins = {e.get("origin") for e in tl["events"]}
+                expected_origins = {"SessionEvent", "AgentReport"}
+                missing = expected_origins - origins
+                assert not missing, (
+                    f"Timeline treba da sadrži izvore: {expected_origins}. "
+                    f"Nedostaju: {missing}. Dobijeni: {origins}"
+                )
+                assert len(tl["events"]) <= tl["page_size"], "Paginacija nije ispoštovana"
 
                 # Testiraj enum validaciju
                 with pytest.raises(ValueError, match="Nevalidan level"):
@@ -384,21 +423,11 @@ class TestPhase3E2E:
             # Detektuj konflikte
             conflict_svc = ConflictDetectionService(db)
             recent = activity_svc.get_recent_activities(project.id, minutes=30)
-            activities_dicts = [
-                {
-                    "file_path": a.file_path,
-                    "session_id": a.session_id,
-                    "observed_at": a.occurred_at.isoformat() if a.occurred_at else None,
-                    "repo_path": a.repository_path,
-                }
-                for a in recent
-                if a.session_id
-            ]
-            active_dicts = [
-                {"id": s.id, "worktree_path": s.worktree_path, "repo_path": s.repo_path}
+            active_sessions_list = [
+                ActiveSession(session_id=s.id, worktree_path=s.worktree_path, repo_path=s.repo_path)
                 for s in [session_a, session_b]
             ]
-            conflicts = conflict_svc.detect_write_write(project.id, activities_dicts, active_dicts)
+            conflicts = conflict_svc.detect_write_write(project.id, recent, active_sessions_list)
 
             # Različiti worktree-evi → nema konflikta
             assert len(conflicts) == 0, (

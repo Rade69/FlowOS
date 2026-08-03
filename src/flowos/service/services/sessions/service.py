@@ -73,6 +73,22 @@ class SessionService:
         self._session.flush()
         return session_obj
 
+    def record_heartbeat(self, session_id: str) -> AgentSession | None:
+        """Beleži procesni heartbeat za sesiju.
+
+        Nezavisno od filesystem aktivnosti. Poziva se periodično
+        iz adaptera, wrapper-a ili process monitora.
+        """
+        session_obj = self._session.get(AgentSession, session_id)
+        if not session_obj:
+            return None
+        now = datetime.now(tz=UTC)
+        session_obj.last_heartbeat_at = now
+        if session_obj.status not in ("ACTIVE", "IDLE"):
+            session_obj.status = SessionStatus.ACTIVE.value
+        self._session.flush()
+        return session_obj
+
     def get_session(self, session_id: str) -> AgentSession | None:
         return self._session.get(AgentSession, session_id)
 

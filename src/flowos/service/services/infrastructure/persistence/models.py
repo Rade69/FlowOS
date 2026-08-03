@@ -127,6 +127,9 @@ class AgentSession(Base):
     last_activity_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    last_heartbeat_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     exit_code: Mapped[int | None] = mapped_column(Integer, nullable=True)
     result_commit_sha: Mapped[str | None] = mapped_column(String(40), nullable=True)

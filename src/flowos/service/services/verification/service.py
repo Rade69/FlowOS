@@ -42,9 +42,8 @@ class ArtifactStore:
 
     def __init__(self, base_path: str | None = None) -> None:
         if base_path is None:
-            # Podrazumevano u korenu projekta
             base_path = str(
-                Path(__file__).resolve().parent.parent.parent.parent.parent / "artifacts"
+                Path(__file__).resolve().parent.parent.parent.parent.parent.parent / "artifacts"
             )
         self._base = Path(base_path)
 
@@ -58,37 +57,55 @@ class ArtifactStore:
         duration_seconds: float,
         started_at: str,
         finished_at: str,
+        *,
+        session_id: str | None = None,
+        project_id: str | None = None,
+        working_directory: str = "",
+        timed_out: bool = False,
     ) -> str:
         """Atomski čuva verify artefakt. Vraća putanju do direktorijuma."""
+        # Path traversal zaštita
+        if ".." in verification_id or "/" in verification_id or "\\" in verification_id:
+            raise ValueError(f"Neispravan verification_id: {verification_id}")
+
+        # Ograničenje veličine izlaza (max 1MB po fajlu)
+        max_size = 1_000_000
+        stdout = stdout[:max_size]
+        stderr = stderr[:max_size]
         artifact_dir = self._base / "verification" / verification_id
-        artifact_dir.mkdir(parents=True, exist_ok=True)
+        tmp_dir = self._base / "verification" / f".tmp_{verification_id}"
+        tmp_dir.mkdir(parents=True, exist_ok=True)
 
-        # command.txt
-        (artifact_dir / "command.txt").write_text(command, encoding="utf-8")
-
-        # stdout.txt
-        stdout_path = artifact_dir / "stdout.txt"
-        stdout_path.write_text(stdout, encoding="utf-8")
-
-        # stderr.txt
-        stderr_path = artifact_dir / "stderr.txt"
-        stderr_path.write_text(stderr, encoding="utf-8")
+        (tmp_dir / "command.txt").write_text(command, encoding="utf-8")
+        (tmp_dir / "stdout.txt").write_text(stdout, encoding="utf-8")
+        (tmp_dir / "stderr.txt").write_text(stderr, encoding="utf-8")
 
         # metadata.json
         metadata = {
-            "verification_id": verification_id,
+            "artifact_id": verification_id,
+            "session_id": session_id,
+            "project_id": project_id,
             "command": command,
+            "working_directory": working_directory,
             "started_at": started_at,
             "finished_at": finished_at,
             "duration_ms": int(duration_seconds * 1000),
             "exit_code": exit_code,
+            "timed_out": timed_out,
             "status": "PASS" if exit_code == 0 else "FAIL",
-            "sha256_stdout": hashlib.sha256(stdout.encode()).hexdigest(),
-            "sha256_stderr": hashlib.sha256(stderr.encode()).hexdigest(),
+            "stdout_sha256": hashlib.sha256(stdout.encode()).hexdigest(),
+            "stderr_sha256": hashlib.sha256(stderr.encode()).hexdigest(),
+            "tool_version": "0.1.0",
+            "python_executable": sys.executable,
         }
-        (artifact_dir / "metadata.json").write_text(
-            json.dumps(metadata, indent=2), encoding="utf-8"
-        )
+        (tmp_dir / "metadata.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+
+        # Atomski rename
+        if artifact_dir.exists():
+            import shutil
+
+            shutil.rmtree(artifact_dir)
+        tmp_dir.rename(artifact_dir)
 
         return str(artifact_dir)
 
@@ -187,6 +204,10 @@ class VerificationService:
                 duration_seconds=duration,
                 started_at=started_at,
                 finished_at=finished_at,
+                session_id=session_id,
+                project_id=project_id,
+                working_directory=str(repo_path),
+                timed_out=timed_out,
             )
         except Exception:
             import logging

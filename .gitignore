@@ -65,3 +65,12 @@ probe_*
 *.bak
 *.backup
 backups/
+
+# FlowOS runtime artefakti
+artifacts/
+
+# Mypy cache
+.mypy_cache/
+
+# Prazan file (crash/artefakt)
+file

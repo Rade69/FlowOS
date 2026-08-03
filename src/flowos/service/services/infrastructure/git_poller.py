@@ -75,6 +75,10 @@ class GitStateReader:
         self._last_state = fresh
         return fresh, changes
 
+    def read_state(self) -> GitState:
+        """Javni API za čitanje trenutnog Git stanja."""
+        return self._read_state()
+
     def _read_state(self) -> GitState:
         """Čita trenutno Git stanje."""
         state = GitState(observed_at=datetime.now(tz=UTC).isoformat())

@@ -83,6 +83,7 @@ class ReportService:
         "updated_at",
         "user_verdict",
         "user_notes",
+        "verdict_audit_json",
         "status",
     }
 
@@ -106,10 +107,9 @@ class ReportService:
                     f"Polje '{key}' ne može da se menja kroz update_report. "
                     f"Koristite specijalizovane metode (npr. set_verdict za user_verdict)."
                 )
-            if key not in self._ALLOWED_UPDATE_FIELDS and hasattr(report, key):
+            if key not in self._ALLOWED_UPDATE_FIELDS:
                 raise ValueError(f"Polje '{key}' nije na allowlisti za update_report.")
-            if hasattr(report, key):
-                setattr(report, key, value)
+            setattr(report, key, value)
 
         report.updated_at = datetime.now(tz=UTC)
         self._session.flush()
@@ -143,10 +143,15 @@ class ReportService:
 
         # Kreiraj audit zapis
         previous_verdict = report.user_verdict
+        previous_status = report.status
         audit_entry = {
             "timestamp": datetime.now(tz=UTC).isoformat(),
-            "verdict": verdict,
+            "report_id": report_id,
             "previous_verdict": previous_verdict,
+            "new_verdict": verdict,
+            "previous_status": previous_status,
+            "new_status": "FINAL",
+            "actor": "user",
             "notes": notes,
         }
 

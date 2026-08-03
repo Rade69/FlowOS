@@ -114,3 +114,16 @@ def end_session(
     if not s:
         raise HTTPException(status_code=404, detail="Sesija nije pronađena")
     return _session_to_dict(s)
+
+
+@router.post("/{session_id}/heartbeat")
+def session_heartbeat(session_id: str, session: Session = Depends(get_session)):
+    """Procesni heartbeat — agent/proces potvrđuje da je živ.
+
+    Nezavisan od filesystem aktivnosti. Poziva se periodično
+    iz adaptera, wrapper-a ili process monitora.
+    """
+    s = SessionService(session).record_heartbeat(session_id)
+    if not s:
+        raise HTTPException(status_code=404, detail="Sesija nije pronađena")
+    return {"status": "ok", "session_id": session_id}

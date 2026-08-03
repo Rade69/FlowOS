@@ -78,7 +78,6 @@ def create_app(runtime: RuntimeManager, engine=None) -> FastAPI:
 
         def _complete(
             session_id: str,
-            repo_path: str,
             exit_code: int | None = None,
             result_commit_sha: str | None = None,
         ) -> None:
@@ -89,7 +88,6 @@ def create_app(runtime: RuntimeManager, engine=None) -> FastAPI:
                 completion = SessionCompletionService(bg_db)
                 completion.complete_session(
                     session_id=session_id,
-                    repo_path=repo_path,
                     exit_code=exit_code,
                     result_commit_sha=result_commit_sha,
                 )
@@ -212,6 +210,26 @@ def _make_lifespan(runtime: RuntimeManager):
                     ]
 
                     activity_svc = ActivityService(db)
+
+                    # Registruj conflict callback za WRITE_WRITE i LATE_OVERLAP
+                    if len(active) >= 2:
+
+                        def _make_conflict_cb(project_id, active_sessions):
+                            def _cb(activity):
+                                from flowos.service.services.conflicts.service import (
+                                    ConflictDetectionService,
+                                )
+
+                                conflict_svc = ConflictDetectionService(db)
+                                conflict_svc.on_file_activity(activity, active_sessions)
+                                db.commit()
+
+                            return _cb
+
+                        activity_svc.register_conflict_callback(
+                            _make_conflict_cb(project_id, active)
+                        )
+
                     _activity = activity_svc.record_file_event(
                         file_path=event.path,
                         event_type=event.event_type,
@@ -222,39 +240,6 @@ def _make_lifespan(runtime: RuntimeManager):
                         metadata={"correlation_id": correlation_id},
                     )
                     db.commit()
-
-                    # Conflict detekcija — WRITE_WRITE i LATE_OVERLAP
-                    if len(active) >= 2:
-                        from flowos.service.services.conflicts.service import (
-                            ConflictDetectionService,
-                        )
-
-                        conflict_svc = ConflictDetectionService(db)
-                        # Pripremi activities listu za conflict service
-                        recent_activities = activity_svc.get_recent_activities(
-                            project_id, minutes=30
-                        )
-                        activities_dicts = [
-                            {
-                                "file_path": a.file_path,
-                                "session_id": a.session_id,
-                                "observed_at": a.occurred_at.isoformat() if a.occurred_at else None,
-                                "repo_path": a.repository_path,
-                            }
-                            for a in recent_activities
-                            if a.session_id
-                        ]
-                        active_dicts = [
-                            {
-                                "id": s.session_id,
-                                "worktree_path": s.worktree_path,
-                                "repo_path": s.repo_path,
-                            }
-                            for s in active
-                        ]
-                        conflict_svc.detect_write_write(project_id, activities_dicts, active_dicts)
-                        conflict_svc.detect_late_overlap(project_id, activities_dicts, active_dicts)
-                        db.commit()
 
                 except Exception:
                     db.rollback()
@@ -370,21 +355,17 @@ def _run_conflict_detection(app: FastAPI) -> None:
 
             # STALE_SESSION — sesija bez aktivnosti > 30 min
             if session.last_activity_at:
-                session_dict = {
-                    "id": session.id,
-                    "last_activity_at": session.last_activity_at.isoformat(),
-                }
-                svc.detect_stale_session(session.project_id, session_dict)
+                svc.detect_stale_session(session.project_id, session)
 
             # BRANCH_CHANGE — proveri da li se branch promenio
             if session.repo_path and session.branch_name:
                 try:
                     reader = GitStateReader(session.repo_path)
-                    git_state = reader._read_state()
+                    git_state = reader.read_state()
                     if git_state.branch and git_state.branch != session.branch_name:
                         svc.detect_branch_change(
                             session.project_id,
-                            {"id": session.id},
+                            session,
                             session.branch_name,
                             git_state.branch,
                         )

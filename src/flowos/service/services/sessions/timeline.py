@@ -160,7 +160,7 @@ class TimelineService:
                     }
                 )
 
-        # 4. AgentReport — za TECHNICAL i TIMELINE nivo
+        # 5. Verification iz AgentReport-a — sekundarni izvor (primarni je VERIFY_RESULT SessionEvent)
         if timeline_level != TimelineLevel.SUMMARY:
             reports = (
                 self._session.query(AgentReport)
@@ -169,20 +169,21 @@ class TimelineService:
                 .all()
             )
             for r in reports:
-                all_events.append(
-                    {
-                        "id": r.id,
-                        "event_type": "REPORT_" + (r.status or "DRAFT"),
-                        "summary": f"Report {r.status}: {r.summary or 'Nema.'}"[:200],
-                        "source": "REPORT_SERVICE",
-                        "occurred_at": r.created_at.isoformat() if r.created_at else None,
-                        "origin": "AgentReport",
-                        "verdict": r.user_verdict,
-                    }
-                )
+                vs = r.verification_summary
+                if vs:
+                    all_events.append(
+                        {
+                            "id": r.id + "_verify_report",
+                            "event_type": "REPORT_VERIFY_SUMMARY",
+                            "summary": f"Report verifikacija: {vs[:200]}",
+                            "source": "REPORT_SERVICE",
+                            "occurred_at": r.created_at.isoformat() if r.created_at else None,
+                            "origin": "AgentReport",
+                        }
+                    )
 
-        # Sortiraj sve događaje po vremenu
-        all_events.sort(key=lambda e: e["occurred_at"] or "")
+        # Sortiraj sve događaje po vremenu, pa po ID-ju (stabilno)
+        all_events.sort(key=lambda e: (e["occurred_at"] or "", e["id"]))
 
         # Paginacija
         total = len(all_events)

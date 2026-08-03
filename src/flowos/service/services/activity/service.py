@@ -124,6 +124,17 @@ class ActivityService:
                 attribution_type,
                 session_id or "none",
             )
+
+            # Ažuriraj last_activity_at i heartbeat za pripisanu sesiju
+            if session_id:
+                from flowos.service.services.infrastructure.persistence.models import AgentSession
+
+                sess = self._db.get(AgentSession, session_id)
+                if sess:
+                    now = datetime.now(tz=UTC)
+                    sess.last_activity_at = now
+                    sess.last_heartbeat_at = now
+
         except Exception:
             self._db.rollback()
             logger.exception("Greška pri zapisu FileActivity: %s %s", event_type, file_path)

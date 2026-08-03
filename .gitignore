@@ -74,3 +74,6 @@ artifacts/
 
 # Prazan file (crash/artefakt)
 file
+
+# Lokalni agentski config
+.claude/

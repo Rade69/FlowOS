@@ -157,7 +157,6 @@ check_untyped_defs = false
 minversion = "8.0"
 testpaths = ["tests"]
 pythonpath = ["src"]
-asyncio_mode = "auto"
 qt_api = "pyside6"
 
 [tool.coverage.run]

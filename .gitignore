@@ -76,4 +76,4 @@ artifacts/
 file
 
 # Lokalni agentski config
-.claude/
+.claude/*.spec

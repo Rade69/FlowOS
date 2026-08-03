@@ -149,9 +149,7 @@ class WorktreeService:
         all_wt = self.list_worktrees()
         wt_dir = str(self.worktrees_dir).replace("\\", "/")
         return [
-            wt
-            for wt in all_wt
-            if wt.path.replace("\\", "/").startswith(wt_dir) and not wt.is_main
+            wt for wt in all_wt if wt.path.replace("\\", "/").startswith(wt_dir) and not wt.is_main
         ]
 
     # ── Status ─────────────────────────────────────────────────
@@ -167,15 +165,9 @@ class WorktreeService:
             return {"exists": False, "clean": False, "error": "Worktree ne postoji"}
 
         try:
-            status_raw = self._git(
-                ["status", "--porcelain=v2", "-z"], cwd=str(path)
-            )
-            branch = self._git(
-                ["branch", "--show-current"], cwd=str(path)
-            )
-            commit = self._git(
-                ["rev-parse", "HEAD"], cwd=str(path)
-            )
+            status_raw = self._git(["status", "--porcelain=v2", "-z"], cwd=str(path))
+            branch = self._git(["branch", "--show-current"], cwd=str(path))
+            commit = self._git(["rev-parse", "HEAD"], cwd=str(path))
         except subprocess.CalledProcessError as e:
             return {"exists": True, "clean": False, "error": str(e.stderr)}
 
@@ -274,10 +266,10 @@ class WorktreeService:
 
     def get_diff_to_base(self, worktree_path: str, base_branch: str = "main") -> str:
         """Vraća diff worktree-ja u odnosu na baznu granu."""
-        try:
+        import contextlib
+
+        with contextlib.suppress(subprocess.CalledProcessError):
             self._git(["fetch", "origin", base_branch])
-        except subprocess.CalledProcessError:
-            pass  # fetch može pasti ako nema remote-a
 
         try:
             return self._git(
@@ -379,9 +371,7 @@ class WorktreeService:
         safe_slug = slug.lower().replace(" ", "-")[:50] if slug else "impl"
         return f"flow/{task_id}-{safe_slug}"
 
-    def _build_info(
-        self, path: str, branch: str, task_id: str | None = None
-    ) -> WorktreeInfo:
+    def _build_info(self, path: str, branch: str, task_id: str | None = None) -> WorktreeInfo:
         """Pravi WorktreeInfo iz putanje i grane."""
         commit = ""
         with contextlib.suppress(subprocess.CalledProcessError):

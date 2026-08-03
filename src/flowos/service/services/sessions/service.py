@@ -48,6 +48,21 @@ class SessionService:
         )
         self._session.add(session_obj)
         self._session.flush()
+
+        # Ako je sesija povezana sa worktree-jem, ažuriraj Worktree model
+        if worktree_path:
+            from flowos.service.services.infrastructure.persistence.worktree_models import Worktree
+
+            wt = (
+                self._session.query(Worktree)
+                .filter(Worktree.worktree_path == worktree_path)
+                .first()
+            )
+            if wt:
+                wt.session_id = session_obj.id
+                wt.last_activity_at = datetime.now(tz=UTC)
+                self._session.flush()
+
         return session_obj
 
     def end_session(

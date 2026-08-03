@@ -18,6 +18,7 @@ from flowos.gui.views.project_resume import (
     ReconciliationView,
 )
 from flowos.gui.views.sessions import SessionsView
+from flowos.gui.views.worktrees import WorktreesView
 
 
 class FlowOsGui:
@@ -31,6 +32,7 @@ class FlowOsGui:
         self._resume_view = ProjectResumeView()
         self._details_view = PlanItemDetailsView()
         self._reconciliation_view = ReconciliationView()
+        self._worktrees_view = WorktreesView()
 
         self._window.set_central_widgets(  # type: ignore[attr-defined]  # MainWindow mockup
             [self._plan_view, self._sessions_view, self._activity_view]

@@ -52,12 +52,35 @@ class FlowOsGui:
     def show(self):
         self._window.show()
 
+    def _get_service_port(self) -> int:
+        """Čita port servisa iz runtime descriptor-a ili koristi default."""
+        import json
+        import os
+
+        descriptor_path = os.path.join(
+            os.environ.get("LOCALAPPDATA", os.path.expanduser("~")),
+            "FlowOS",
+            "runtime",
+            "service.json",
+        )
+        try:
+            with open(descriptor_path) as f:
+                data = json.load(f)
+                port = data.get("port", 9100)
+                if isinstance(port, int) and 1024 <= port <= 65535:
+                    return port
+        except Exception:
+            pass
+        return 9100
+
     def _ensure_service_running(self):
         """Proverava da li servis radi; ako ne — pokreće ga."""
         import httpx
 
+        port = self._get_service_port()
+
         try:
-            resp = httpx.get("http://127.0.0.1:9100/health", timeout=2)
+            resp = httpx.get(f"http://127.0.0.1:{port}/health", timeout=2)
             if resp.status_code == 200:
                 return  # Servis već radi
         except Exception:
@@ -74,7 +97,7 @@ class FlowOsGui:
             # Sačekaj da servis postane dostupan (max 10s)
             for _ in range(20):
                 try:
-                    resp = httpx.get("http://127.0.0.1:9100/health", timeout=1)
+                    resp = httpx.get(f"http://127.0.0.1:{port}/health", timeout=1)
                     if resp.status_code == 200:
                         return
                 except Exception:
@@ -85,7 +108,8 @@ class FlowOsGui:
             pass
 
     def _setup_live(self):
-        api = GuiApiClient(base_url="http://127.0.0.1:9100")
+        port = self._get_service_port()
+        api = GuiApiClient(base_url=f"http://127.0.0.1:{port}")
         self._controller = OverviewController(api)
 
         self._controller.health_updated.connect(self._on_health)

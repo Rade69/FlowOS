@@ -133,11 +133,34 @@ class WorktreeManager:
         return base
 
     def cleanup_worktree(self, worktree_id: str, *, force: bool = False) -> dict:
-        """Uklanja worktree uz retention proveru."""
+        """Uklanja worktree uz retention i bezbednosne provere."""
         wt = self._db.get(Worktree, worktree_id)
         if not wt:
             raise WorktreeError(f"Worktree nije pronađen: {worktree_id}")
 
+        # Provera aktivne sesije
+        if wt.session_id:
+            from flowos.service.services.infrastructure.persistence.models import AgentSession
+
+            session = self._db.get(AgentSession, wt.session_id)
+            if session and session.status in ("ACTIVE", "IDLE"):
+                raise WorktreeError(
+                    f"Worktree ima aktivnu sesiju ({wt.session_id}). Prvo završite sesiju."
+                )
+
+        # Provera konflikata
+        if wt.has_conflicts:
+            raise WorktreeError("Worktree ima otvorene konflikte. Prvo ih razrešite.")
+
+        # Provera dirty stanja
+        svc = self._get_service(wt.worktree_path)
+        status = svc.get_status(wt.worktree_path)
+        if not status.get("clean", False) and not force:
+            raise WorktreeError(
+                "Worktree ima nekomitovane izmene. Koristite force=True za prinudno brisanje."
+            )
+
+        # Retention provera
         if not force:
             now = datetime.now(tz=UTC)
             if wt.created_at:
@@ -148,7 +171,6 @@ class WorktreeManager:
                         f"Retention period nije istekao. Preostalo: {remaining} dana."
                     )
 
-        svc = self._get_service(wt.worktree_path)
         svc.cleanup(wt.worktree_path, force=force)
         wt.status = "CLEANED"
         wt.cleaned_at = datetime.now(tz=UTC)
@@ -157,10 +179,22 @@ class WorktreeManager:
         return {"status": "cleaned", "worktree_id": worktree_id}
 
     def assign_session(self, worktree_id: str, session_id: str) -> dict | None:
-        """Povezuje sesiju sa worktree-jem."""
+        """Povezuje sesiju sa worktree-jem. Odbija ako je već zauzet."""
         wt = self._db.get(Worktree, worktree_id)
         if not wt:
             return None
+
+        # Provera da li worktree već ima aktivnu sesiju
+        if wt.session_id and wt.session_id != session_id:
+            from flowos.service.services.infrastructure.persistence.models import AgentSession
+
+            existing = self._db.get(AgentSession, wt.session_id)
+            if existing and existing.status in ("ACTIVE", "IDLE"):
+                raise WorktreeError(
+                    f"Worktree je već zauzet sesijom {wt.session_id}. "
+                    f"Jedan worktree = najviše jedna writer sesija."
+                )
+
         wt.session_id = session_id
         wt.last_activity_at = datetime.now(tz=UTC)
         self._db.flush()

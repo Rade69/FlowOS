@@ -23,6 +23,7 @@ class GuiApiClient(QObject):
     plan_progress_received = Signal(dict)
     resume_received = Signal(dict)
     sessions_received = Signal(list)
+    worktrees_received = Signal(list)
     error_occurred = Signal(int, str)
 
     def __init__(self, base_url: str = "http://127.0.0.1:9100", parent=None):
@@ -112,3 +113,22 @@ class GuiApiClient(QObject):
             if signal:
                 signal.emit({"error": msg})  # type: ignore[attr-defined]  # PySide6 Signal
         reply.deleteLater()
+
+    # ── Worktrees ───────────────────────────────────────
+
+    def fetch_worktrees(self, project_id: str):
+        self._get(f"/worktrees?project_id={project_id}", self.worktrees_received)  # type: ignore[arg-type]
+
+    def prepare_integration(self, worktree_id: str, base_branch: str = "main"):
+        self._post(
+            f"/worktrees/{worktree_id}/integrate/prepare?base_branch={base_branch}",
+            {},
+            self.worktrees_received,  # type: ignore[arg-type]
+        )
+
+    def cleanup_worktree(self, worktree_id: str, force: bool = False):
+        self._post(
+            f"/worktrees/{worktree_id}/cleanup",
+            {"force": force},
+            self.worktrees_received,  # type: ignore[arg-type]
+        )

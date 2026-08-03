@@ -58,6 +58,14 @@ class FlowOsGui:
         self._controller.sessions_loaded.connect(self._sessions_view.render)
         self._controller.error_occurred.connect(self._on_error)
 
+        # Worktrees: poveži API signale sa View-om
+        api.worktrees_received.connect(self._worktrees_view.render)
+        self._worktrees_view.refresh_requested.connect(
+            lambda: api.fetch_worktrees(self._active_project_id or "")
+        )
+        self._worktrees_view.integrate_requested.connect(lambda wid: api.prepare_integration(wid))
+        self._worktrees_view.cleanup_requested.connect(lambda wid: api.cleanup_worktree(wid))
+
         self._window.topbar.refresh_requested.connect(lambda: self._controller.check_health())
 
         QTimer.singleShot(500, self._controller.check_health)

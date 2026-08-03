@@ -59,6 +59,14 @@ class SessionService:
                 .first()
             )
             if wt:
+                # Provera ekskluzivnosti: jedan worktree = jedna writer sesija
+                if wt.session_id and wt.session_id != session_obj.id:
+                    existing = self._session.get(AgentSession, wt.session_id)
+                    if existing and existing.status in ("ACTIVE", "IDLE"):
+                        raise ValueError(
+                            f"Worktree je već zauzet sesijom {wt.session_id}. "
+                            f"Jedan worktree = najviše jedna writer sesija."
+                        )
                 wt.session_id = session_obj.id
                 wt.last_activity_at = datetime.now(tz=UTC)
                 self._session.flush()

@@ -9,6 +9,7 @@ Pokretanje: python scripts/build.py
 Izlaz: dist/
 """
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -33,7 +34,7 @@ def run_pyinstaller(name: str, entry: str, hidden_imports: list[str] | None = No
         "--specpath",
         str(ROOT / "build"),
         "--add-data",
-        f"src{Path.pathsep}src",
+        f"src{os.pathsep}src",
     ]
     if hidden_imports:
         for hi in hidden_imports:
@@ -78,7 +79,7 @@ def main() -> int:
         ),
         (
             "flowos",
-            "src/flowos/cli.py",
+            "src/flowos/cli/app.py",
             [
                 "typer",
                 "httpx",

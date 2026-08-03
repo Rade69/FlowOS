@@ -24,6 +24,8 @@ class GuiApiClient(QObject):
     resume_received = Signal(dict)
     sessions_received = Signal(list)
     worktrees_received = Signal(list)
+    integration_prepared = Signal(dict)
+    worktree_cleaned = Signal(dict)
     error_occurred = Signal(int, str)
 
     def __init__(self, base_url: str = "http://127.0.0.1:9100", parent=None):
@@ -123,12 +125,12 @@ class GuiApiClient(QObject):
         self._post(
             f"/worktrees/{worktree_id}/integrate/prepare?base_branch={base_branch}",
             {},
-            self.worktrees_received,  # type: ignore[arg-type]
+            self.integration_prepared,  # type: ignore[arg-type]
         )
 
     def cleanup_worktree(self, worktree_id: str, force: bool = False):
         self._post(
             f"/worktrees/{worktree_id}/cleanup",
             {"force": force},
-            self.worktrees_received,  # type: ignore[arg-type]
+            self.worktree_cleaned,  # type: ignore[arg-type]
         )

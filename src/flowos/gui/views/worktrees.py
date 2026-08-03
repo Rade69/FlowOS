@@ -113,7 +113,7 @@ class WorktreesView(QFrame):
                 btn_lo.setSpacing(2)
 
                 if status in ("ACTIVE", "READY"):
-                    integrate_btn = QPushButton("Integriši")
+                    integrate_btn = QPushButton("Pregledaj izmjene")
                     integrate_btn.setStyleSheet(
                         f"background: {TEAL}; color: #000; border-radius: 3px; padding: 2px 8px; font-size: 10px;"
                     )

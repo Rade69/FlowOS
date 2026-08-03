@@ -52,7 +52,7 @@ def create_worktree(data: WorktreeCreateRequest, session: Session = Depends(get_
     except WorktreeExistsError as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
     except WorktreeError as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=409, detail=str(e)) from e
 
 
 @router.get("")
@@ -66,7 +66,7 @@ def list_worktrees(
     try:
         return mgr.list_worktrees(project_id, flowos_only=flowos_only)
     except WorktreeError as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=409, detail=str(e)) from e
 
 
 @router.get("/{worktree_id}")
@@ -93,7 +93,7 @@ def cleanup_worktree(
     try:
         return mgr.cleanup_worktree(worktree_id, force=data.force)
     except WorktreeError as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=409, detail=str(e)) from e
 
 
 @router.post("/{worktree_id}/integrate/prepare")
@@ -107,7 +107,7 @@ def prepare_integration(
     try:
         return mgr.prepare_integration(worktree_id, base_branch=base_branch)
     except WorktreeError as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=409, detail=str(e)) from e
 
 
 @router.post("/{worktree_id}/verify")

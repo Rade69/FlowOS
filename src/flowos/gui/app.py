@@ -1,9 +1,12 @@
 """FlowOS GUI — PySide6 aplikacija (FLOW-106, FLOW-105A/B, FLOW-207/B).
 
 Povezuje View → Controller → GUI Services → Backend API.
+Automatski pokreće flowos-service.exe ako nije aktivan.
 """
 
+import subprocess
 import sys
+import time
 
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication
@@ -22,9 +25,10 @@ from flowos.gui.views.worktrees import WorktreesView
 
 
 class FlowOsGui:
-    def __init__(self, use_live: bool = False):
+    def __init__(self, use_live: bool = True):
         self._window = MainWindow()
         self._active_project_id: str | None = None
+        self._service_process: subprocess.Popen | None = None
 
         self._plan_view = PlanProgressView()
         self._sessions_view = SessionsView()
@@ -34,7 +38,7 @@ class FlowOsGui:
         self._reconciliation_view = ReconciliationView()
         self._worktrees_view = WorktreesView()
 
-        self._window.set_central_widgets(  # type: ignore[attr-defined]  # MainWindow mockup
+        self._window.set_central_widgets(  # type: ignore[attr-defined]
             [self._plan_view, self._sessions_view, self._activity_view]
         )
         self._window.set_right_widgets(  # type: ignore[attr-defined]
@@ -42,10 +46,43 @@ class FlowOsGui:
         )
 
         if use_live:
+            self._ensure_service_running()
             self._setup_live()
 
     def show(self):
         self._window.show()
+
+    def _ensure_service_running(self):
+        """Proverava da li servis radi; ako ne — pokreće ga."""
+        import httpx
+
+        try:
+            resp = httpx.get("http://127.0.0.1:9100/health", timeout=2)
+            if resp.status_code == 200:
+                return  # Servis već radi
+        except Exception:
+            pass
+
+        # Servis nije dostupan — pokreni ga
+        service_exe = "flowos-service.exe"
+        try:
+            self._service_process = subprocess.Popen(
+                [service_exe],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            # Sačekaj da servis postane dostupan (max 10s)
+            for _ in range(20):
+                try:
+                    resp = httpx.get("http://127.0.0.1:9100/health", timeout=1)
+                    if resp.status_code == 200:
+                        return
+                except Exception:
+                    time.sleep(0.5)
+        except FileNotFoundError:
+            print("flowos-service.exe nije pronađen — pokrenite servis ručno.")
+        except Exception:
+            pass
 
     def _setup_live(self):
         api = GuiApiClient(base_url="http://127.0.0.1:9100")

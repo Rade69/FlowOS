@@ -54,7 +54,7 @@ Desktop.ini
 
 # FlowOS interni
 .flowos/
-worktrees/
+/worktrees/
 review_bundles/
 metadata/
 

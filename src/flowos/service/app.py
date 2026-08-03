@@ -7,9 +7,6 @@ sa CLI-jem preko REST (+ offline JSONL spool).
 Pri startup-u automatski dodaje kolone koje nedostaju (direktne SQL migracije).
 """
 
-import contextlib
-import logging
-import sqlite3
 import sys
 
 import uvicorn
@@ -20,39 +17,23 @@ from flowos.service.services.infrastructure.runtime import RuntimeManager
 
 
 def _run_migrations() -> None:
-    """Dodaje kolone koje nedostaju na postojećim tabelama."""
-    db_path = get_data_directory() / "flowos.db"
-    if not db_path.exists():
-        return
+    """Dodaje kolone koje nedostaju koristeći SQLAlchemy engine."""
+    import contextlib
 
-    logger = logging.getLogger("flowos.migrations")
-    migrations = [
-        "ALTER TABLE agent_sessions ADD COLUMN last_heartbeat_at TIMESTAMP",
-        """CREATE TABLE IF NOT EXISTS worktrees (
-            id TEXT PRIMARY KEY, project_id TEXT NOT NULL, task_id TEXT,
-            session_id TEXT, worktree_path TEXT NOT NULL, branch_name TEXT NOT NULL,
-            base_branch TEXT, base_commit_sha TEXT, status TEXT NOT NULL DEFAULT "ACTIVE",
-            is_clean INTEGER NOT NULL DEFAULT 1, has_conflicts INTEGER NOT NULL DEFAULT 0,
-            created_at TIMESTAMP NOT NULL, last_activity_at TIMESTAMP,
-            integrated_at TIMESTAMP, cleaned_at TIMESTAMP,
-            retention_days INTEGER NOT NULL DEFAULT 7,
-            result_commit_sha TEXT, integration_verified INTEGER NOT NULL DEFAULT 0,
-            metadata_json TEXT,
-            FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,
-            FOREIGN KEY(session_id) REFERENCES agent_sessions(id) ON DELETE SET NULL
-        )""",
-    ]
+    from flowos.service.services.infrastructure.persistence.base import Base
+    from flowos.service.services.infrastructure.persistence.engine import (
+        create_sqlite_engine,
+    )
 
+    engine = create_sqlite_engine()
     with contextlib.suppress(Exception):
-        conn = sqlite3.connect(str(db_path))
-        for sql in migrations:
-            try:
-                conn.execute(sql)
-                logger.info("Migracija uspesna")
-            except sqlite3.OperationalError:
-                pass  # Kolona već postoji
+        # Kreiraj sve tabele ako ne postoje (sa svim novim kolonama)
+        Base.metadata.create_all(engine)
+
+    # Dodaj kolone koje create_all ne može da doda na postojeće tabele
+    with contextlib.suppress(Exception), engine.connect() as conn:
+        conn.exec_driver_sql("ALTER TABLE agent_sessions ADD COLUMN last_heartbeat_at TIMESTAMP")
         conn.commit()
-        conn.close()
 
 
 def main() -> int:

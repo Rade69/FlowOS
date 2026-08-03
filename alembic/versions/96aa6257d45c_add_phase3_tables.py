@@ -1,13 +1,13 @@
 """add_phase3_tables
 
 Zbirna migracija za sve Faza 3 tabele: conflicts, agent_reports,
-file_activities. Zamenjuje dve prethodne lokalne migracije
-(251b7ae30744, 41d57a685feb) koje nikada nisu bile commitovane
-niti primenjene na postojećim bazama.
+file_activities. Zamenjuje dve prethodne migracije (251b7ae30744,
+41d57a685feb) koje su bile commitovane u razvojnoj grani ali nikada
+nisu bile release-ovane niti primenjene na produkcione baze.
 
 Revision ID: 96aa6257d45c
 Revises: d62470d60bc8
-Create Date: 2026-08-02 21:49:20.366919
+Create Date: 2026-08-02 21:49:20.366019
 
 """
 from typing import Sequence, Union

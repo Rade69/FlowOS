@@ -57,7 +57,7 @@ def main() -> int:
     targets = [
         (
             "flowos-service",
-            "src/flowos/service/main.py",
+            "src/flowos/service/app.py",
             [
                 "sqlalchemy",
                 "alembic",

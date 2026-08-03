@@ -79,9 +79,7 @@ class WorktreeManager:
 
         db_wts = {
             wt.worktree_path: wt
-            for wt in self._db.query(Worktree)
-            .filter(Worktree.project_id == project_id)
-            .all()
+            for wt in self._db.query(Worktree).filter(Worktree.project_id == project_id).all()
         }
 
         result = []

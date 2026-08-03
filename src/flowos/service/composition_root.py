@@ -139,6 +139,99 @@ def _http_to_error_code(status: int) -> str:
     return mapping.get(status, "INTERNAL_ERROR")
 
 
+def _create_watcher_callback(project_id: str, repo_path: str, *, _engine=None):
+    """Fabrika watcher callback-a — produkcijski wiring.
+
+    Svaki watcher događaj se trajno beleži u FileActivity tabelu
+    sa atribucijom aktivnim sesijama. Ako ima >=2 aktivne sesije,
+    registruje se conflict callback za WRITE_WRITE i LATE_OVERLAP.
+
+    Izdvojena iz lifespan-a radi testabilnosti — koristi je
+    _make_lifespan pri startup-u.
+    """
+    import uuid as _uuid
+
+    from flowos.service.services.activity.service import ActivityService
+    from flowos.service.services.attribution.service import ActiveSession
+    from flowos.service.services.infrastructure.persistence.engine import (
+        create_session_factory,
+        create_sqlite_engine,
+    )
+    from flowos.service.services.infrastructure.persistence.models import AgentSession
+    from flowos.shared.enums.session import SessionStatus
+
+    if _engine is None:
+        _engine = create_sqlite_engine()
+    db_engine = _engine
+    db_factory = create_session_factory(db_engine)
+
+    def _callback(event):
+        correlation_id = str(_uuid.uuid4())
+        db = db_factory()
+        try:
+            active_sessions_raw = (
+                db.query(AgentSession)
+                .filter(
+                    AgentSession.project_id == project_id,
+                    AgentSession.status.in_((SessionStatus.ACTIVE.value, SessionStatus.IDLE.value)),
+                )
+                .all()
+            )
+
+            active = [
+                ActiveSession(
+                    session_id=s.id,
+                    worktree_path=s.worktree_path,
+                    repo_path=s.repo_path,
+                )
+                for s in active_sessions_raw
+            ]
+
+            activity_svc = ActivityService(db)
+
+            if len(active) >= 2:
+
+                def _make_conflict_cb(project_id, active_sessions):
+                    def _cb(activity):
+                        from flowos.service.services.conflicts.service import (
+                            ConflictDetectionService,
+                        )
+
+                        conflict_svc = ConflictDetectionService(db)
+                        conflict_svc.on_file_activity(activity, active_sessions)
+                        db.commit()
+
+                    return _cb
+
+                activity_svc.register_conflict_callback(_make_conflict_cb(project_id, active))
+
+            activity_svc.record_file_event(
+                file_path=event.path,
+                event_type=event.event_type,
+                project_id=project_id,
+                repo_path=repo_path,
+                active_sessions=active,
+                source="WATCHER",
+                metadata={"correlation_id": correlation_id},
+            )
+            db.commit()
+
+        except Exception:
+            db.rollback()
+            import logging
+
+            logging.getLogger("flowos").exception(
+                "Watcher callback greška [%s]: %s %s",
+                correlation_id,
+                event.event_type,
+                event.path,
+            )
+        finally:
+            db.close()
+
+    return _callback
+
+
 def _make_lifespan(runtime: RuntimeManager):
     """Kreira lifespan handler za FastAPI.
 
@@ -152,21 +245,16 @@ def _make_lifespan(runtime: RuntimeManager):
         import asyncio
         import contextlib
         import logging
-        import uuid
 
-        from flowos.service.services.activity.service import ActivityService
-        from flowos.service.services.attribution.service import ActiveSession
         from flowos.service.services.infrastructure.logging import setup_logging
         from flowos.service.services.infrastructure.persistence.engine import (
             create_session_factory,
             create_sqlite_engine,
         )
         from flowos.service.services.infrastructure.persistence.models import (
-            AgentSession,
             Project,
         )
         from flowos.service.services.infrastructure.watcher import WatcherPipeline
-        from flowos.shared.enums.session import SessionStatus
 
         logger = setup_logging(level=logging.INFO)
         app.state.runtime = runtime
@@ -174,85 +262,9 @@ def _make_lifespan(runtime: RuntimeManager):
         # Watcher kolekcija — jedan watcher po projektu
         app.state.watchers: dict[str, WatcherPipeline] = {}  # type: ignore[misc]  # starlette State je netipiziran
 
-        # Watcher callback — povezuje watcher → ActivityService → baza
+        # Watcher callback factory — izdvojena radi testabilnosti
         def _make_watcher_callback(project_id: str, repo_path: str):
-            """Fabrika callback-a za određeni projekat.
-
-            Svaki watcher događaj se trajno beleži u FileActivity tabelu
-            sa atribucijom aktivnim sesijama.
-            """
-            db_engine = create_sqlite_engine()
-            db_factory = create_session_factory(db_engine)
-
-            def _callback(event):
-                correlation_id = str(uuid.uuid4())
-                db = db_factory()
-                try:
-                    # Učitaj aktivne sesije za ovaj projekat
-                    active_sessions_raw = (
-                        db.query(AgentSession)
-                        .filter(
-                            AgentSession.project_id == project_id,
-                            AgentSession.status.in_(
-                                (SessionStatus.ACTIVE.value, SessionStatus.IDLE.value)
-                            ),
-                        )
-                        .all()
-                    )
-
-                    active = [
-                        ActiveSession(
-                            session_id=s.id,
-                            worktree_path=s.worktree_path,
-                            repo_path=s.repo_path,
-                        )
-                        for s in active_sessions_raw
-                    ]
-
-                    activity_svc = ActivityService(db)
-
-                    # Registruj conflict callback za WRITE_WRITE i LATE_OVERLAP
-                    if len(active) >= 2:
-
-                        def _make_conflict_cb(project_id, active_sessions):
-                            def _cb(activity):
-                                from flowos.service.services.conflicts.service import (
-                                    ConflictDetectionService,
-                                )
-
-                                conflict_svc = ConflictDetectionService(db)
-                                conflict_svc.on_file_activity(activity, active_sessions)
-                                db.commit()
-
-                            return _cb
-
-                        activity_svc.register_conflict_callback(
-                            _make_conflict_cb(project_id, active)
-                        )
-
-                    _activity = activity_svc.record_file_event(
-                        file_path=event.path,
-                        event_type=event.event_type,
-                        project_id=project_id,
-                        repo_path=repo_path,
-                        active_sessions=active,
-                        source="WATCHER",
-                        metadata={"correlation_id": correlation_id},
-                    )
-                    db.commit()
-
-                except Exception:
-                    db.rollback()
-                    logger.exception(
-                        "Watcher callback greška [%s]: %s %s",
-                        correlation_id,
-                        event.event_type,
-                        event.path,
-                    )
-                finally:
-                    db.close()
-
-            return _callback
+            return _create_watcher_callback(project_id, repo_path)
 
         # Učitaj aktivne projekte i pokreni watcher-e
         engine = create_sqlite_engine()

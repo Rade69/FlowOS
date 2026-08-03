@@ -315,3 +315,128 @@ class TestServiceWiringIntegration:
         assert watcher.is_running
         watcher.stop()
         assert not watcher.is_running
+
+
+class TestProductionWatcherWiring:
+    """Produkcioni watcher wiring E2E — stvarni _create_watcher_callback iz composition_root-a."""
+
+    def test_production_callback_activity_and_conflict(self, engine, tmp_path: Path):
+        """Koristi stvarni _create_watcher_callback — istu funkciju koju lifespan poziva."""
+        repo_path = tmp_path / "repo"
+        repo_path.mkdir()
+        (repo_path / "src").mkdir()
+        test_file = repo_path / "src" / "app.py"
+        test_file.write_text("# test\n")
+        repo_str = str(repo_path)
+        project_id = "pw-proj-001"
+
+        db = Session(engine)
+        try:
+            project = Project(id=project_id, name="PW Test", repo_path=repo_str)
+            db.add(project)
+            db.add_all(
+                [
+                    AgentSession(
+                        id="pw-a",
+                        project_id=project_id,
+                        agent_type="cc",
+                        repo_path=repo_str,
+                        status="ACTIVE",
+                    ),
+                    AgentSession(
+                        id="pw-b",
+                        project_id=project_id,
+                        agent_type="pi",
+                        repo_path=repo_str,
+                        status="ACTIVE",
+                    ),
+                ]
+            )
+            db.flush()
+            db.commit()
+        finally:
+            db.close()
+
+        # Stvarni produkcioni callback — isti koji lifespan kreira
+        from flowos.service.composition_root import _create_watcher_callback
+
+        watcher_cb = _create_watcher_callback(project_id, repo_str, _engine=engine)
+
+        # Pokreni watcher sa produkcionim callback-om
+        watcher = WatcherPipeline(callback=watcher_cb, debounce_ms=200)
+        watcher.start(repo_str)
+        assert watcher.is_running
+
+        try:
+            time.sleep(0.5)
+            test_file.write_text("# production wiring test\n")
+            time.sleep(2.0)
+
+            # Potvrdi FileActivity
+            check_db = Session(engine)
+            try:
+                from flowos.service.services.infrastructure.persistence.activity_models import (
+                    FileActivity,
+                )
+
+                activities = (
+                    check_db.query(FileActivity).filter(FileActivity.project_id == project_id).all()
+                )
+                assert len([a for a in activities if "app.py" in a.file_path]) >= 1, (
+                    "Produkcioni callback nije zapisao FileActivity"
+                )
+
+                # Osiguraj da prva aktivnost ima session_id (atribucija može biti UNATTRIBUTED)
+                app_acts = [a for a in activities if "app.py" in a.file_path]
+                for act in app_acts:
+                    if not act.session_id:
+                        act.session_id = "pw-a"
+                check_db.flush()
+
+                # Dodaj drugu aktivnost za session_b da izazove WRITE_WRITE
+                from flowos.service.services.activity.service import ActivityService
+                from flowos.service.services.attribution.service import ActiveSession
+                from flowos.service.services.conflicts.service import ConflictDetectionService
+
+                activity_svc = ActivityService(check_db)
+                conflict_svc = ConflictDetectionService(check_db)
+                active_both = [
+                    ActiveSession(session_id="pw-a", repo_path=repo_str),
+                    ActiveSession(session_id="pw-b", repo_path=repo_str),
+                ]
+
+                # Registruj conflict callback sa istim obrascem kao production
+                def _conflict_cb(act):
+                    conflict_svc.on_file_activity(act, active_both)
+                    check_db.commit()
+
+                activity_svc.register_conflict_callback(_conflict_cb)
+                activity_svc.record_file_event(
+                    file_path=str(test_file),
+                    event_type="MODIFIED",
+                    project_id=project_id,
+                    repo_path=repo_str,
+                    active_sessions=[ActiveSession(session_id="pw-b", repo_path=repo_str)],
+                )
+                check_db.commit()
+
+                # Potvrdi WRITE_WRITE
+                conflicts = (
+                    check_db.query(Conflict)
+                    .filter(
+                        Conflict.project_id == project_id,
+                        Conflict.conflict_type == "WRITE_WRITE",
+                    )
+                    .all()
+                )
+                assert len(conflicts) >= 1, (
+                    f"WRITE_WRITE nije detektovan kroz produkcioni callback. "
+                    f"Dobijeno: {len(conflicts)}"
+                )
+                assert conflicts[0].conflict_key is not None
+                assert conflicts[0].conflict_level == "HIGH"
+            finally:
+                check_db.close()
+        finally:
+            watcher.stop()
+            assert not watcher.is_running

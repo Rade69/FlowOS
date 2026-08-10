@@ -32,9 +32,7 @@ def run_pyinstaller(name: str, entry: str, hidden_imports: list[str] | None = No
         "--workpath",
         str(ROOT / "build" / name),
         "--specpath",
-        str(ROOT / "build"),
-        "--add-data",
-        f"src{os.pathsep}src",
+        str(ROOT),
     ]
     if hidden_imports:
         for hi in hidden_imports:

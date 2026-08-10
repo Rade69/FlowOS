@@ -20,6 +20,15 @@ def _run_migrations() -> None:
     """Dodaje kolone koje nedostaju koristeći SQLAlchemy engine."""
     import contextlib
 
+    import flowos.service.services.infrastructure.persistence.activity_models  # noqa: F401
+    import flowos.service.services.infrastructure.persistence.conflict_models  # noqa: F401
+
+    # Importuj sve modele da bi create_all video sve tabele
+    import flowos.service.services.infrastructure.persistence.models  # noqa: F401
+    import flowos.service.services.infrastructure.persistence.plan_models  # noqa: F401
+    import flowos.service.services.infrastructure.persistence.report_models  # noqa: F401
+    import flowos.service.services.infrastructure.persistence.resume_models  # noqa: F401
+    import flowos.service.services.infrastructure.persistence.worktree_models  # noqa: F401
     from flowos.service.services.infrastructure.persistence.base import Base
     from flowos.service.services.infrastructure.persistence.engine import (
         create_sqlite_engine,

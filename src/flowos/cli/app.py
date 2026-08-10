@@ -9,7 +9,9 @@ kada backend nije dostupan.
 
 import json
 import os
+import subprocess
 import sys
+import time
 from pathlib import Path
 
 import typer
@@ -19,7 +21,6 @@ from flowos.cli.services.client import CliApiClient
 app = typer.Typer(
     name="flowos",
     help="FlowOS CLI — lokalni lični operativni sistem za koordinaciju agentskih sesija",
-    no_args_is_help=True,
 )
 
 # Pod-komande
@@ -35,20 +36,7 @@ app.add_typer(session_app, name="session")
 
 
 def _get_client() -> CliApiClient:
-    """Kreira API klijenta sa automatskim otkrivanjem porta."""
-    port = 9100
-    runtime_file = (
-        Path(os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local")))
-        / "FlowOS"
-        / "runtime"
-        / "service.json"
-    )
-    if runtime_file.exists():
-        try:
-            data = json.loads(runtime_file.read_text())
-            port = data.get("port", 9100)
-        except (json.JSONDecodeError, KeyError):
-            pass
+    port = _get_port()
     return CliApiClient(base_url=f"http://127.0.0.1:{port}")
 
 
@@ -57,9 +45,98 @@ def _get_client() -> CliApiClient:
 # ═══════════════════════════════════════════════════════════════════
 
 
-@app.callback()
-def callback():
-    """FlowOS CLI root."""
+@app.callback(invoke_without_command=True)
+def callback(ctx: typer.Context):
+    """FlowOS — lokalni licni operativni sistem.
+
+    Bez argumenata: pokrece servis i GUI automatski.
+    """
+    if ctx.invoked_subcommand is not None:
+        return
+
+    # Launcher mod
+    import io as _io
+
+    try:
+        sys.stdout = _io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    except Exception:
+        pass
+
+    typer.echo("◆ FlowOS v0.1.0")
+    port = _get_port()
+
+    # Proveri servis
+    try:
+        client = CliApiClient(base_url=f"http://127.0.0.1:{port}")
+        resp = client.get("/health")
+        typer.echo(f"  Servis: aktivan (port {port})")
+    except Exception:
+        typer.echo("  Pokrecem servis...")
+        service_exe = _find_exe("flowos-service.exe")
+        if not service_exe:
+            typer.echo("  [ERROR] flowos-service.exe nije pronadjen.", err=True)
+            raise typer.Exit(code=1)
+        subprocess.Popen([str(service_exe)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        for _ in range(20):
+            try:
+                client = CliApiClient(base_url=f"http://127.0.0.1:{port}")
+                client.get("/health")
+                typer.echo(f"  Servis: pokrenut (port {port})")
+                break
+            except Exception:
+                time.sleep(0.5)
+        else:
+            typer.echo("  [ERROR] Servis nije mogao biti pokrenut.", err=True)
+            raise typer.Exit(code=1)
+
+    # Pokreni GUI
+    gui_exe = _find_exe("flowos-gui.exe")
+    if gui_exe:
+        # Proveri da li je GUI već pokrenut
+        import subprocess as _sp
+        check = _sp.run(
+            ["tasklist", "/fi", "IMAGENAME eq flowos-gui.exe", "/fo", "csv", "/nh"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if "flowos-gui.exe" in check.stdout:
+            typer.echo("  GUI: već pokrenut.")
+        else:
+            typer.echo("  GUI: pokrecem...")
+            _sp.Popen([str(gui_exe), "--live"], stdout=_sp.DEVNULL, stderr=_sp.DEVNULL)
+    else:
+        typer.echo("  [WARN] flowos-gui.exe nije pronadjen.")
+
+
+def _get_port() -> int:
+    runtime_file = (
+        Path(os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local")))
+        / "FlowOS" / "runtime" / "service.json"
+    )
+    if runtime_file.exists():
+        try:
+            data = json.loads(runtime_file.read_text())
+            return data.get("port", 9100)
+        except (json.JSONDecodeError, KeyError):
+            pass
+    return 9100
+
+
+def _find_exe(name: str) -> Path | None:
+    """Pronalazi exe pored trenutnog flowos.exe ili u dist/ folderu."""
+    # U PyInstaller exe-u: traži pored sebe
+    if getattr(sys, 'frozen', False):
+        exe_dir = Path(sys.executable).parent
+        exe = exe_dir / name
+        if exe.exists():
+            return exe
+
+    # U development modu: traži u dist/ folderu
+    import os as _os
+    dist_dir = Path(_os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))))) / "dist"
+    exe = dist_dir / name
+    if exe.exists():
+        return exe
+    return None
 
 
 @app.command()

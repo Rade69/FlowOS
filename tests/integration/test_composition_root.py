@@ -359,8 +359,11 @@ class TestProductionWatcherWiring:
 
         # Stvarni produkcioni callback — isti koji lifespan kreira
         from flowos.service.composition_root import _create_watcher_callback
+        from flowos.service.services.infrastructure.persistence.engine import create_session_factory
 
-        watcher_cb = _create_watcher_callback(project_id, repo_str, _engine=engine)
+        watcher_cb = _create_watcher_callback(
+            project_id, repo_str, session_factory=create_session_factory(engine)
+        )
 
         # Pokreni watcher sa produkcionim callback-om
         watcher = WatcherPipeline(callback=watcher_cb, debounce_ms=200)

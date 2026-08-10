@@ -116,6 +116,9 @@ class PlanProgressService:
         )
         self._session.add(event)
 
+        # Emituj WebSocket događaj i regeneriši resume
+        self._emit_and_refresh(item)
+
     # ── Blokirajuće zavisnosti ──────────────────────────
 
     def _check_blocking_dependencies(self, item: PlanItem) -> None:
@@ -273,6 +276,7 @@ class PlanProgressService:
                     "title": phase.title,
                     "sequence": phase.sequence,
                     "status": phase.status,
+                    "items": [_item_to_dict(i) for i in items],
                 }
             )
 
@@ -436,6 +440,30 @@ class PlanProgressService:
             "status": "ACTIVE",
             "activated_at": plan.activated_at.isoformat(),
         }
+
+    def _emit_and_refresh(self, item: PlanItem) -> None:
+        """Emituje WebSocket događaj i regeneriše resume nakon promene statusa."""
+        try:
+            from flowos.service.controllers.websocket.events import event_bus
+
+            event_bus.emit_sync("plan_progress.updated", {
+                "plan_item_id": item.id,
+                "item_key": item.item_key,
+                "status": item.status,
+            })
+        except Exception:
+            pass
+
+        try:
+            from flowos.service.services.project_resume import ProjectResumeService
+
+            phase = self._session.get(PlanPhase, item.plan_phase_id)
+            if phase:
+                plan = self._session.get(Plan, phase.plan_id)
+                if plan:
+                    ProjectResumeService(self._session).regenerate(plan.project_id)
+        except Exception:
+            pass
 
 
 # ═══════════════════════════════════════════════════════════════════

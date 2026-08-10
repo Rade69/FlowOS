@@ -29,7 +29,67 @@ class SessionService:
         base_commit_sha: str | None = None,
         pid: int | None = None,
     ) -> AgentSession:
-        """Registruje novu sesiju."""
+        """Registruje novu sesiju.
+
+        Validacija se izvršava pre flush-a:
+        - Projekat mora postojati
+        - Task mora pripadati projektu
+        - Plan item mora pripadati aktivnom planu projekta
+        - Worktree ne sme biti zauzet drugom aktivnom sesijom
+        """
+        from flowos.service.services.infrastructure.persistence.models import Project, Task
+        from flowos.service.services.infrastructure.persistence.plan_models import (
+            Plan,
+            PlanItem,
+        )
+
+        # Validacija: projekat postoji
+        project = self._session.get(Project, project_id)
+        if not project:
+            raise ValueError(f"Projekat {project_id} ne postoji")
+
+        # Validacija: task pripada projektu
+        if task_id:
+            task = self._session.get(Task, task_id)
+            if not task:
+                raise ValueError(f"Task {task_id} ne postoji")
+            if task.project_id != project_id:
+                raise ValueError(
+                    f"Task {task_id} ne pripada projektu {project_id}"
+                )
+
+        # Validacija: plan item pripada aktivnom planu projekta
+        if plan_item_id:
+            plan_item = self._session.get(PlanItem, plan_item_id)
+            if not plan_item:
+                raise ValueError(f"PlanItem {plan_item_id} ne postoji")
+            plan = self._session.get(Plan, plan_item.plan_id)
+            if not plan or plan.project_id != project_id:
+                raise ValueError(
+                    f"PlanItem {plan_item_id} ne pripada projektu {project_id}"
+                )
+
+        # Validacija: worktree nije zauzet drugom aktivnom sesijom
+        if worktree_path:
+            from flowos.service.services.infrastructure.persistence.worktree_models import Worktree
+
+            wt = (
+                self._session.query(Worktree)
+                .filter(Worktree.worktree_path == worktree_path)
+                .first()
+            )
+            if wt and wt.project_id != project_id:
+                raise ValueError(
+                    f"Worktree {worktree_path} ne pripada projektu {project_id}"
+                )
+            if wt and wt.session_id:
+                existing = self._session.get(AgentSession, wt.session_id)
+                if existing and existing.status in ("ACTIVE", "IDLE"):
+                    raise ValueError(
+                        f"Worktree je već zauzet sesijom {wt.session_id}. "
+                        f"Jedan worktree = najviše jedna writer sesija."
+                    )
+
         session_obj = AgentSession(
             project_id=project_id,
             task_id=task_id,
@@ -51,25 +111,26 @@ class SessionService:
 
         # Ako je sesija povezana sa worktree-jem, ažuriraj Worktree model
         if worktree_path:
-            from flowos.service.services.infrastructure.persistence.worktree_models import Worktree
-
             wt = (
                 self._session.query(Worktree)
                 .filter(Worktree.worktree_path == worktree_path)
                 .first()
             )
             if wt:
-                # Provera ekskluzivnosti: jedan worktree = jedna writer sesija
-                if wt.session_id and wt.session_id != session_obj.id:
-                    existing = self._session.get(AgentSession, wt.session_id)
-                    if existing and existing.status in ("ACTIVE", "IDLE"):
-                        raise ValueError(
-                            f"Worktree je već zauzet sesijom {wt.session_id}. "
-                            f"Jedan worktree = najviše jedna writer sesija."
-                        )
                 wt.session_id = session_obj.id
                 wt.last_activity_at = datetime.now(tz=UTC)
                 self._session.flush()
+
+        # Emituj WebSocket događaj
+        from flowos.service.controllers.websocket.events import event_bus
+
+        event_bus.emit_sync("session.created", {
+            "session_id": session_obj.id,
+            "project_id": project_id,
+            "agent_type": agent_type,
+            "execution_mode": execution_mode,
+            "worktree_path": worktree_path,
+        })
 
         return session_obj
 
@@ -101,14 +162,21 @@ class SessionService:
 
         Nezavisno od filesystem aktivnosti. Poziva se periodično
         iz adaptera, wrapper-a ili process monitora.
+
+        Heartbeat se prihvata samo za ne-terminalna stanja
+        (ACTIVE, IDLE). Za terminalna stanja (COMPLETED, ABANDONED,
+        NEEDS_REVIEW i sve završne statuse) baca ValueError.
         """
         session_obj = self._session.get(AgentSession, session_id)
         if not session_obj:
             return None
-        now = datetime.now(tz=UTC)
-        session_obj.last_heartbeat_at = now
+
         if session_obj.status not in ("ACTIVE", "IDLE"):
-            session_obj.status = SessionStatus.ACTIVE.value
+            raise ValueError(
+                f"Sesija je u terminalnom stanju {session_obj.status}"
+            )
+
+        session_obj.last_heartbeat_at = datetime.now(tz=UTC)
         self._session.flush()
         return session_obj
 

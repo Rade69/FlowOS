@@ -67,9 +67,10 @@ def create_app(runtime: RuntimeManager, engine=None) -> FastAPI:
     # WebSocket
     app.add_api_websocket_route("/ws", ws_endpoint)
 
-    # Session factory
+    # Jedan engine/session factory za ceo servis
     if engine is None:
         engine = create_sqlite_engine()
+    app.state.engine = engine
     app.state.session_factory = create_session_factory(engine)
 
     # Background task fabrika za session completion
@@ -83,9 +84,7 @@ def create_app(runtime: RuntimeManager, engine=None) -> FastAPI:
             exit_code: int | None = None,
             result_commit_sha: str | None = None,
         ) -> None:
-            bg_engine = create_sqlite_engine()
-            bg_factory = create_session_factory(bg_engine)
-            bg_db = bg_factory()
+            bg_db = app.state.session_factory()
             try:
                 completion = SessionCompletionService(bg_db)
                 completion.complete_session(
@@ -141,7 +140,7 @@ def _http_to_error_code(status: int) -> str:
     return mapping.get(status, "INTERNAL_ERROR")
 
 
-def _create_watcher_callback(project_id: str, repo_path: str, *, _engine=None):
+def _create_watcher_callback(project_id: str, repo_path: str, *, session_factory=None):
     """Fabrika watcher callback-a — produkcijski wiring.
 
     Svaki watcher događaj se trajno beleži u FileActivity tabelu
@@ -155,17 +154,10 @@ def _create_watcher_callback(project_id: str, repo_path: str, *, _engine=None):
 
     from flowos.service.services.activity.service import ActivityService
     from flowos.service.services.attribution.service import ActiveSession
-    from flowos.service.services.infrastructure.persistence.engine import (
-        create_session_factory,
-        create_sqlite_engine,
-    )
     from flowos.service.services.infrastructure.persistence.models import AgentSession
     from flowos.shared.enums.session import SessionStatus
 
-    if _engine is None:
-        _engine = create_sqlite_engine()
-    db_engine = _engine
-    db_factory = create_session_factory(db_engine)
+    db_factory = session_factory
 
     def _callback(event):
         correlation_id = str(_uuid.uuid4())
@@ -249,10 +241,6 @@ def _make_lifespan(runtime: RuntimeManager):
         import logging
 
         from flowos.service.services.infrastructure.logging import setup_logging
-        from flowos.service.services.infrastructure.persistence.engine import (
-            create_session_factory,
-            create_sqlite_engine,
-        )
         from flowos.service.services.infrastructure.persistence.models import (
             Project,
         )
@@ -266,12 +254,12 @@ def _make_lifespan(runtime: RuntimeManager):
 
         # Watcher callback factory — izdvojena radi testabilnosti
         def _make_watcher_callback(project_id: str, repo_path: str):
-            return _create_watcher_callback(project_id, repo_path)
+            return _create_watcher_callback(
+                project_id, repo_path, session_factory=app.state.session_factory
+            )
 
         # Učitaj aktivne projekte i pokreni watcher-e
-        engine = create_sqlite_engine()
-        init_factory = create_session_factory(engine)
-        init_db = init_factory()
+        init_db = app.state.session_factory()
         try:
             projects = init_db.query(Project).all()
             for proj in projects:
@@ -308,6 +296,24 @@ def _make_lifespan(runtime: RuntimeManager):
         conflict_task = asyncio.create_task(_conflict_detector())
         app.state.conflict_task = conflict_task
 
+        # Periodični reconciliation — proverava Git stanje svakih 120s
+        async def _reconciliation_loop():
+            await asyncio.sleep(15)
+            while True:
+                try:
+                    _run_reconciliation(app)
+                except Exception:
+                    logger.exception("Reconciliation failed")
+                await asyncio.sleep(120)
+
+        reconciliation_task = asyncio.create_task(_reconciliation_loop())
+        app.state.reconciliation_task = reconciliation_task
+
+        # Binduj EventBus za glavni event loop (threadsafe WebSocket emit)
+        from flowos.service.controllers.websocket.events import event_bus
+
+        event_bus.bind_loop(asyncio.get_running_loop())
+
         logger.info("FlowOS servis se pokrece (pid=%d, port=%d)", runtime.pid, runtime.port)
 
         yield  # Servis radi...
@@ -315,8 +321,10 @@ def _make_lifespan(runtime: RuntimeManager):
         # Shutdown
         logger.info("FlowOS servis se gasi")
         conflict_task.cancel()
+        reconciliation_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await conflict_task
+            await reconciliation_task
         # Zaustavi sve watcher-e
         for proj_id, w in app.state.watchers.items():
             try:
@@ -340,16 +348,10 @@ def _run_conflict_detection(app: FastAPI) -> None:
     """
     from flowos.service.services.conflicts.service import ConflictDetectionService
     from flowos.service.services.infrastructure.git_poller import GitStateReader
-    from flowos.service.services.infrastructure.persistence.engine import (
-        create_session_factory,
-        create_sqlite_engine,
-    )
     from flowos.service.services.infrastructure.persistence.models import AgentSession
     from flowos.shared.enums.session import SessionStatus
 
-    engine = create_sqlite_engine()
-    factory = create_session_factory(engine)
-    db = factory()
+    db = app.state.session_factory()
     try:
         # Pronađi sve aktivne sesije
         active = (
@@ -394,5 +396,26 @@ def _run_conflict_detection(app: FastAPI) -> None:
     except Exception:
         db.rollback()
         raise
+    finally:
+        db.close()
+
+
+def _run_reconciliation(app):
+    """Periodično proverava Git stanje svih registrovanih projekata."""
+    from flowos.service.services.infrastructure.persistence.models import Project
+    from flowos.service.services.reconciliation.service import ReconciliationService
+
+    db = app.state.session_factory()
+    try:
+        projects = db.query(Project).all()
+        for proj in projects:
+            try:
+                svc = ReconciliationService(db)
+                svc.reconcile(proj.id, proj.repo_path)
+            except FileNotFoundError:
+                pass
+        db.commit()
+    except Exception:
+        db.rollback()
     finally:
         db.close()

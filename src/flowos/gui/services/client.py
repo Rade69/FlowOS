@@ -16,16 +16,19 @@ class GuiApiClient(QObject):
     Sve metode su neblokirajuće — rezultat se emituje kroz Signal.
     """
 
-    health_received = Signal(dict)
-    projects_received = Signal(list)
-    project_created = Signal(dict)
+    health_received = Signal(object)
+    projects_received = Signal(object)
+    project_created = Signal(object)
     project_deleted = Signal(str)
-    plan_progress_received = Signal(dict)
-    resume_received = Signal(dict)
-    sessions_received = Signal(list)
-    worktrees_received = Signal(list)
-    integration_prepared = Signal(dict)
-    worktree_cleaned = Signal(dict)
+    plan_progress_received = Signal(object)
+    resume_received = Signal(object)
+    sessions_received = Signal(object)
+    worktrees_received = Signal(object)
+    integration_prepared = Signal(object)
+    worktree_cleaned = Signal(object)
+    plan_item_received = Signal(object)
+    timeline_received = Signal(object)
+    agents_scanned = Signal(object)
     error_occurred = Signal(int, str)
 
     def __init__(self, base_url: str = "http://127.0.0.1:9100", parent=None):
@@ -71,6 +74,21 @@ class GuiApiClient(QObject):
 
     def get_active_sessions(self, project_id: str):
         self._get(f"/sessions/active?project_id={project_id}", self.sessions_received)  # type: ignore[arg-type]
+
+    # ── Plan Items ─────────────────────────────────────
+
+    def get_plan_item(self, item_id: str):
+        self._get(f"/plan-items/{item_id}", self.plan_item_received)  # type: ignore[arg-type]
+
+    # ── Timeline ────────────────────────────────────────
+
+    def get_timeline(self, project_id: str, limit: int = 30):
+        self._get(f"/projects/{project_id}/timeline?limit={limit}", self.timeline_received)  # type: ignore[arg-type]
+
+    # ── Agents ──────────────────────────────────────────
+
+    def scan_agents(self):
+        self._get("/agents/scan", self.agents_scanned)  # type: ignore[arg-type]
 
     # ── HTTP helpers ───────────────────────────────────
 

@@ -156,6 +156,8 @@ class ConflictDetectionService:
 
         if conflicts:
             self._session.flush()
+            self._emit_conflicts(conflicts)
+            self._rebuild_resume(project_id)
         return conflicts
 
     # ── Pravilo 2: LATE_OVERLAP ─────────────────────────────────
@@ -235,6 +237,8 @@ class ConflictDetectionService:
 
         if conflicts:
             self._session.flush()
+            self._emit_conflicts(conflicts)
+            self._rebuild_resume(project_id)
         return conflicts
 
     # ── Pravilo 3: BRANCH_CHANGE ─────────────────────────────────
@@ -283,6 +287,8 @@ class ConflictDetectionService:
         )
         self._session.add(conflict)
         self._session.flush()
+        self._emit_conflicts([conflict])
+        self._rebuild_resume(project_id)
         return conflict
 
     # ── Pravilo 4: STALE_SESSION ─────────────────────────────────
@@ -302,12 +308,21 @@ class ConflictDetectionService:
         if session.status not in ("ACTIVE", "IDLE"):
             return None
 
+        # Normalizuj heartbeat timestamp (može biti naive iz SQLite)
+        heartbeat = session.last_heartbeat_at
+        if heartbeat and heartbeat.tzinfo is None:
+            heartbeat = heartbeat.replace(tzinfo=UTC)
+
         # Heartbeat je svež — sesija je živa
-        if session.last_heartbeat_at and (now - session.last_heartbeat_at) <= self.stale_window:
+        if heartbeat and (now - heartbeat) <= self.stale_window:
             return None
 
-        # Poslednja fs aktivnost je sveža — sesija je aktivna
+        # Normalizuj last_activity timestamp
         last_activity = session.last_activity_at
+        if last_activity and last_activity.tzinfo is None:
+            last_activity = last_activity.replace(tzinfo=UTC)
+
+        # Poslednja fs aktivnost je sveža — sesija je aktivna
         if last_activity and (now - last_activity) <= self.stale_window:
             return None
 
@@ -378,6 +393,8 @@ class ConflictDetectionService:
         )
         self._session.add(conflict)
         self._session.flush()
+        self._emit_conflicts([conflict])
+        self._rebuild_resume(project_id)
         return conflict
 
     # ── Pravilo 5: NO_COMMIT ─────────────────────────────────────
@@ -430,6 +447,8 @@ class ConflictDetectionService:
         )
         self._session.add(conflict)
         self._session.flush()
+        self._emit_conflicts([conflict])
+        self._rebuild_resume(project_id)
         return conflict
 
     # ── Pomoćne metode ───────────────────────────────────────────
@@ -506,6 +525,28 @@ class ConflictDetectionService:
         conflict.status = "RESOLVED"
         conflict.resolved_at = datetime.now(tz=UTC)
         self._session.flush()
+
+        # Emituj WebSocket događaj
+        try:
+            from flowos.service.controllers.websocket.events import event_bus
+
+            event_bus.emit_sync("conflict.resolved", {
+                "conflict_id": conflict.id,
+                "project_id": conflict.project_id,
+                "conflict_type": conflict.conflict_type,
+                "file_path": conflict.file_path,
+            })
+        except Exception:
+            pass
+
+        # Regeneriši resume
+        try:
+            from flowos.service.services.project_resume import ProjectResumeService
+
+            ProjectResumeService(self._session).regenerate(conflict.project_id)
+        except Exception:
+            pass
+
         return conflict
 
     def list_open(self, project_id: str) -> list[Conflict]:
@@ -515,3 +556,28 @@ class ConflictDetectionService:
             .order_by(Conflict.detected_at.desc())
             .all()
         )
+
+    @staticmethod
+    def _emit_conflicts(conflicts: list[Conflict]) -> None:
+        try:
+            from flowos.service.controllers.websocket.events import event_bus
+
+            for c in conflicts:
+                event_bus.emit_sync("conflict.created", {
+                    "conflict_id": c.id,
+                    "project_id": c.project_id,
+                    "conflict_type": c.conflict_type,
+                    "conflict_level": c.conflict_level,
+                    "file_path": c.file_path,
+                })
+        except Exception:
+            pass
+
+    def _rebuild_resume(self, project_id: str) -> None:
+        """Regeneriše Project Resume nakon promene stanja konflikta."""
+        try:
+            from flowos.service.services.project_resume import ProjectResumeService
+
+            ProjectResumeService(self._session).regenerate(project_id)
+        except Exception:
+            pass

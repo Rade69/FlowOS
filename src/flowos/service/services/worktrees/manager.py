@@ -58,6 +58,28 @@ class WorktreeManager:
         self._db.add(wt)
         self._db.flush()
 
+        # Emituj WebSocket događaj
+        try:
+            from flowos.service.controllers.websocket.events import event_bus
+
+            event_bus.emit_sync("worktree.created", {
+                "worktree_id": wt.id,
+                "project_id": project_id,
+                "task_id": task_id,
+                "branch_name": info.branch,
+                "worktree_path": info.path,
+            })
+        except Exception:
+            pass
+
+        # Regeneriši resume
+        try:
+            from flowos.service.services.project_resume import ProjectResumeService
+
+            ProjectResumeService(self._db).regenerate(project_id)
+        except Exception:
+            pass
+
         return {
             "id": wt.id,
             "path": info.path,

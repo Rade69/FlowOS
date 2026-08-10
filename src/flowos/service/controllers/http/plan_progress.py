@@ -67,6 +67,19 @@ def get_plan_item(item_id: str, session: Session = Depends(get_session)):
     return _item_to_dict(item)
 
 
+@router.get("/plan-items/{item_id}/evidence")
+def get_plan_item_evidence(item_id: str, session: Session = Depends(get_session)):
+    """Vraća EvidenceBundle — sve dokaze za plan stavku."""
+    from flowos.service.services.evidence import EvidenceService
+
+    bundle = EvidenceService(session).build(item_id)
+    if not bundle:
+        raise HTTPException(status_code=404, detail="Planirana stavka nije pronađena")
+    from dataclasses import asdict
+
+    return asdict(bundle)
+
+
 @router.patch("/plan-items/{item_id}")
 def update_plan_item(item_id: str, data: dict, session: Session = Depends(get_session)):
     item = PlanProgressService(session).update_plan_item(item_id, data)

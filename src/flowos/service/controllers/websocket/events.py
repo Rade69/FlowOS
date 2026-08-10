@@ -9,6 +9,7 @@ Podržava:
 - project.resume.updated
 """
 
+import asyncio
 import json
 import logging
 from typing import Any
@@ -19,10 +20,19 @@ logger = logging.getLogger("flowos.websocket")
 
 
 class EventBus:
-    """Simple pub/sub za WebSocket događaje."""
+    """Pub/sub za WebSocket događaje sa threadsafe emit podrškom."""
 
     def __init__(self):
         self._connections: set[WebSocket] = set()
+        self._loop: asyncio.AbstractEventLoop | None = None
+
+    def bind_loop(self, loop: asyncio.AbstractEventLoop) -> None:
+        """Veže event bus za glavni asyncio event loop.
+
+        Mora se pozvati tokom lifespan startup-a, dok je loop aktivan.
+        """
+        self._loop = loop
+        logger.info("EventBus vezan za glavni event loop")
 
     async def connect(self, ws: WebSocket):
         await ws.accept()
@@ -49,6 +59,25 @@ class EventBus:
                 dead.add(ws)
         for ws in dead:
             self.disconnect(ws)
+
+    def emit_sync(self, event_type: str, payload: dict[str, Any]):
+        """Threadsafe emit — može se pozvati iz sync worker thread-ova.
+
+        Koristi run_coroutine_threadsafe za slanje u glavni event loop.
+        Ako loop nije bindovan (npr. pre startup-a), događaj se gubi
+        uz upozorenje.
+        """
+        if self._loop is None:
+            logger.warning("EventBus nema bindovan loop — događaj %s odbačen", event_type)
+            return
+
+        if not self._connections:
+            return
+
+        asyncio.run_coroutine_threadsafe(
+            self.emit(event_type, payload),
+            self._loop,
+        )
 
 
 # Globalni event bus — jedan po procesu

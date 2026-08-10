@@ -94,6 +94,9 @@ class OverviewController(QObject):
         )
 
     def _on_sessions(self, data: list):
+        if not isinstance(data, list):
+            self.sessions_loaded.emit([])
+            return
         self.sessions_loaded.emit(
             [
                 {
@@ -102,6 +105,7 @@ class OverviewController(QObject):
                     "plan_item_id": s.get("plan_item_id"),
                     "status": status_label(s.get("status", "")),
                     "started_at": s.get("started_at", ""),
+                    "last_activity_at": s.get("last_activity_at", ""),
                     "worktree_path": s.get("worktree_path"),
                     "branch_name": s.get("branch_name", ""),
                 }

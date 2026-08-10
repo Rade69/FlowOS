@@ -1,24 +1,37 @@
 """PlanProgressView — prikaz napretka po planu (FLOW-105A)."""
 
+from PySide6.QtCore import Signal
 from PySide6.QtGui import QColor, QFont
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QTreeWidget, QTreeWidgetItem, QVBoxLayout
+from PySide6.QtWidgets import (
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QVBoxLayout,
+)
 
 from flowos.gui.theme.labels import status_label
 from flowos.gui.views.overview_skeleton import (
     BG_CARD,
     BG_HOVER,
     BG_SECONDARY,
+    BLUE,
     BORDER,
     FONT_LG,
     FONT_MD,
     FONT_SM,
+    FONT_XS,
     GRAY,
     GREEN,
     PURPLE,
     RADIUS_MD,
+    RED,
     SPACING_LG,
     SPACING_MD,
     SPACING_SM,
+    SPACING_XL,
     TEAL,
     TEXT_MUTED,
     TEXT_PRIMARY,
@@ -33,7 +46,7 @@ STATUS_COUNT_COLORS = {
     "IMPLEMENTED": PURPLE,
     "IN_PROGRESS": YELLOW,
     "BLOCKED": "#F38BA8",
-    "NOT_STARTED": GRAY,
+    "NOT_STARTED": "#A6ADC8",  # TEXT_SECONDARY — svetlija siva
 }
 STATUS_COUNT_LABELS = {
     "ACCEPTED": "prihvaceno",
@@ -46,6 +59,8 @@ STATUS_COUNT_LABELS = {
 
 
 class PlanProgressView(QFrame):
+    import_requested = Signal()
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self._tree = None
@@ -59,9 +74,20 @@ class PlanProgressView(QFrame):
         lo = QVBoxLayout(self)
         lo.setContentsMargins(0, 0, 0, 0)
         lo.setSpacing(SPACING_MD)
-        h = QHBoxLayout()
-        lo.addWidget(_lbl("NAPREDAK PO PLANU", FONT_LG, True))
-        lo.addLayout(h)
+
+        # Header row: naslov + dugme za uvoz
+        hh = QHBoxLayout()
+        hh.addWidget(_lbl("NAPREDAK PO PLANU", FONT_LG, True))
+        hh.addStretch()
+        import_btn = QPushButton("Uvezi plan")
+        import_btn.setStyleSheet(
+            f"QPushButton {{ background: {BLUE}; color: #000; border: none; border-radius: {RADIUS_MD}px; "
+            f"padding: {SPACING_SM}px {SPACING_LG}px; font-size: {FONT_SM}px; font-weight: bold; }}"
+            f"QPushButton:hover {{ background: #7AA2F7; }}"
+        )
+        import_btn.clicked.connect(self.import_requested.emit)
+        hh.addWidget(import_btn)
+        lo.addLayout(hh)
         self._plan_label = _lbl("", FONT_SM, False, TEXT_MUTED)
         lo.addWidget(self._plan_label)
         self._status_row = QHBoxLayout()
@@ -137,3 +163,161 @@ class PlanProgressView(QFrame):
             it = self._status_row.takeAt(0)
             if it.widget():
                 it.widget().deleteLater()
+
+
+# ═══════════════════════════════════════════════════════════════════
+# CurrentPhaseView — prikaz samo aktivne faze na Pregledu
+# ═══════════════════════════════════════════════════════════════════
+
+
+class CurrentPhaseView(QFrame):
+    """Prikazuje samo relevantne stavke aktivne faze — ne ceo plan."""
+
+    item_selected = Signal(str)
+    open_full_plan_requested = Signal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setStyleSheet(f"background: {BG_CARD}; border: 1px solid {BORDER}; border-radius: {RADIUS_MD}px;")
+        self._content = QVBoxLayout(self)
+        self._content.setContentsMargins(SPACING_XL, SPACING_LG, SPACING_XL, SPACING_LG)
+        self._content.setSpacing(SPACING_SM)
+        self.render([])
+
+    def render(self, phases: list):  # type: ignore[override]
+        self._clear()
+        if not phases:
+            self._content.addWidget(_lbl("Nema podataka o planu.", FONT_SM, False, TEXT_MUTED))
+            self._content.addStretch()
+            return
+
+        # Pronađi aktivnu fazu (prvu sa stavkama koje nisu sve NOT_STARTED)
+        active_phase = None
+        for ph in phases:
+            items = ph.get("items", [])
+            statuses = {it.get("status", "NOT_STARTED") for it in items}
+            if statuses != {"NOT_STARTED"}:
+                active_phase = ph
+                break
+        if not active_phase:
+            active_phase = phases[0] if phases else None
+        if not active_phase:
+            return
+
+        items = active_phase.get("items", [])
+
+        self._content.addWidget(
+            _lbl(f"{active_phase.get('phase_key', '')} — {active_phase.get('title', '')}", FONT_MD, True)
+        )
+        self._content.addSpacing(SPACING_SM)
+
+        # IN_PROGRESS
+        in_progress = [it for it in items if it.get("status") == "IN_PROGRESS"]
+        if in_progress:
+            self._content.addWidget(_lbl("U TOKU", FONT_XS, True, YELLOW))
+            for it in in_progress:
+                self._add_item_row(it, YELLOW)
+
+        # BLOCKED
+        blocked = [it for it in items if it.get("status") == "BLOCKED"]
+        if blocked:
+            self._content.addWidget(_lbl("BLOKIRANO", FONT_XS, True, RED))
+            for it in blocked:
+                self._add_item_row(it, RED)
+
+        # IMPLEMENTED — poslednja
+        implemented = [it for it in items if it.get("status") in ("IMPLEMENTED", "VERIFIED")]
+        if implemented:
+            last = implemented[-1]
+            self._content.addWidget(_lbl("POSLJEDNJA ZAVRŠENA", FONT_XS, True, PURPLE))
+            self._add_item_row(last, PURPLE)
+
+        # SLEDEĆE — najviše 2
+        next_items = [it for it in items if it.get("status") == "NOT_STARTED"][:2]
+        if next_items:
+            self._content.addWidget(_lbl("SLJEDEĆE", FONT_XS, True, TEXT_MUTED))
+            for it in next_items:
+                self._add_item_row(it, TEXT_MUTED)
+
+        self._content.addSpacing(SPACING_SM)
+        btn = QPushButton("Otvori cijeli plan →")
+        btn.setStyleSheet(
+            f"QPushButton {{ background: transparent; border: 1px solid {BORDER}; color: {BLUE}; "
+            f"border-radius: {RADIUS_MD}px; padding: {SPACING_SM}px; font-size: {FONT_SM}px; }}"
+            f"QPushButton:hover {{ background: {BG_HOVER}; }}"
+        )
+        btn.clicked.connect(self.open_full_plan_requested.emit)
+        self._content.addWidget(btn)
+        self._content.addStretch()
+
+    def _add_item_row(self, it: dict, color: str) -> None:
+        key = it.get("item_key", "")
+        title = it.get("title", "")
+        label = f"{key}  {title}" if key else title
+        row = _lbl(label, FONT_SM, False, TEXT_PRIMARY)
+        self._content.addWidget(row)
+
+    def _clear(self) -> None:
+        while self._content.count():
+            w = self._content.takeAt(0)
+            if w.widget():
+                w.widget().deleteLater()
+            elif w.layout():
+                self._clear_layout(w.layout())
+
+    def _clear_layout(self, lo) -> None:
+        while lo.count():
+            w = lo.takeAt(0)
+            if w.widget():
+                w.widget().deleteLater()
+            elif w.layout():
+                self._clear_layout(w.layout())
+
+
+# ═══════════════════════════════════════════════════════════════════
+# StatusSummaryBar — klikabilni statusni badge elementi
+# ═══════════════════════════════════════════════════════════════════
+
+
+class StatusSummaryBar(QFrame):
+    """Horizontalni bar sa statusnim badge-vima."""
+
+    status_selected = Signal(str)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setStyleSheet("background: transparent; border: none;")
+        self._layout = QHBoxLayout(self)
+        self._layout.setContentsMargins(0, 0, 0, 0)
+        self._layout.setSpacing(SPACING_SM)
+        self._layout.addStretch()
+        self.render({})
+
+    def render(self, counts: dict[str, int]) -> None:  # type: ignore[override]
+        self._clear_badges()
+        order = ["ACCEPTED", "VERIFIED", "IMPLEMENTED", "IN_PROGRESS", "BLOCKED", "NOT_STARTED"]
+        labels = {
+            "ACCEPTED": "Prihvaćeno", "VERIFIED": "Provjereno",
+            "IMPLEMENTED": "Implementirano", "IN_PROGRESS": "U toku",
+            "BLOCKED": "Blokirano", "NOT_STARTED": "Nije započeto",
+        }
+        for status in order:
+            c = counts.get(status, 0)
+            if c == 0 and status != "NOT_STARTED":
+                continue
+            color = STATUS_COUNT_COLORS.get(status, GRAY)
+            badge = QPushButton(f"{c} {labels.get(status, status)}")
+            badge.setStyleSheet(
+                f"QPushButton {{ background: transparent; border: 1px solid {color}; "
+                f"color: {color}; border-radius: {RADIUS_MD}px; padding: 2px {SPACING_SM}px; "
+                f"font-size: {FONT_XS}px; }}"
+                f"QPushButton:hover {{ background: {BG_HOVER}; }}"
+            )
+            badge.clicked.connect(lambda checked, s=status: self.status_selected.emit(s))
+            self._layout.insertWidget(self._layout.count() - 1, badge)
+
+    def _clear_badges(self) -> None:
+        while self._layout.count() > 1:  # ostavi stretch
+            w = self._layout.takeAt(0)
+            if w.widget():
+                w.widget().deleteLater()

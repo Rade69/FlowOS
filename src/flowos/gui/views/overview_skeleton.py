@@ -9,16 +9,19 @@ Pokreni: python src/flowos/gui/views/overview_skeleton.py
 import sys
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QColor, QFont, QPalette
+from PySide6.QtGui import QAction, QColor, QFont, QIcon, QPalette
 from PySide6.QtWidgets import (
     QApplication,
     QFrame,
     QHBoxLayout,
     QLabel,
     QMainWindow,
+    QMenu,
     QPushButton,
     QScrollArea,
     QSplitter,
+    QStackedWidget,
+    QSystemTrayIcon,
     QTreeWidget,
     QTreeWidgetItem,
     QVBoxLayout,
@@ -115,7 +118,6 @@ def _status_color(status: str) -> str:
 
 
 class TopBar(QFrame):
-    project_changed = Signal(str)
     refresh_requested = Signal()
 
     def __init__(self, parent=None):
@@ -124,27 +126,47 @@ class TopBar(QFrame):
         self.setStyleSheet(f"background: {BG_SECONDARY}; border-bottom: 1px solid {BORDER};")
         layout = QHBoxLayout(self)
         layout.setContentsMargins(SPACING_XL, 0, SPACING_XL, 0)
-        layout.setSpacing(SPACING_LG)
-        layout.addWidget(_lbl("◆ FlowOS", FONT_LG, True, BLUE))
-        sep = QLabel("|")
-        sep.setStyleSheet(f"color: {BORDER}; border: none;")
+        layout.setSpacing(SPACING_MD)
+
+        self._proj_label = _lbl("FlowOS", FONT_LG, True, BLUE)
+        layout.addWidget(self._proj_label)
+
+        sep = QLabel("·")
+        sep.setStyleSheet(f"color: {BORDER}; border: none; font-size: {FONT_LG}px;")
         layout.addWidget(sep)
-        layout.addWidget(_lbl("Projekat:", FONT_SM, False, TEXT_MUTED))
-        layout.addWidget(_lbl("FlowOS Core ▼", FONT_MD, True))
-        layout.addSpacing(SPACING_XL)
-        dot = QLabel("●")
-        dot.setStyleSheet(f"color: {GREEN}; border: none; font-size: 14px;")
-        layout.addWidget(dot)
-        layout.addWidget(_lbl("Ažurno", FONT_SM, False, GREEN))
+
+        self._phase_label = _lbl("", FONT_SM, False, TEXT_SECONDARY)
+        layout.addWidget(self._phase_label)
+
+        self._stats_label = _lbl("", FONT_SM, False, TEXT_MUTED)
+        layout.addWidget(self._stats_label)
+
         layout.addStretch()
-        layout.addWidget(_lbl("● Servis aktivan", FONT_SM, False, GREEN))
+
+        self._git_label = _lbl("", FONT_SM, False, TEXT_MUTED)
+        layout.addWidget(self._git_label)
+
         btn = QPushButton("↻")
         btn.setFixedSize(32, 32)
+        btn.setToolTip("Osveži podatke")
         btn.setStyleSheet(
-            f"background: {BG_CARD}; border: 1px solid {BORDER}; border-radius: 4px; color: {TEXT_PRIMARY};"
+            f"QPushButton {{ background: {BG_CARD}; border: 1px solid {BORDER}; border-radius: 4px; color: {TEXT_PRIMARY}; }}"
+            f"QPushButton:hover {{ background: {BG_HOVER}; }}"
         )
         btn.clicked.connect(self.refresh_requested.emit)
         layout.addWidget(btn)
+
+    def set_info(self, project: str = "", phase: str = "", sessions: int = -1, git_status: str = "") -> None:
+        if project:
+            self._proj_label.setText(project)
+        if phase:
+            self._phase_label.setText(phase)
+        parts = []
+        if sessions >= 0:
+            parts.append(f"{sessions} aktivna sesija" if sessions == 1 else f"{sessions} aktivne sesije" if sessions > 0 else "")
+        self._stats_label.setText(" · ".join(p for p in parts if p))
+        if git_status:
+            self._git_label.setText(git_status)
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -154,6 +176,7 @@ class TopBar(QFrame):
 
 class Sidebar(QFrame):
     navigation_requested = Signal(str)
+    action_requested = Signal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -168,32 +191,28 @@ class Sidebar(QFrame):
         nav_label.setContentsMargins(SPACING_XL, SPACING_SM, 0, SPACING_SM)
         layout.addWidget(nav_label)
 
-        nav_keys = [
-            "Pregled",
-            "Projekti",
-            "Plan",
-            "Sesije",
-            "Zadaci",
-            "Agenti",
-            "Radna stabla",
-            "Konflikti",
-            "Izvještaji",
-            "Postavke",
+        self._nav_buttons: dict[str, QPushButton] = {}
+        nav_groups = [
+            ("RAD", ["Pregled", "Plan", "Zadaci", "Sesije"]),
+            ("NADZOR", ["Agenti", "Radna stabla", "Konflikti", "Izvještaji"]),
+            ("SISTEM", ["Projekti", "Postavke"]),
         ]
-        for item in nav_keys:
-            active = item == "Pregled"
-            bg = BG_HOVER if active else "transparent"
-            bl = (
-                f"border-left: 3px solid {BLUE};"
-                if active
-                else "border-left: 3px solid transparent;"
-            )
-            btn = QPushButton(f"  {item}")
-            btn.setFixedHeight(36)
-            btn.setStyleSheet(
-                f"QPushButton {{ background: {bg}; {bl} border-top:none; border-right:none; border-bottom:none; color: {TEXT_PRIMARY if active else TEXT_SECONDARY}; text-align:left; padding-left:{SPACING_XL}px; font-size:{FONT_SM}px; }} QPushButton:hover {{ background: {BG_HOVER}; color: {TEXT_PRIMARY}; }}"
-            )
-            layout.addWidget(btn)
+        for group_label, nav_keys in nav_groups:
+            if group_label:
+                sep = _sec(group_label)
+                sep.setContentsMargins(SPACING_XL, SPACING_SM, 0, SPACING_XS)
+                layout.addWidget(sep)
+            for item in nav_keys:
+                btn = QPushButton(f"  {item}")
+                btn.setFixedHeight(36)
+                btn.setStyleSheet(
+                    f"QPushButton {{ background: transparent; border-left: 3px solid transparent; border-top:none; border-right:none; border-bottom:none; color: {TEXT_SECONDARY}; text-align:left; padding-left:{SPACING_XL}px; font-size:{FONT_SM}px; }} QPushButton:hover {{ background: {BG_HOVER}; color: {TEXT_PRIMARY}; }}"
+                )
+                btn.clicked.connect(lambda checked, key=item: self._on_nav(key))
+                self._nav_buttons[item] = btn
+                layout.addWidget(btn)
+
+        self._set_active("Pregled")
 
         layout.addSpacing(SPACING_XL)
 
@@ -205,11 +224,16 @@ class Sidebar(QFrame):
         cl = QVBoxLayout(card)
         cl.setContentsMargins(SPACING_LG, SPACING_LG, SPACING_LG, SPACING_LG)
         cl.setSpacing(SPACING_SM)
-        cl.addWidget(_lbl("FlowOS Core", FONT_MD, True))
-        cl.addWidget(_lbl("Plan: FlowOS v3", FONT_XS, False, GREEN))
-        cl.addWidget(_lbl("FLOW-103 Rad servisnog procesa", FONT_SM, True))
-        cl.addWidget(_lbl("Implementirano · nije provjereno", FONT_XS, False, PURPLE))
-        cl.addWidget(_lbl("Posljednji rad: juče 18:20", FONT_XS, False, TEXT_MUTED))
+        self._proj_name = _lbl("Nema projekta", FONT_MD, True)
+        cl.addWidget(self._proj_name)
+        self._proj_plan = _lbl("", FONT_XS, False, GREEN)
+        cl.addWidget(self._proj_plan)
+        self._proj_task = _lbl("", FONT_SM, True)
+        cl.addWidget(self._proj_task)
+        self._proj_status = _lbl("", FONT_XS, False, PURPLE)
+        cl.addWidget(self._proj_status)
+        self._proj_last = _lbl("", FONT_XS, False, TEXT_MUTED)
+        cl.addWidget(self._proj_last)
         layout.addWidget(card)
 
         layout.addSpacing(SPACING_MD)
@@ -229,18 +253,42 @@ class Sidebar(QFrame):
             btn.setStyleSheet(
                 f"QPushButton {{ background:transparent; border:none; color:{TEXT_SECONDARY}; text-align:left; padding-left:{SPACING_XL}px; font-size:{FONT_SM}px; }} QPushButton:hover {{ color:{TEXT_PRIMARY}; }}"
             )
+            btn.clicked.connect(lambda checked, key=a: self.action_requested.emit(key))
             layout.addWidget(btn)
 
         layout.addStretch()
 
-        sl = QHBoxLayout()
-        sl.setContentsMargins(SPACING_XL, 0, SPACING_MD, 0)
-        dot = QLabel("●")
-        dot.setStyleSheet(f"color: {GREEN}; border: none;")
-        sl.addWidget(dot)
-        sl.addWidget(_lbl("Povezano sa servisom", FONT_XS, False, GREEN))
-        sl.addStretch()
-        layout.addLayout(sl)
+    def _on_nav(self, key: str) -> None:
+        self._set_active(key)
+        self.navigation_requested.emit(key)
+
+    def _set_active(self, active_key: str) -> None:
+        for key, btn in self._nav_buttons.items():
+            active = key == active_key
+            bg = BG_HOVER if active else "transparent"
+            bl = f"border-left: 3px solid {BLUE};" if active else "border-left: 3px solid transparent;"
+            color = TEXT_PRIMARY if active else TEXT_SECONDARY
+            btn.setStyleSheet(
+                f"QPushButton {{ background: {bg}; {bl} border-top:none; border-right:none; border-bottom:none; color: {color}; text-align:left; padding-left:{SPACING_XL}px; font-size:{FONT_SM}px; }} QPushButton:hover {{ background: {BG_HOVER}; color: {TEXT_PRIMARY}; }}"
+            )
+
+    def set_project_info(self, data: dict | None) -> None:
+        if not data:
+            self._proj_name.setText("Nema projekta")
+            self._proj_plan.setText("")
+            self._proj_task.setText("")
+            self._proj_status.setText("")
+            self._proj_last.setText("")
+            return
+        self._proj_name.setText(data.get("name", ""))
+        plan_title = data.get("plan_title", "")
+        self._proj_plan.setText(f"Plan: {plan_title}" if plan_title else "")
+        task = data.get("active_plan_item", "")
+        self._proj_task.setText(task if task else "")
+        status = data.get("active_plan_status", "")
+        self._proj_status.setText(status if status else "")
+        last = data.get("last_activity", "")
+        self._proj_last.setText(f"Posljednji rad: {last}" if last else "")
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -354,26 +402,76 @@ class ActiveSessionsWidget(QFrame):
 class RecentActivityWidget(QFrame):
     def __init__(self, parent=None):
         super().__init__(parent)
-        l = QVBoxLayout(self)
-        l.setContentsMargins(0, 0, 0, 0)
-        l.setSpacing(SPACING_SM)
-        h = QHBoxLayout()
-        h.addWidget(_lbl("NEDAVNA AKTIVNOST", FONT_LG, True))
-        h.addStretch()
-        h.addWidget(QPushButton("Otvori vremensku liniju →"))
-        l.addLayout(h)
-        for t, src, det in [
-            ("17:22", "pi / SESSION-42", "Commit a8f19d2"),
-            ("17:10", "pi / SESSION-42", "Testovi: 18/19 prolazi"),
-            ("16:40", "Sesija pokrenuta", "FLOW-103"),
-            ("15:55", "FLOW-102", "Prešao u Provjereno"),
-        ]:
-            rl = QHBoxLayout()
-            rl.addWidget(_lbl(t, FONT_XS, False, TEXT_MUTED))
-            rl.addWidget(_lbl(src, FONT_SM, True))
-            rl.addWidget(_lbl(det, FONT_SM, False, TEXT_SECONDARY))
-            rl.addStretch()
-            l.addLayout(rl)
+        self._content = QVBoxLayout(self)
+        self._content.setContentsMargins(0, 0, 0, 0)
+        self._content.setSpacing(SPACING_SM)
+        self._content.addWidget(_lbl("NEDAVNA AKTIVNOST", FONT_LG, True))
+        self._items_layout = QVBoxLayout()
+        self._items_layout.setSpacing(SPACING_XS)
+        self._content.addLayout(self._items_layout)
+        self._content.addStretch()
+        self.render([])
+
+    def render(self, items: list) -> None:  # type: ignore[override]
+        self._clear_items()
+        if not items or not isinstance(items, list):
+            self._items_layout.addWidget(
+                _lbl("Nema nedavne aktivnosti.", FONT_XS, False, TEXT_MUTED)
+            )
+            return
+        for item in items[:20]:
+            event_type = item.get("type", "")
+            label_map = {
+                "FILE": "FAJL",
+                "SESSION": "SESIJA",
+                "GIT": "GIT",
+                "TEST": "TEST",
+                "PLAN": "PLAN",
+                "KONFLIKT": "KONFLIKT",
+            }
+            label = label_map.get(event_type, event_type)
+            summary = item.get("event", "") or item.get("file", "")
+            ts = item.get("occurred_at", "")
+            relative = ""
+            if ts:
+                try:
+                    from datetime import UTC, datetime
+                    dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                    delta = datetime.now(tz=UTC) - dt
+                    s = int(delta.total_seconds())
+                    if s < 60:
+                        relative = "upravo"
+                    elif s < 3600:
+                        relative = f"prije {s // 60}m"
+                    elif s < 86400:
+                        relative = f"prije {s // 3600}h"
+                    else:
+                        relative = f"prije {s // 86400}d"
+                except Exception:
+                    pass
+
+            row = QHBoxLayout()
+            row.addWidget(_lbl(label, FONT_XS, True, BLUE))
+            row.addWidget(_lbl(summary[:60], FONT_XS, False, TEXT_SECONDARY))
+            row.addWidget(_lbl(relative, FONT_XS, False, TEXT_MUTED))
+            row.addStretch()
+            self._items_layout.addLayout(row)
+
+    def _clear_items(self) -> None:
+        while self._items_layout.count():
+            w = self._items_layout.takeAt(0)
+            if w.widget():
+                w.widget().deleteLater()
+            elif w.layout():
+                self._clear_recursive(w.layout())
+
+    def _clear_recursive(self, lo) -> None:
+        while lo.count():
+            w = lo.takeAt(0)
+            if w.widget():
+                w.widget().deleteLater()
+            elif w.layout():
+                self._clear_recursive(w.layout())
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -552,15 +650,32 @@ class StatusBar(QFrame):
         l = QHBoxLayout(self)
         l.setContentsMargins(SPACING_XL, 0, SPACING_XL, 0)
         l.setSpacing(SPACING_XL)
-        for t in [
-            "Servis: aktivan",
-            "API: v1",
-            "Baza: flowos.db · u redu",
-            "Posmatrač: aktivan",
-            "Usklađivanje stanja: prije 2 min",
-        ]:
-            l.addWidget(_lbl(t, FONT_XS, False, TEXT_MUTED))
+
+        self._health = _lbl("● Servis: povezuje se…", FONT_XS, False, YELLOW)
+        l.addWidget(self._health)
+        self._sessions = _lbl("Sesije: —", FONT_XS, False, TEXT_MUTED)
+        l.addWidget(self._sessions)
+        self._watcher = _lbl("Posmatrač: —", FONT_XS, False, TEXT_MUTED)
+        l.addWidget(self._watcher)
+        self._git = _lbl("Git: —", FONT_XS, False, TEXT_MUTED)
+        l.addWidget(self._git)
         l.addStretch()
+
+    def set_connected(self, ok: bool) -> None:
+        if ok:
+            self._health.setText("● Servis: aktivan")
+            self._health.setStyleSheet(f"color: {GREEN}; border: none; background: transparent;")
+        else:
+            self._health.setText("● Servis: nedostupan")
+            self._health.setStyleSheet(f"color: {RED}; border: none; background: transparent;")
+
+    def set_stats(self, sessions: int, projects: int, watcher_active: bool) -> None:
+        self._sessions.setText(f"Sesije: {sessions}" if sessions >= 0 else "Sesije: —")
+        self._watcher.setText(
+            "● Posmatrač: aktivan" if watcher_active else "Posmatrač: —"
+        )
+        if watcher_active:
+            self._watcher.setStyleSheet(f"color: {GREEN}; border: none; background: transparent;")
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -569,6 +684,15 @@ class StatusBar(QFrame):
 
 
 class MainWindow(QMainWindow):
+    """Glavni prozor sa sidebar navigacijom i QStackedWidget-om."""
+
+    page_changed = Signal(str)
+
+    PAGE_NAMES = [
+        "Pregled", "Projekti", "Plan", "Sesije", "Zadaci",
+        "Agenti", "Radna stabla", "Konflikti", "Izvještaji", "Postavke",
+    ]
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle("FlowOS — Pregled")
@@ -584,45 +708,211 @@ class MainWindow(QMainWindow):
         self.topbar = TopBar()
         root.addWidget(self.topbar)
 
-        splitter = QSplitter(Qt.Orientation.Horizontal)
-        splitter.addWidget(Sidebar())
+        self._splitter = QSplitter(Qt.Orientation.Horizontal)
 
-        # Centralni — scroll
+        self._sidebar = Sidebar()
+        self._sidebar.navigation_requested.connect(self._on_navigate)
+        self._sidebar.action_requested.connect(self._on_action)
+        self._splitter.addWidget(self._sidebar)
+
+        self._stack = QStackedWidget()
+        self._pages: dict[str, QWidget] = {}
+
+        self._build_overview_page()
+        self._build_placeholder_pages()
+        self._splitter.addWidget(self._stack)
+
+        self._splitter.setSizes([SIDEBAR_DEFAULT, 900])
+        self._splitter.setStretchFactor(0, 0)
+        self._splitter.setStretchFactor(1, 1)
+        root.addWidget(self._splitter)
+        self._statusbar = StatusBar()
+        root.addWidget(self._statusbar)
+
+        # System tray
+        self._setup_tray()
+
+    def _setup_tray(self) -> None:
+        # System tray — za sada onemogućen (treba ikona)
+        return
+
+    # ── Overview (Pregled) stranica ─────────────────────
+
+    def _build_overview_page(self):
+        page = QWidget()
+        page.setStyleSheet(f"background: {BG_PRIMARY};")
+        hsplit = QSplitter(Qt.Orientation.Horizontal)
+
+        # Centralni deo — vertikalni layout sa ResumeHero na vrhu
         cs = QScrollArea()
         cs.setWidgetResizable(True)
         cs.setStyleSheet(f"QScrollArea {{ border: none; background: {BG_PRIMARY}; }}")
-        cc = QWidget()
-        cl = QVBoxLayout(cc)
-        cl.setContentsMargins(SPACING_XXL, SPACING_XL, SPACING_XL, SPACING_XL)
-        cl.setSpacing(SPACING_XL)
-        cl.addWidget(PlanProgressWidget())
-        cl.addWidget(ActiveSessionsWidget())
-        cl.addWidget(RecentActivityWidget())
-        cl.addStretch()
-        cs.setWidget(cc)
-        splitter.addWidget(cs)
+        self._central_widget = QWidget()
+        self._central_layout = QVBoxLayout(self._central_widget)
+        self._central_layout.setContentsMargins(SPACING_XL, SPACING_MD, SPACING_MD, SPACING_XL)
+        self._central_layout.setSpacing(SPACING_MD)
+        # Placeholderi — zamenjuju se kroz set_central_widgets
+        self._central_layout.addWidget(PlanProgressWidget())
+        self._central_layout.addWidget(ActiveSessionsWidget())
+        self._central_layout.addWidget(RecentActivityWidget())
+        self._central_layout.addStretch()
+        cs.setWidget(self._central_widget)
+        hsplit.addWidget(cs)
 
-        # Desni — JEDAN QScrollArea sa svim karticama
+        # Desni deo
         rs = QScrollArea()
         rs.setWidgetResizable(True)
         rs.setStyleSheet(f"QScrollArea {{ border: none; background: {BG_PRIMARY}; }}")
-        rc = QWidget()
-        rl = QVBoxLayout(rc)
-        rl.setContentsMargins(0, SPACING_XL, SPACING_XXL, SPACING_XL)
-        rl.setSpacing(SPACING_LG)
-        rl.addWidget(ProjectResumeWidget())
-        rl.addWidget(PlanItemDetailsWidget())
-        rl.addWidget(ReconciliationWidget())
-        rl.addStretch()
-        rs.setWidget(rc)
-        splitter.addWidget(rs)
+        self._right_widget = QWidget()
+        self._right_layout = QVBoxLayout(self._right_widget)
+        self._right_layout.setContentsMargins(0, SPACING_MD, SPACING_XL, SPACING_XL)
+        self._right_layout.setSpacing(SPACING_MD)
+        self._right_layout.addWidget(ProjectResumeWidget())
+        self._right_layout.addWidget(PlanItemDetailsWidget())
+        self._right_layout.addWidget(ReconciliationWidget())
+        self._right_layout.addStretch()
+        rs.setWidget(self._right_widget)
+        hsplit.addWidget(rs)
 
-        splitter.setSizes([SIDEBAR_DEFAULT, 700, RIGHT_PANEL_DEFAULT])
-        splitter.setStretchFactor(0, 0)
-        splitter.setStretchFactor(1, 1)
-        splitter.setStretchFactor(2, 0)
-        root.addWidget(splitter)
-        root.addWidget(StatusBar())
+        hsplit.setSizes([700, RIGHT_PANEL_DEFAULT])
+        hsplit.setStretchFactor(0, 1)
+        hsplit.setStretchFactor(1, 0)
+
+        layout = QHBoxLayout(page)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(hsplit)
+
+        self._add_page("Pregled", page)
+
+    # ── Placeholder stranice ────────────────────────────
+
+    def _build_placeholder_pages(self):
+        for name in self.PAGE_NAMES:
+            if name == "Pregled":
+                continue
+            page = self._make_placeholder(name)
+            self._add_page(name, page)
+
+    def _make_placeholder(self, title: str) -> QWidget:
+        w = QWidget()
+        w.setStyleSheet(f"background: {BG_PRIMARY};")
+        lo = QVBoxLayout(w)
+        lo.setContentsMargins(SPACING_XXL, SPACING_XXL, SPACING_XXL, SPACING_XXL)
+        lo.addStretch()
+        lbl = _lbl(title.upper(), FONT_XXL, True, TEXT_MUTED)
+        lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        lo.addWidget(lbl)
+        hint = _lbl("U izradi…", FONT_MD, False, TEXT_MUTED)
+        hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        lo.addWidget(hint)
+        lo.addStretch()
+        return w
+
+    def _add_page(self, name: str, widget: QWidget) -> None:
+        self._pages[name] = widget
+        self._stack.addWidget(widget)
+
+    # ── Navigacija ──────────────────────────────────────
+
+    def _on_navigate(self, page_name: str) -> None:
+        if page_name in self._pages:
+            self._stack.setCurrentWidget(self._pages[page_name])
+            self.setWindowTitle(f"FlowOS — {page_name}")
+            self.page_changed.emit(page_name)
+
+    def _on_action(self, action: str) -> None:
+        import os
+        import subprocess
+
+        mapping = {
+            "Nova sesija": "Sesije",
+            "Dodaj zadatak": "Zadaci",
+            "Pregledaj vanjske promjene": "Konflikti",
+        }
+        if action in mapping:
+            self._on_navigate(mapping[action])
+        elif action == "Uvezi plan":
+            self._on_navigate("Plan")
+        elif action == "Otvori dnevnik":
+            reports_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "agent_reports")
+            if os.path.isdir(reports_dir):
+                subprocess.Popen(["explorer", os.path.abspath(reports_dir)])
+
+    @property
+    def overview_page(self) -> QWidget:
+        return self._pages.get("Pregled", self._stack.widget(0))
+
+    def set_project_info(self, data: dict | None) -> None:
+        self._sidebar.set_project_info(data)
+
+    def set_status(self, connected: bool, sessions: int = -1, watcher_active: bool = False) -> None:
+        self._statusbar.set_connected(connected)
+        self._statusbar.set_stats(sessions, 0, watcher_active)
+
+    def set_topbar_info(self, project: str = "", phase: str = "", sessions: int = -1, git_status: str = "") -> None:
+        self.topbar.set_info(project, phase, sessions, git_status)
+
+    def set_page_widget(self, name: str, widget: QWidget) -> None:
+        """Zamenjuje placeholder stranicu pravim View-om."""
+        if name in self._pages:
+            old = self._pages[name]
+            idx = self._stack.indexOf(old)
+            self._stack.removeWidget(old)
+            old.deleteLater()
+            self._pages[name] = widget
+            if idx >= 0:
+                self._stack.insertWidget(idx, widget)
+            else:
+                self._stack.addWidget(widget)
+
+    # ── Live data injection (za Pregled stranicu) ──────
+
+    def set_central_widgets(self, widgets: list[QWidget]) -> None:
+        for i in reversed(range(self._central_layout.count())):
+            w = self._central_layout.itemAt(i).widget()
+            if w is not None:
+                w.setParent(None)
+        for w in widgets:
+            self._central_layout.addWidget(w)
+        self._central_layout.addStretch()
+
+    def set_right_widgets(self, widgets: list[QWidget]) -> None:
+        for i in reversed(range(self._right_layout.count())):
+            w = self._right_layout.itemAt(i).widget()
+            if w is not None:
+                w.setParent(None)
+        for w in widgets:
+            self._right_layout.addWidget(w)
+        self._right_layout.addStretch()
+
+    # ── Zatvaranje ───────────────────────────────────────
+
+    shutdown_requested = Signal()
+
+    def closeEvent(self, event) -> None:
+        from PySide6.QtWidgets import QMessageBox
+
+        msg = QMessageBox(self)
+        msg.setWindowTitle("FlowOS")
+        msg.setText("Šta želite da uradite?")
+        msg.setInformativeText(
+            "Zatvaranje prozora ne zaustavlja pozadinski servis "
+            "i agentske sesije."
+        )
+        btn_close = msg.addButton("Zatvori samo prozor", QMessageBox.ButtonRole.AcceptRole)
+        btn_shutdown = msg.addButton("Zaustavi sve i ugasi FlowOS", QMessageBox.ButtonRole.DestructiveRole)
+        btn_cancel = msg.addButton("Odustani", QMessageBox.ButtonRole.RejectRole)
+        msg.setDefaultButton(btn_cancel)
+        msg.exec()
+
+        clicked = msg.clickedButton()
+        if clicked is btn_close:
+            event.accept()
+        elif clicked is btn_shutdown:
+            self.shutdown_requested.emit()
+            event.accept()
+        else:
+            event.ignore()
 
 
 def main():

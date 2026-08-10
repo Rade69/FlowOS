@@ -168,11 +168,48 @@ class ReportService:
         report.status = "FINAL"
         report.updated_at = datetime.now(tz=UTC)
         self._session.flush()
+
+        # NEEDS_WORK / REJECTED → vrati PlanItem u IN_PROGRESS
+        if verdict in ("NEEDS_WORK", "REJECTED"):
+            self._reopen_plan_item(report)
+
         return report
 
     def get_report(self, report_id: str) -> AgentReport | None:
         """Vraća izveštaj po ID-ju."""
         return self._session.get(AgentReport, report_id)
+
+    def _reopen_plan_item(self, report: AgentReport) -> None:
+        """Vraća PlanItem u IN_PROGRESS kada je verdict NEEDS_WORK ili REJECTED."""
+        import logging
+
+        logger = logging.getLogger("flowos.reports")
+        try:
+            from flowos.service.services.infrastructure.persistence.models import AgentSession
+            from flowos.service.services.infrastructure.persistence.plan_models import PlanItem
+            from flowos.service.services.plan_progress import PlanProgressService
+
+            session = self._session.get(AgentSession, report.session_id)
+            if not session or not session.plan_item_id:
+                return
+
+            plan_item = self._session.get(PlanItem, session.plan_item_id)
+            if not plan_item or plan_item.status not in ("IMPLEMENTED", "VERIFIED"):
+                return
+
+            progress_svc = PlanProgressService(self._session)
+            progress_svc.validate_transition(
+                plan_item,
+                "IN_PROGRESS",
+                reason=f"Verdict: {report.user_verdict}",
+            )
+            logger.info(
+                "ReportService: plan_item %s → IN_PROGRESS (verdict=%s)",
+                plan_item.item_key,
+                report.user_verdict,
+            )
+        except Exception as e:
+            logger.warning("ReportService: reopen plan_item nije uspelo: %s", e)
 
     def get_report_for_session(self, session_id: str) -> AgentReport | None:
         """Vraća izveštaj za datu sesiju (najnoviji)."""

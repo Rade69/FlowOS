@@ -122,8 +122,14 @@ def session_heartbeat(session_id: str, session: Session = Depends(get_session)):
 
     Nezavisan od filesystem aktivnosti. Poziva se periodično
     iz adaptera, wrapper-a ili process monitora.
+
+    Heartbeat se odbija za sesije u terminalnom stanju (COMPLETED,
+    ABANDONED, NEEDS_REVIEW) sa 409 Conflict.
     """
-    s = SessionService(session).record_heartbeat(session_id)
+    try:
+        s = SessionService(session).record_heartbeat(session_id)
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
     if not s:
         raise HTTPException(status_code=404, detail="Sesija nije pronađena")
     return {"status": "ok", "session_id": session_id}

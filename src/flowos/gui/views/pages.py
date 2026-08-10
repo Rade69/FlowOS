@@ -3,6 +3,8 @@
 Svaka stranica prima podatke iz API-ja kroz render() metod.
 """
 
+# mypy: disable-error-code="union-attr,arg-type"
+
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QFrame,
@@ -101,10 +103,15 @@ class TasksPage(QFrame):
         if not tasks:
             return
         for t in tasks:
-            QTreeWidgetItem(self._tree, [
-                t.get("title", ""), t.get("status", "—"),
-                t.get("priority", "—"), t.get("plan_item_id", "—") or "—",
-            ])
+            QTreeWidgetItem(
+                self._tree,
+                [
+                    t.get("title", ""),
+                    t.get("status", "—"),
+                    t.get("priority", "—"),
+                    t.get("plan_item_id", "—") or "—",
+                ],
+            )
 
 
 class AgentsPage(QFrame):
@@ -142,10 +149,14 @@ class AgentsPage(QFrame):
         total = data.get("total", len(agents)) if isinstance(data, dict) else len(agents)
 
         if not agents:
-            self._list.addWidget(_lbl(
-                "Nema pronađenih agenata. Klikni 'Skeniraj procese'.",
-                FONT_MD, False, TEXT_MUTED
-            ))
+            self._list.addWidget(
+                _lbl(
+                    "Nema pronađenih agenata. Klikni 'Skeniraj procese'.",
+                    FONT_MD,
+                    False,
+                    TEXT_MUTED,
+                )
+            )
             return
 
         self._list.addWidget(_lbl(f"Pronađeno {total} agentskih procesa:", FONT_SM, False, GREEN))
@@ -158,10 +169,11 @@ class AgentsPage(QFrame):
             cl = QHBoxLayout(card)
             info = QVBoxLayout()
             info.addWidget(_lbl(a.get("agent_type", "Nepoznat"), FONT_MD, True))
-            info.addWidget(_lbl(
-                f"PID: {a.get('pid', '')}  |  {a.get('image', '')}",
-                FONT_XS, False, TEXT_MUTED
-            ))
+            info.addWidget(
+                _lbl(
+                    f"PID: {a.get('pid', '')}  |  {a.get('image', '')}", FONT_XS, False, TEXT_MUTED
+                )
+            )
             title = a.get("title", "")
             if title:
                 info.addWidget(_lbl(title, FONT_XS, False, TEXT_SECONDARY))
@@ -175,7 +187,9 @@ class AgentsPage(QFrame):
             )
             pid = a.get("pid", 0)
             agent_type = a.get("agent_type", "")
-            track_btn.clicked.connect(lambda checked, p=pid, t=agent_type: self.track_requested.emit(p, t))
+            track_btn.clicked.connect(
+                lambda checked, p=pid, t=agent_type: self.track_requested.emit(p, t)
+            )
             cl.addWidget(track_btn)
             self._list.addWidget(card)
 
@@ -219,12 +233,16 @@ class ConflictsPage(QFrame):
         for c in conflicts:
             level = c.get("conflict_level", "")
             color = RED if level == "HIGH" else YELLOW if level == "MEDIUM" else TEXT_MUTED
-            row = QTreeWidgetItem(self._tree, [
-                c.get("conflict_type", ""), level,
-                c.get("file_path", "") or c.get("description", "")[:60],
-                c.get("status", ""),
-                c.get("detected_at", "")[:19] if c.get("detected_at") else "",
-            ])
+            row = QTreeWidgetItem(
+                self._tree,
+                [
+                    c.get("conflict_type", ""),
+                    level,
+                    c.get("file_path", "") or c.get("description", "")[:60],
+                    c.get("status", ""),
+                    c.get("detected_at", "")[:19] if c.get("detected_at") else "",
+                ],
+            )
             row.setForeground(1, color)
 
 
@@ -256,12 +274,15 @@ class ReportsPage(QFrame):
         if not reports:
             return
         for r in reports:
-            QTreeWidgetItem(self._tree, [
-                (r.get("session_id", "") or "")[:8] + "...",
-                (r.get("summary", "") or "")[:60],
-                r.get("verdict", "DRAFT") or "DRAFT",
-                r.get("created_at", "")[:19] if r.get("created_at") else "",
-            ])
+            QTreeWidgetItem(
+                self._tree,
+                [
+                    (r.get("session_id", "") or "")[:8] + "...",
+                    (r.get("summary", "") or "")[:60],
+                    r.get("verdict", "DRAFT") or "DRAFT",
+                    r.get("created_at", "")[:19] if r.get("created_at") else "",
+                ],
+            )
 
 
 class SettingsPage(QFrame):
@@ -276,7 +297,14 @@ class SettingsPage(QFrame):
 
         lo.addWidget(_lbl("POSTAVKE", FONT_XL, True))
         lo.addWidget(_lbl("FlowOS v0.1.0", FONT_MD, True))
-        lo.addWidget(_lbl("Lokalni lični operativni sistem za agentske sesije.", FONT_SM, False, TEXT_SECONDARY))
+        lo.addWidget(
+            _lbl(
+                "Lokalni lični operativni sistem za agentske sesije.",
+                FONT_SM,
+                False,
+                TEXT_SECONDARY,
+            )
+        )
         lo.addSpacing(SPACING_LG)
         lo.addWidget(_lbl("Backend: http://127.0.0.1:9100", FONT_SM, False, TEXT_MUTED))
         lo.addWidget(_lbl("Baza: %LOCALAPPDATA%/FlowOS/data/flowos.db", FONT_XS, False, TEXT_MUTED))

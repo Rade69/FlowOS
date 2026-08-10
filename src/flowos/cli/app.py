@@ -12,6 +12,7 @@ import os
 import subprocess
 import sys
 import time
+from contextlib import suppress
 from pathlib import Path
 
 import typer
@@ -57,10 +58,8 @@ def callback(ctx: typer.Context):
     # Launcher mod
     import io as _io
 
-    try:
-        sys.stdout = _io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-    except Exception:
-        pass
+    with suppress(Exception):
+        sys.stdout = _io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
     typer.echo("◆ FlowOS v0.1.0")
     port = _get_port()
@@ -68,7 +67,7 @@ def callback(ctx: typer.Context):
     # Proveri servis
     try:
         client = CliApiClient(base_url=f"http://127.0.0.1:{port}")
-        resp = client.get("/health")
+        client.get("/health")
         typer.echo(f"  Servis: aktivan (port {port})")
     except Exception:
         typer.echo("  Pokrecem servis...")
@@ -94,9 +93,12 @@ def callback(ctx: typer.Context):
     if gui_exe:
         # Proveri da li je GUI već pokrenut
         import subprocess as _sp
+
         check = _sp.run(
             ["tasklist", "/fi", "IMAGENAME eq flowos-gui.exe", "/fo", "csv", "/nh"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         if "flowos-gui.exe" in check.stdout:
             typer.echo("  GUI: već pokrenut.")
@@ -110,7 +112,9 @@ def callback(ctx: typer.Context):
 def _get_port() -> int:
     runtime_file = (
         Path(os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local")))
-        / "FlowOS" / "runtime" / "service.json"
+        / "FlowOS"
+        / "runtime"
+        / "service.json"
     )
     if runtime_file.exists():
         try:
@@ -124,7 +128,7 @@ def _get_port() -> int:
 def _find_exe(name: str) -> Path | None:
     """Pronalazi exe pored trenutnog flowos.exe ili u dist/ folderu."""
     # U PyInstaller exe-u: traži pored sebe
-    if getattr(sys, 'frozen', False):
+    if getattr(sys, "frozen", False):
         exe_dir = Path(sys.executable).parent
         exe = exe_dir / name
         if exe.exists():
@@ -132,7 +136,15 @@ def _find_exe(name: str) -> Path | None:
 
     # U development modu: traži u dist/ folderu
     import os as _os
-    dist_dir = Path(_os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))))) / "dist"
+
+    dist_dir = (
+        Path(
+            _os.path.dirname(
+                _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+            )
+        )
+        / "dist"
+    )
     exe = dist_dir / name
     if exe.exists():
         return exe

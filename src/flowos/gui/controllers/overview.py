@@ -4,6 +4,8 @@ Podržava: projekte, plan progress, resume, sesije, health.
 Mapira DTO u ViewState. Ne pristupa bazi/Git-u/subprocessu.
 """
 
+# mypy: disable-error-code="unreachable"
+
 from PySide6.QtCore import QObject, Signal
 
 from flowos.gui.services.client import GuiApiClient

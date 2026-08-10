@@ -69,7 +69,7 @@ def short_path(value: str | None, max_length: int = 40) -> str:
         return "—"
     if len(value) <= max_length:
         return value
-    return "..." + value[-(max_length - 3):]
+    return "..." + value[-(max_length - 3) :]
 
 
 def safe_text(value, fallback: str = "—") -> str:

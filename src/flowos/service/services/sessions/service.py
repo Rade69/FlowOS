@@ -41,6 +41,7 @@ class SessionService:
         from flowos.service.services.infrastructure.persistence.plan_models import (
             Plan,
             PlanItem,
+            PlanPhase,
         )
 
         # Validacija: projekat postoji
@@ -54,20 +55,17 @@ class SessionService:
             if not task:
                 raise ValueError(f"Task {task_id} ne postoji")
             if task.project_id != project_id:
-                raise ValueError(
-                    f"Task {task_id} ne pripada projektu {project_id}"
-                )
+                raise ValueError(f"Task {task_id} ne pripada projektu {project_id}")
 
         # Validacija: plan item pripada aktivnom planu projekta
         if plan_item_id:
             plan_item = self._session.get(PlanItem, plan_item_id)
             if not plan_item:
                 raise ValueError(f"PlanItem {plan_item_id} ne postoji")
-            plan = self._session.get(Plan, plan_item.plan_id)
+            phase = self._session.get(PlanPhase, plan_item.plan_phase_id)
+            plan = self._session.get(Plan, phase.plan_id) if phase else None
             if not plan or plan.project_id != project_id:
-                raise ValueError(
-                    f"PlanItem {plan_item_id} ne pripada projektu {project_id}"
-                )
+                raise ValueError(f"PlanItem {plan_item_id} ne pripada projektu {project_id}")
 
         # Validacija: worktree nije zauzet drugom aktivnom sesijom
         if worktree_path:
@@ -79,9 +77,7 @@ class SessionService:
                 .first()
             )
             if wt and wt.project_id != project_id:
-                raise ValueError(
-                    f"Worktree {worktree_path} ne pripada projektu {project_id}"
-                )
+                raise ValueError(f"Worktree {worktree_path} ne pripada projektu {project_id}")
             if wt and wt.session_id:
                 existing = self._session.get(AgentSession, wt.session_id)
                 if existing and existing.status in ("ACTIVE", "IDLE"):
@@ -124,13 +120,16 @@ class SessionService:
         # Emituj WebSocket događaj
         from flowos.service.controllers.websocket.events import event_bus
 
-        event_bus.emit_sync("session.created", {
-            "session_id": session_obj.id,
-            "project_id": project_id,
-            "agent_type": agent_type,
-            "execution_mode": execution_mode,
-            "worktree_path": worktree_path,
-        })
+        event_bus.emit_sync(
+            "session.created",
+            {
+                "session_id": session_obj.id,
+                "project_id": project_id,
+                "agent_type": agent_type,
+                "execution_mode": execution_mode,
+                "worktree_path": worktree_path,
+            },
+        )
 
         return session_obj
 
@@ -172,9 +171,7 @@ class SessionService:
             return None
 
         if session_obj.status not in ("ACTIVE", "IDLE"):
-            raise ValueError(
-                f"Sesija je u terminalnom stanju {session_obj.status}"
-            )
+            raise ValueError(f"Sesija je u terminalnom stanju {session_obj.status}")
 
         session_obj.last_heartbeat_at = datetime.now(tz=UTC)
         self._session.flush()

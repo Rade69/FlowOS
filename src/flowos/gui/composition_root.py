@@ -7,11 +7,14 @@ Ne koristiti dependency-injection framework.
 Svaka zavisnost se prosleđuje eksplicitno kroz konstruktor.
 """
 
+from contextlib import suppress
+
 from PySide6.QtCore import QTimer, QUrl
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 try:
     from PySide6.QtWebSockets import QWebSocket
+
     HAS_WEBSOCKET = True
 except ImportError:
     HAS_WEBSOCKET = False
@@ -91,6 +94,8 @@ class FlowOsGui:
 
     def _wire_controller(self) -> None:
         ctrl = self._controller
+        if ctrl is None:
+            return
         ctrl.health_updated.connect(self._on_health)
         ctrl.projects_loaded.connect(self._on_projects)
         ctrl.plan_progress_loaded.connect(self._on_plan_progress)
@@ -104,7 +109,9 @@ class FlowOsGui:
 
         # Agents page
         if self._agents_page:
-            self._agents_page.scan_requested.connect(lambda: self._api.scan_agents() if self._api else None)
+            self._agents_page.scan_requested.connect(
+                lambda: self._api.scan_agents() if self._api else None
+            )
             self._agents_page.track_requested.connect(self._track_agent)
 
         if self._api:
@@ -131,9 +138,7 @@ class FlowOsGui:
 
         # ResumeHero: Nastavi rad → prebaci na Plan stranicu
         if self._resume_hero:
-            self._resume_hero.continue_requested.connect(
-                lambda: self._window._on_navigate("Plan")
-            )
+            self._resume_hero.continue_requested.connect(lambda: self._window._on_navigate("Plan"))
 
         # AttentionPanel: klik → navigiraj na odgovarajuću stranicu
         if self._attention_panel:
@@ -167,7 +172,8 @@ class FlowOsGui:
                 return
             try:
                 import json
-                data = json.loads(reply.readAll().data().decode())
+
+                data = json.loads(bytes(reply.readAll().data()).decode())
             except Exception:
                 self._quit_app()
                 return
@@ -189,7 +195,7 @@ class FlowOsGui:
         msg.setInformativeText("Gašenje će prekinuti agentske procese.")
         btn_wait = msg.addButton("Zatvori samo GUI", QMessageBox.ButtonRole.AcceptRole)
         btn_kill = msg.addButton("Prekini sesije i ugasi", QMessageBox.ButtonRole.DestructiveRole)
-        btn_cancel = msg.addButton("Odustani", QMessageBox.ButtonRole.RejectRole)
+        msg.addButton("Odustani", QMessageBox.ButtonRole.RejectRole)
         msg.exec()
 
         clicked = msg.clickedButton()
@@ -202,30 +208,31 @@ class FlowOsGui:
     def _do_shutdown_confirm(self) -> None:
         """Šalje shutdown/confirm zahtev servisu i gasi GUI."""
         if self._api:
-            try:
-                self._api._post("/system/shutdown/confirm", {})
-            except Exception:
-                pass
+            with suppress(Exception):
+                self._api._post("/system/shutdown/confirm", {}, lambda _data: None)
         self._quit_app()
 
     def _quit_app(self) -> None:
         from PySide6.QtWidgets import QApplication
-        QApplication.instance().quit()
+
+        app = QApplication.instance()
+        if app:
+            app.quit()
 
     def _on_import_plan(self) -> None:
         from PySide6.QtWidgets import QFileDialog
 
-        path, _ = QFileDialog.getOpenFileName(
-            self._window, "Uvezi plan", "", "Markdown (*.md)"
-        )
-        if path and self._api:
+        path, _ = QFileDialog.getOpenFileName(self._window, "Uvezi plan", "", "Markdown (*.md)")
+        if path and self._api and self._active_project_id:
             import pathlib
 
             content = pathlib.Path(path).read_text(encoding="utf-8")
+            project_id = self._active_project_id
+            api = self._api
             self._api._post(
-                f"/projects/{self._active_project_id}/import-plan",
+                f"/projects/{project_id}/import-plan",
                 {"markdown": content},
-                self._api.plan_progress_received,
+                lambda _data: api.get_plan_progress(project_id),
             )
 
     def _load_plan_item_details(self, item_id: str) -> None:
@@ -237,16 +244,23 @@ class FlowOsGui:
         if not self._api or not self._active_project_id:
             return
         if not self._active_project_repo_path:
-            self._controller.error_occurred.emit("Nije postavljen repo_path za aktivni projekat")
+            if self._controller:
+                self._controller.error_occurred.emit(
+                    "Nije postavljen repo_path za aktivni projekat"
+                )
             return
 
-        self._api._post("/sessions", {
-            "project_id": self._active_project_id,
-            "agent_type": agent_type.lower().replace(" ", "_"),
-            "repo_path": self._active_project_repo_path,
-            "execution_mode": "EXTERNAL_TRACKED",
-            "pid": pid,
-        }, self._api.sessions_received)
+        self._api._post(
+            "/sessions",
+            {
+                "project_id": self._active_project_id,
+                "agent_type": agent_type.lower().replace(" ", "_"),
+                "repo_path": self._active_project_repo_path,
+                "execution_mode": "EXTERNAL_TRACKED",
+                "pid": pid,
+            },
+            self._api.sessions_received,
+        )
 
     def _start_auto_refresh(self) -> None:
         self._refresh_timer = QTimer()
@@ -281,15 +295,18 @@ class FlowOsGui:
             if pid and pid != self._active_project_id:
                 self._active_project_id = pid
                 self._active_project_repo_path = repo
-                self._controller.load_plan_progress(pid)
-                self._controller.load_resume(pid)
-                self._controller.load_sessions(pid)
+                if self._controller:
+                    self._controller.load_plan_progress(pid)
+                    self._controller.load_resume(pid)
+                    self._controller.load_sessions(pid)
                 if self._api:
                     self._api.fetch_worktrees(pid)
-            self._window.set_project_info({
-                "name": name,
-                "last_activity": p.get("updated_at", ""),
-            })
+            self._window.set_project_info(
+                {
+                    "name": name,
+                    "last_activity": p.get("updated_at", ""),
+                }
+            )
             self._window.set_topbar_info(project=name)
         else:
             self._window.set_project_info(None)
@@ -306,7 +323,7 @@ class FlowOsGui:
 
         # StatusSummaryBar
         if self._status_bar:
-            counts = {}
+            counts: dict[str, int] = {}
             for ph in phases:
                 for it in ph.get("items", []):
                     s = it.get("status", "NOT_STARTED")
@@ -335,9 +352,8 @@ class FlowOsGui:
             self._attention_panel.render({"blocked_items": data.get("blocked", 0)})
 
     def _on_plan_item_received(self, data: dict) -> None:
-        if isinstance(data, dict) and "error" not in data:
-            if self._details_view:
-                self._details_view.render(data)
+        if isinstance(data, dict) and "error" not in data and self._details_view:
+            self._details_view.render(data)
 
     def _on_sessions(self, sessions: list) -> None:
         if self._sessions_overview:
@@ -354,11 +370,13 @@ class FlowOsGui:
             return
         ws_state = data.get("workspace_state", {})
         if ws_state and ws_state.get("reconciliation_status") not in (None, "CURRENT"):
-            self._reconciliation_view.render({
-                "new_commits": ws_state.get("external_commits", 0),
-                "dirty_files": ws_state.get("external_dirty", 0),
-                "current_branch": ws_state.get("last_known_branch", ""),
-            })
+            self._reconciliation_view.render(
+                {
+                    "new_commits": ws_state.get("external_commits", 0),
+                    "dirty_files": ws_state.get("external_dirty", 0),
+                    "current_branch": ws_state.get("last_known_branch", ""),
+                }
+            )
         else:
             self._reconciliation_view.render(None)
 
@@ -400,9 +418,13 @@ class FlowOsGui:
         try:
             msg = json.loads(raw)
             event_type = msg.get("type", "")
-            payload = msg.get("payload", {})
 
-            if event_type in ("session.completed", "plan_progress.updated", "project.resume.updated") or event_type == "conflict.created" or event_type == "reconciliation.created":
+            if (
+                event_type
+                in ("session.completed", "plan_progress.updated", "project.resume.updated")
+                or event_type == "conflict.created"
+                or event_type == "reconciliation.created"
+            ):
                 self._refresh_all()
         except Exception:
             pass
@@ -444,7 +466,9 @@ def create_gui(use_live: bool = True) -> FlowOsGui:
     projects_page = ProjectsPage()
 
     # Layout — Pregled
-    window.set_central_widgets([resume_hero, status_bar, current_phase, sessions_overview, activity_view])
+    window.set_central_widgets(
+        [resume_hero, status_bar, current_phase, sessions_overview, activity_view]
+    )
     window.set_right_widgets([attention_panel, details_view, reconciliation_view])
 
     # Layout — namenske stranice
@@ -539,6 +563,6 @@ def _ensure_service_running() -> None:
             except Exception:
                 time.sleep(0.5)
     except FileNotFoundError:
-        print("flowos-service.exe nije pronađen — pokrenite servis ručno.")
+        pass
     except Exception:
         pass

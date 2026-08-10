@@ -34,12 +34,14 @@ def scan_agents() -> list[dict]:
                     if pid in seen_pids:
                         continue
                     seen_pids.add(pid)
-                    agents.append({
-                        "pid": pid,
-                        "agent_type": name.title(),
-                        "image": image,
-                        "detected_at": now,
-                    })
+                    agents.append(
+                        {
+                            "pid": pid,
+                            "agent_type": name.title(),
+                            "image": image,
+                            "detected_at": now,
+                        }
+                    )
     except Exception:
         pass
 

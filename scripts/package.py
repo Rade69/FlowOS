@@ -84,9 +84,7 @@ def _should_skip(name: str) -> bool:
         return True
     if name.startswith(".venv"):
         return True
-    if name.startswith(".") and name not in (".gitignore", ".gitnexus", ".crush"):
-        return True
-    return False
+    return name.startswith(".") and name not in (".gitignore", ".gitnexus", ".crush")
 
 
 def _bundle_dist() -> int:
@@ -123,9 +121,7 @@ def _bundle_dist() -> int:
         shutil.rmtree(alembic_dst)
     shutil.copytree(alembic_src, alembic_dst)
 
-    (bundle / "POKRENI.txt").write_text(
-        README_DIST.format(version=VERSION), encoding="utf-8"
-    )
+    (bundle / "POKRENI.txt").write_text(README_DIST.format(version=VERSION), encoding="utf-8")
 
     zip_path = DIST / f"FlowOS-v{VERSION}.zip"
     if zip_path.exists():
@@ -157,9 +153,7 @@ def _bundle_source() -> int:
             shutil.copytree(
                 item,
                 dst,
-                ignore=shutil.ignore_patterns(
-                    "__pycache__", "*.pyc", "*.egg-info", ".DS_Store"
-                ),
+                ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.egg-info", ".DS_Store"),
                 dirs_exist_ok=True,
             )
             file_count = sum(1 for _ in dst.rglob("*") if _.is_file())
@@ -170,16 +164,12 @@ def _bundle_source() -> int:
             print(f"    [file]  {name}")
             total_files += 1
 
-    (bundle / "PROCITAJ.txt").write_text(
-        README_SOURCE.format(version=VERSION), encoding="utf-8"
-    )
+    (bundle / "PROCITAJ.txt").write_text(README_SOURCE.format(version=VERSION), encoding="utf-8")
 
     zip_path = DIST / f"FlowOS-source-v{VERSION}.zip"
     if zip_path.exists():
         zip_path.unlink()
-    shutil.make_archive(
-        str(DIST / f"FlowOS-source-v{VERSION}"), "zip", str(DIST), "FlowOS-source"
-    )
+    shutil.make_archive(str(DIST / f"FlowOS-source-v{VERSION}"), "zip", str(DIST), "FlowOS-source")
     zip_size = zip_path.stat().st_size / (1024 * 1024)
     print(f"\n[PASS] Source bundle kreiran: {bundle}")
     print(f"  Ukupno fajlova: {total_files}")

@@ -20,9 +20,10 @@ Koristi se:
 
 import subprocess
 import sys
+import tempfile
 
 if sys.platform == "win32":
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -82,38 +83,53 @@ def main() -> int:
     print("FlowOS — verify.py")
     print(f"  Root: {ROOT}")
 
-    steps: list[tuple[str, list[str]]] = [
-        ("1. Ruff format check", ["ruff", "format", "--check", "src/", "tests/", "scripts/"]),
-        ("2. Ruff lint", ["ruff", "check", "src/", "tests/", "scripts/"]),
-        ("3. mypy", [sys.executable, "-m", "mypy", "src", "--explicit-package-bases"]),
-        (
-            "4. Architecture boundaries",
-            ["pytest", "tests/architecture/", "-v", "--tb=short", "--no-header"],
-        ),
-        (
-            "5. Unit tests",
-            [
-                "pytest",
-                "tests/unit/",
-                "tests/integration/",
-                "tests/contract/",
-                "-v",
-                "--tb=short",
-                "--no-header",
-            ],
-        ),
-    ] + [
-        ("6. Migrations check", [sys.executable, "-m", "alembic", "upgrade", "head"]),
-        (
-            "7. Alembic round-trip",
-            [sys.executable, str(ROOT / "scripts" / "verify_roundtrip.py")],
-        ),
-    ]
+    with tempfile.TemporaryDirectory(prefix="flowos_verify_migrations_") as temp_dir:
+        migration_db = Path(temp_dir) / "migrations.db"
+        migration_url = f"sqlite:///{migration_db.as_posix()}"
 
-    results: list[Result] = []
-    for name, cmd in steps:
-        result = run_step(name, cmd)
-        results.append(result)
+        steps: list[tuple[str, list[str]]] = [
+            ("1. Ruff format check", ["ruff", "format", "--check", "src/", "tests/", "scripts/"]),
+            ("2. Ruff lint", ["ruff", "check", "src/", "tests/", "scripts/"]),
+            ("3. mypy", [sys.executable, "-m", "mypy", "src", "--explicit-package-bases"]),
+            (
+                "4. Architecture boundaries",
+                ["pytest", "tests/architecture/", "-v", "--tb=short", "--no-header"],
+            ),
+            (
+                "5. Unit tests",
+                [
+                    "pytest",
+                    "tests/unit/",
+                    "tests/integration/",
+                    "tests/contract/",
+                    "-v",
+                    "--tb=short",
+                    "--no-header",
+                ],
+            ),
+        ] + [
+            (
+                "6. Migrations check",
+                [
+                    sys.executable,
+                    "-m",
+                    "alembic",
+                    "-x",
+                    f"sqlalchemy.url={migration_url}",
+                    "upgrade",
+                    "head",
+                ],
+            ),
+            (
+                "7. Alembic round-trip",
+                [sys.executable, str(ROOT / "scripts" / "verify_roundtrip.py")],
+            ),
+        ]
+
+        results: list[Result] = []
+        for name, cmd in steps:
+            result = run_step(name, cmd)
+            results.append(result)
 
     # Sažetak
     print(f"\n{'=' * 60}")

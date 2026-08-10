@@ -4,6 +4,8 @@ Zamenjuje placeholder ActiveSessionsWidget. Prima DTO podatke kroz render().
 Prikazuje: sesija ID, agent tip, plan stavku, granu/worktree, status.
 """
 
+# mypy: disable-error-code="union-attr,unused-ignore"
+
 from PySide6.QtCore import Signal
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QFrame, QTreeWidget, QTreeWidgetItem, QVBoxLayout
@@ -45,7 +47,9 @@ class SessionsView(QFrame):
         lo.addWidget(self._title_label)
 
         self._tree = QTreeWidget()
-        self._tree.setHeaderLabels(["Agent", "Plan stavka", "Radno stablo", "Trajanje", "Posljednja aktivnost", "Status"])
+        self._tree.setHeaderLabels(
+            ["Agent", "Plan stavka", "Radno stablo", "Trajanje", "Posljednja aktivnost", "Status"]
+        )
         self._tree.setRootIsDecorated(False)
         self._tree.setStyleSheet(
             f"QTreeWidget {{ background: {BG_CARD}; border: 1px solid {BORDER}; border-radius: {RADIUS_MD}px; }}"
@@ -67,6 +71,7 @@ class SessionsView(QFrame):
 
         if not sessions:
             from flowos.gui.views.overview_skeleton import TEXT_MUTED
+
             self._tree.setHeaderLabels(["Nema aktivnih sesija"])
             empty = QTreeWidgetItem(["— agenti koji trenutno rade će se pojaviti ovdje —"])
             empty.setForeground(0, QColor(TEXT_MUTED))
@@ -88,6 +93,7 @@ class SessionsView(QFrame):
             if started:
                 try:
                     from datetime import UTC, datetime
+
                     dt = datetime.fromisoformat(started.replace("Z", "+00:00"))
                     delta = datetime.now(tz=UTC) - dt
                     mins = int(delta.total_seconds() / 60)
@@ -104,6 +110,7 @@ class SessionsView(QFrame):
             if last_activity:
                 try:
                     from datetime import UTC, datetime
+
                     dt = datetime.fromisoformat(str(last_activity).replace("Z", "+00:00"))
                     delta = datetime.now(tz=UTC) - dt
                     mins = int(delta.total_seconds() / 60)

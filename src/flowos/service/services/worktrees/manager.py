@@ -62,13 +62,16 @@ class WorktreeManager:
         try:
             from flowos.service.controllers.websocket.events import event_bus
 
-            event_bus.emit_sync("worktree.created", {
-                "worktree_id": wt.id,
-                "project_id": project_id,
-                "task_id": task_id,
-                "branch_name": info.branch,
-                "worktree_path": info.path,
-            })
+            event_bus.emit_sync(
+                "worktree.created",
+                {
+                    "worktree_id": wt.id,
+                    "project_id": project_id,
+                    "task_id": task_id,
+                    "branch_name": info.branch,
+                    "worktree_path": info.path,
+                },
+            )
         except Exception:
             pass
 

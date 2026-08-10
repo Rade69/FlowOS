@@ -26,9 +26,11 @@ def engine():
         c.execute("PRAGMA foreign_keys=ON;")
         c.close()
 
+    import flowos.service.services.infrastructure.persistence.conflict_models  # noqa: F401
     import flowos.service.services.infrastructure.persistence.models  # noqa: F401
     import flowos.service.services.infrastructure.persistence.plan_models  # noqa: F401
     import flowos.service.services.infrastructure.persistence.resume_models  # noqa: F401
+    import flowos.service.services.infrastructure.persistence.worktree_models  # noqa: F401
 
     Base.metadata.create_all(eng)
     yield eng
@@ -122,6 +124,83 @@ class TestProjectsAPI:
         # Treba da vrati 404
         resp = client.get(f"/projects/{pid}")
         assert resp.status_code == 404
+
+    def test_timeline_filters_session_events_by_session_project(self, client: TestClient, engine):
+        from flowos.service.services.infrastructure.persistence.models import (
+            AgentSession,
+            SessionEvent,
+        )
+
+        project_a = client.post("/projects", json={"name": "A", "repo_path": "C:/a"}).json()
+        project_b = client.post("/projects", json={"name": "B", "repo_path": "C:/b"}).json()
+        factory = sessionmaker(bind=engine)
+        with factory() as db:
+            session_a = AgentSession(
+                project_id=project_a["id"],
+                agent_type="codex",
+                repo_path="C:/a",
+            )
+            session_b = AgentSession(
+                project_id=project_b["id"],
+                agent_type="crush",
+                repo_path="C:/b",
+            )
+            db.add_all([session_a, session_b])
+            db.flush()
+            db.add_all(
+                [
+                    SessionEvent(
+                        session_id=session_a.id,
+                        event_type="A_EVENT",
+                        summary="Event za projekat A",
+                    ),
+                    SessionEvent(
+                        session_id=session_b.id,
+                        event_type="B_EVENT",
+                        summary="Event za projekat B",
+                    ),
+                ]
+            )
+            db.commit()
+
+        resp = client.get(f"/projects/{project_a['id']}/timeline")
+        assert resp.status_code == 200
+        session_events = [item for item in resp.json() if item["type"] == "SESSION"]
+        assert [item["event"] for item in session_events] == ["A_EVENT"]
+
+    def test_project_state_uses_existing_workspace_and_worktree_fields(
+        self, client: TestClient, engine
+    ):
+        from flowos.service.services.infrastructure.persistence.resume_models import (
+            ProjectWorkspaceState,
+        )
+        from flowos.service.services.infrastructure.persistence.worktree_models import Worktree
+
+        project = client.post("/projects", json={"name": "State", "repo_path": "C:/state"}).json()
+        factory = sessionmaker(bind=engine)
+        with factory() as db:
+            db.add(
+                ProjectWorkspaceState(
+                    project_id=project["id"],
+                    last_known_status_porcelain=" M src/app.py",
+                    reconciliation_status="CURRENT",
+                )
+            )
+            db.add(
+                Worktree(
+                    project_id=project["id"],
+                    worktree_path="C:/state-wt",
+                    branch_name="flowos/test",
+                    is_clean=False,
+                )
+            )
+            db.commit()
+
+        resp = client.get(f"/projects/{project['id']}/state")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["git_dirty"] is True
+        assert data["dirty_worktrees"] == 1
 
 
 # ═══════════════════════════════════════════════════════════════════

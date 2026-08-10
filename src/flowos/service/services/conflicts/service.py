@@ -530,12 +530,15 @@ class ConflictDetectionService:
         try:
             from flowos.service.controllers.websocket.events import event_bus
 
-            event_bus.emit_sync("conflict.resolved", {
-                "conflict_id": conflict.id,
-                "project_id": conflict.project_id,
-                "conflict_type": conflict.conflict_type,
-                "file_path": conflict.file_path,
-            })
+            event_bus.emit_sync(
+                "conflict.resolved",
+                {
+                    "conflict_id": conflict.id,
+                    "project_id": conflict.project_id,
+                    "conflict_type": conflict.conflict_type,
+                    "file_path": conflict.file_path,
+                },
+            )
         except Exception:
             pass
 
@@ -563,13 +566,16 @@ class ConflictDetectionService:
             from flowos.service.controllers.websocket.events import event_bus
 
             for c in conflicts:
-                event_bus.emit_sync("conflict.created", {
-                    "conflict_id": c.id,
-                    "project_id": c.project_id,
-                    "conflict_type": c.conflict_type,
-                    "conflict_level": c.conflict_level,
-                    "file_path": c.file_path,
-                })
+                event_bus.emit_sync(
+                    "conflict.created",
+                    {
+                        "conflict_id": c.id,
+                        "project_id": c.project_id,
+                        "conflict_type": c.conflict_type,
+                        "conflict_level": c.conflict_level,
+                        "file_path": c.file_path,
+                    },
+                )
         except Exception:
             pass
 

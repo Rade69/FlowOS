@@ -446,15 +446,22 @@ class PlanProgressService:
         try:
             from flowos.service.controllers.websocket.events import event_bus
 
-            event_bus.emit_sync("plan_progress.updated", {
-                "plan_item_id": item.id,
-                "item_key": item.item_key,
-                "status": item.status,
-            })
+            event_bus.emit_sync(
+                "plan_progress.updated",
+                {
+                    "plan_item_id": item.id,
+                    "item_key": item.item_key,
+                    "status": item.status,
+                },
+            )
         except Exception:
             pass
 
         try:
+            from flowos.service.services.infrastructure.persistence.plan_models import (
+                Plan,
+                PlanPhase,
+            )
             from flowos.service.services.project_resume import ProjectResumeService
 
             phase = self._session.get(PlanPhase, item.plan_phase_id)

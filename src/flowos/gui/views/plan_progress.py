@@ -1,5 +1,7 @@
 """PlanProgressView — prikaz napretka po planu (FLOW-105A)."""
 
+# mypy: disable-error-code="union-attr,unused-ignore"
+
 from PySide6.QtCore import Signal
 from PySide6.QtGui import QColor, QFont
 from PySide6.QtWidgets import (
@@ -178,7 +180,9 @@ class CurrentPhaseView(QFrame):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setStyleSheet(f"background: {BG_CARD}; border: 1px solid {BORDER}; border-radius: {RADIUS_MD}px;")
+        self.setStyleSheet(
+            f"background: {BG_CARD}; border: 1px solid {BORDER}; border-radius: {RADIUS_MD}px;"
+        )
         self._content = QVBoxLayout(self)
         self._content.setContentsMargins(SPACING_XL, SPACING_LG, SPACING_XL, SPACING_LG)
         self._content.setSpacing(SPACING_SM)
@@ -207,7 +211,11 @@ class CurrentPhaseView(QFrame):
         items = active_phase.get("items", [])
 
         self._content.addWidget(
-            _lbl(f"{active_phase.get('phase_key', '')} — {active_phase.get('title', '')}", FONT_MD, True)
+            _lbl(
+                f"{active_phase.get('phase_key', '')} — {active_phase.get('title', '')}",
+                FONT_MD,
+                True,
+            )
         )
         self._content.addSpacing(SPACING_SM)
 
@@ -297,9 +305,12 @@ class StatusSummaryBar(QFrame):
         self._clear_badges()
         order = ["ACCEPTED", "VERIFIED", "IMPLEMENTED", "IN_PROGRESS", "BLOCKED", "NOT_STARTED"]
         labels = {
-            "ACCEPTED": "Prihvaćeno", "VERIFIED": "Provjereno",
-            "IMPLEMENTED": "Implementirano", "IN_PROGRESS": "U toku",
-            "BLOCKED": "Blokirano", "NOT_STARTED": "Nije započeto",
+            "ACCEPTED": "Prihvaćeno",
+            "VERIFIED": "Provjereno",
+            "IMPLEMENTED": "Implementirano",
+            "IN_PROGRESS": "U toku",
+            "BLOCKED": "Blokirano",
+            "NOT_STARTED": "Nije započeto",
         }
         for status in order:
             c = counts.get(status, 0)

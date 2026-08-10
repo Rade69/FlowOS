@@ -18,12 +18,6 @@ async def health():
     return {"status": "ok", "uptime": time.time() - _start_time}
 
 
-@router.get("/health")
-async def health():
-    """Provera da je servis živ."""
-    return {"status": "ok", "uptime": time.time() - _start_time}
-
-
 @router.get("/version")
 async def version():
     """Verzija servisa i API-ja."""
@@ -65,18 +59,11 @@ async def shutdown(request: Request):
 @router.post("/shutdown/prepare")
 async def shutdown_prepare(request: Request):
     """Vraća informacije o aktivnim sesijama pre gašenja."""
-    from flowos.service.services.infrastructure.persistence.models import AgentSession
-    from flowos.shared.enums.session import SessionStatus
+    from flowos.service.services.system_state import SystemStateService
 
     db = request.app.state.session_factory()
     try:
-        active = (
-            db.query(AgentSession)
-            .filter(
-                AgentSession.status.in_((SessionStatus.ACTIVE.value, SessionStatus.IDLE.value))
-            )
-            .count()
-        )
+        active = SystemStateService(db).count_active_sessions()
     finally:
         db.close()
 

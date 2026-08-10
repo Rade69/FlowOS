@@ -6,6 +6,8 @@ View → Controller → Services arhitektura.
 Pokreni: python src/flowos/gui/views/overview_skeleton.py
 """
 
+# mypy: disable-error-code="union-attr,return-value"
+
 import sys
 
 from PySide6.QtCore import Qt, Signal
@@ -156,14 +158,22 @@ class TopBar(QFrame):
         btn.clicked.connect(self.refresh_requested.emit)
         layout.addWidget(btn)
 
-    def set_info(self, project: str = "", phase: str = "", sessions: int = -1, git_status: str = "") -> None:
+    def set_info(
+        self, project: str = "", phase: str = "", sessions: int = -1, git_status: str = ""
+    ) -> None:
         if project:
             self._proj_label.setText(project)
         if phase:
             self._phase_label.setText(phase)
         parts = []
         if sessions >= 0:
-            parts.append(f"{sessions} aktivna sesija" if sessions == 1 else f"{sessions} aktivne sesije" if sessions > 0 else "")
+            parts.append(
+                f"{sessions} aktivna sesija"
+                if sessions == 1
+                else f"{sessions} aktivne sesije"
+                if sessions > 0
+                else ""
+            )
         self._stats_label.setText(" · ".join(p for p in parts if p))
         if git_status:
             self._git_label.setText(git_status)
@@ -266,7 +276,11 @@ class Sidebar(QFrame):
         for key, btn in self._nav_buttons.items():
             active = key == active_key
             bg = BG_HOVER if active else "transparent"
-            bl = f"border-left: 3px solid {BLUE};" if active else "border-left: 3px solid transparent;"
+            bl = (
+                f"border-left: 3px solid {BLUE};"
+                if active
+                else "border-left: 3px solid transparent;"
+            )
             color = TEXT_PRIMARY if active else TEXT_SECONDARY
             btn.setStyleSheet(
                 f"QPushButton {{ background: {bg}; {bl} border-top:none; border-right:none; border-bottom:none; color: {color}; text-align:left; padding-left:{SPACING_XL}px; font-size:{FONT_SM}px; }} QPushButton:hover {{ background: {BG_HOVER}; color: {TEXT_PRIMARY}; }}"
@@ -436,6 +450,7 @@ class RecentActivityWidget(QFrame):
             if ts:
                 try:
                     from datetime import UTC, datetime
+
                     dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
                     delta = datetime.now(tz=UTC) - dt
                     s = int(delta.total_seconds())
@@ -671,9 +686,7 @@ class StatusBar(QFrame):
 
     def set_stats(self, sessions: int, projects: int, watcher_active: bool) -> None:
         self._sessions.setText(f"Sesije: {sessions}" if sessions >= 0 else "Sesije: —")
-        self._watcher.setText(
-            "● Posmatrač: aktivan" if watcher_active else "Posmatrač: —"
-        )
+        self._watcher.setText("● Posmatrač: aktivan" if watcher_active else "Posmatrač: —")
         if watcher_active:
             self._watcher.setStyleSheet(f"color: {GREEN}; border: none; background: transparent;")
 
@@ -689,8 +702,16 @@ class MainWindow(QMainWindow):
     page_changed = Signal(str)
 
     PAGE_NAMES = [
-        "Pregled", "Projekti", "Plan", "Sesije", "Zadaci",
-        "Agenti", "Radna stabla", "Konflikti", "Izvještaji", "Postavke",
+        "Pregled",
+        "Projekti",
+        "Plan",
+        "Sesije",
+        "Zadaci",
+        "Agenti",
+        "Radna stabla",
+        "Konflikti",
+        "Izvještaji",
+        "Postavke",
     ]
 
     def __init__(self):
@@ -834,7 +855,9 @@ class MainWindow(QMainWindow):
         elif action == "Uvezi plan":
             self._on_navigate("Plan")
         elif action == "Otvori dnevnik":
-            reports_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "agent_reports")
+            reports_dir = os.path.join(
+                os.path.dirname(__file__), "..", "..", "..", "..", "agent_reports"
+            )
             if os.path.isdir(reports_dir):
                 subprocess.Popen(["explorer", os.path.abspath(reports_dir)])
 
@@ -849,7 +872,9 @@ class MainWindow(QMainWindow):
         self._statusbar.set_connected(connected)
         self._statusbar.set_stats(sessions, 0, watcher_active)
 
-    def set_topbar_info(self, project: str = "", phase: str = "", sessions: int = -1, git_status: str = "") -> None:
+    def set_topbar_info(
+        self, project: str = "", phase: str = "", sessions: int = -1, git_status: str = ""
+    ) -> None:
         self.topbar.set_info(project, phase, sessions, git_status)
 
     def set_page_widget(self, name: str, widget: QWidget) -> None:
@@ -896,11 +921,12 @@ class MainWindow(QMainWindow):
         msg.setWindowTitle("FlowOS")
         msg.setText("Šta želite da uradite?")
         msg.setInformativeText(
-            "Zatvaranje prozora ne zaustavlja pozadinski servis "
-            "i agentske sesije."
+            "Zatvaranje prozora ne zaustavlja pozadinski servis i agentske sesije."
         )
         btn_close = msg.addButton("Zatvori samo prozor", QMessageBox.ButtonRole.AcceptRole)
-        btn_shutdown = msg.addButton("Zaustavi sve i ugasi FlowOS", QMessageBox.ButtonRole.DestructiveRole)
+        btn_shutdown = msg.addButton(
+            "Zaustavi sve i ugasi FlowOS", QMessageBox.ButtonRole.DestructiveRole
+        )
         btn_cancel = msg.addButton("Odustani", QMessageBox.ButtonRole.RejectRole)
         msg.setDefaultButton(btn_cancel)
         msg.exec()

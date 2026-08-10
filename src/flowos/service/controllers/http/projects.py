@@ -85,45 +85,9 @@ def delete_project(project_id: str, session: Session = Depends(get_session)):
 @router.get("/{project_id}/timeline")
 def get_project_timeline(project_id: str, limit: int = 30, session: Session = Depends(get_session)):
     """Vraća nedavne događaje za projekat (FileActivity + SessionEvents)."""
-    from flowos.service.services.activity.service import ActivityService
-    from flowos.service.services.infrastructure.persistence.models import SessionEvent
+    from flowos.service.services.project_timeline import ProjectTimelineService
 
-    items: list[dict] = []
-
-    # FileActivity
-    activity_svc = ActivityService(session)
-    activities = activity_svc.get_project_activities(project_id, limit=limit)
-    for a in activities:
-        items.append({
-            "id": a.event_id,
-            "type": "FILE",
-            "event": a.event_type,
-            "file": a.file_path or "",
-            "session_id": a.session_id or "",
-            "attribution": a.attribution_type,
-            "occurred_at": a.occurred_at.isoformat() if a.occurred_at else "",
-        })
-
-    # SessionEvents
-    events = (
-        session.query(SessionEvent)
-        .filter(SessionEvent.project_id == project_id)
-        .order_by(SessionEvent.occurred_at.desc())
-        .limit(limit)
-        .all()
-    )
-    for e in events:
-        items.append({
-            "id": e.id,
-            "type": "SESSION",
-            "event": e.event_type,
-            "session_id": e.session_id or "",
-            "occurred_at": e.occurred_at.isoformat() if e.occurred_at else "",
-        })
-
-    # Sortiraj po vremenu
-    items.sort(key=lambda x: x.get("occurred_at", ""), reverse=True)
-    return items[:limit]
+    return ProjectTimelineService(session).get_timeline(project_id, limit=limit)
 
 
 @router.get("/{project_id}/state")

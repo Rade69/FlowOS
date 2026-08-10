@@ -5,6 +5,7 @@ Vraća rezultate kroz Qt signale (ne callback hell).
 """
 
 import json
+from typing import Any
 
 from PySide6.QtCore import QObject, Signal
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
@@ -52,7 +53,7 @@ class GuiApiClient(QObject):
 
     def create_project(self, name: str, repo_path: str):
         body = {"name": name, "repo_path": repo_path}
-        self._post("/projects", body, self.project_created)  # type: ignore[arg-type]  # PySide6 SignalInstance
+        self._post("/projects", body, self.project_created)
 
     def delete_project(self, project_id: str):
         self._delete(f"/projects/{project_id}", lambda data: self.project_deleted.emit(project_id))
@@ -68,7 +69,7 @@ class GuiApiClient(QObject):
         self._get(f"/projects/{project_id}/resume", self.resume_received)  # type: ignore[arg-type]
 
     def regenerate_resume(self, project_id: str):
-        self._post(f"/projects/{project_id}/resume/regenerate", {}, self.resume_received)  # type: ignore[arg-type]
+        self._post(f"/projects/{project_id}/resume/regenerate", {}, self.resume_received)
 
     # ── Sessions ───────────────────────────────────────
 
@@ -100,7 +101,7 @@ class GuiApiClient(QObject):
         reply = self._nam.get(req)
         reply.finished.connect(lambda r=reply, s=signal: self._handle_response(r, s))
 
-    def _post(self, path: str, body: dict, signal: Signal):
+    def _post(self, path: str, body: dict, signal: Any):
         url = f"{self._base_url}{path}"
         req = QNetworkRequest()
         req.setUrl(url)
@@ -116,12 +117,19 @@ class GuiApiClient(QObject):
         reply = self._nam.deleteResource(req)
         reply.finished.connect(lambda r=reply, cb=callback: self._handle_response(r, None, cb))
 
-    def _handle_response(self, reply: QNetworkReply, signal: Signal | None, callback=None):
+    def _handle_response(
+        self,
+        reply: QNetworkReply,
+        signal: Any,
+        callback=None,
+    ):
         if reply.error() == QNetworkReply.NetworkError.NoError:
             try:
                 data = json.loads(reply.readAll().data().decode())  # type: ignore[union-attr]  # PySide6 QByteArray
-                if signal:
-                    signal.emit(data)  # type: ignore[attr-defined]  # PySide6 Signal
+                if callable(signal):
+                    signal(data)
+                elif signal:
+                    signal.emit(data)
                 elif callback:
                     callback(data)
             except json.JSONDecodeError:
@@ -130,8 +138,10 @@ class GuiApiClient(QObject):
             code = reply.error()
             msg = reply.errorString()
             self.error_occurred.emit(code, msg)
-            if signal:
-                signal.emit({"error": msg})  # type: ignore[attr-defined]  # PySide6 Signal
+            if callable(signal):
+                signal({"error": msg})
+            elif signal:
+                signal.emit({"error": msg})
         reply.deleteLater()
 
     # ── Worktrees ───────────────────────────────────────
@@ -143,12 +153,12 @@ class GuiApiClient(QObject):
         self._post(
             f"/worktrees/{worktree_id}/integrate/prepare?base_branch={base_branch}",
             {},
-            self.integration_prepared,  # type: ignore[arg-type]
+            self.integration_prepared,
         )
 
     def cleanup_worktree(self, worktree_id: str, force: bool = False):
         self._post(
             f"/worktrees/{worktree_id}/cleanup",
             {"force": force},
-            self.worktree_cleaned,  # type: ignore[arg-type]
+            self.worktree_cleaned,
         )

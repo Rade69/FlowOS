@@ -53,9 +53,7 @@ class ProjectStateService:
             self._db.query(AgentSession)
             .filter(
                 AgentSession.project_id == project_id,
-                AgentSession.status.in_(
-                    (SessionStatus.ACTIVE.value, SessionStatus.IDLE.value)
-                ),
+                AgentSession.status.in_((SessionStatus.ACTIVE.value, SessionStatus.IDLE.value)),
             )
             .all()
         )
@@ -63,12 +61,13 @@ class ProjectStateService:
         # Plan itemi
         plan_items: list[PlanItem] = []
         if active_plan:
-            phase_ids = [p.id for p in self._db.query(PlanPhase).filter(PlanPhase.plan_id == active_plan.id).all()]
+            phase_ids = [
+                p.id
+                for p in self._db.query(PlanPhase).filter(PlanPhase.plan_id == active_plan.id).all()
+            ]
             if phase_ids:
                 plan_items = (
-                    self._db.query(PlanItem)
-                    .filter(PlanItem.plan_phase_id.in_(phase_ids))
-                    .all()
+                    self._db.query(PlanItem).filter(PlanItem.plan_phase_id.in_(phase_ids)).all()
                 )
 
         # Konflikti
@@ -93,12 +92,8 @@ class ProjectStateService:
         )
 
         # Worktrees
-        worktrees = (
-            self._db.query(Worktree)
-            .filter(Worktree.project_id == project_id)
-            .all()
-        )
-        dirty_worktrees = sum(1 for w in worktrees if w.git_status == "DIRTY")
+        worktrees = self._db.query(Worktree).filter(Worktree.project_id == project_id).all()
+        dirty_worktrees = sum(1 for w in worktrees if not w.is_clean)
 
         # Izvedeno stanje
         operational_state = self._derive_state(
@@ -132,10 +127,12 @@ class ProjectStateService:
                 "item_key": active_item.item_key,
                 "title": active_item.title,
                 "status": active_item.status,
-            } if active_item else None,
+            }
+            if active_item
+            else None,
             "active_sessions": len(active_sessions),
             "open_conflicts": open_conflicts,
-            "git_dirty": ws_state.is_dirty if ws_state else False,
+            "git_dirty": bool(ws_state.last_known_status_porcelain) if ws_state else False,
             "external_changes": ws_state.reconciliation_status != "CURRENT" if ws_state else False,
             "dirty_worktrees": dirty_worktrees,
             "resume_confidence": resume.confidence if resume else "LOW",

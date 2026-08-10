@@ -1,14 +1,23 @@
 # FlowOS — audit trenutnog stanja repozitorija
 
 **Datum snimka:** 2026-08-10  
-**Predmet:** stvarno stanje koda, uključujući necommitovane fajlove zatečene u working treeju  
-**Metod:** čitanje izvornog koda, ORM modela, migracija, contracta, API kontrolera, GUI wiring-a i testova. Planovi i raniji izvještaji korišteni su samo za poređenje. GitNexus indeks odgovara HEAD-u `5bd1f88`, ali ne obuhvata necommitovane izmjene i njegov FTS upit je prijavio neispravan/prazan indeks; zato je kod ručno provjeren kao primarni dokaz.
+**Predmet:** stvarno stanje koda nakon commitovanja Crush implementacije i pratećih arhitektonskih/alatnih artefakata
+**Metod:** čitanje izvornog koda, ORM modela, migracija, contracta, API kontrolera, GUI wiring-a i testova. Planovi i raniji izvještaji korišteni su samo za poređenje. GitNexus je nakon oba commita osvježen na 6.693 čvora, 10.685 veza i 176 execution flowova; kod ostaje primarni dokaz.
 
 ## Sažetak
 
 FlowOS danas jeste Python desktop sistem sa tri izvršna ulaza: FastAPI servis, PySide6/Qt Widgets GUI i Typer CLI. Backend trajno čuva projekte, zadatke, planove, sesije, više vrsta događaja, konflikte, worktree metapodatke, izvještaje i materijalizovano „Gdje si stao“ stanje u SQLite bazi. Servis pri radu pokreće filesystem watchere po projektu, periodičnu detekciju konflikata i Git reconciliation. GUI je već povezan sa dijelom REST API-ja i WebSocket signalima, ali dio stranica je samo statički ili djelimično povezan.
 
-Najvažnija činjenica za migraciju jeste da postoje paralelni koncepti: generički `Task` i planski `PlanItem`; direktna veza sesije sa jednim taskom i jednim plan itemom; najmanje četiri odvojena trajna toka aktivnosti/događaja; te dva različita značenja „agent reporta“ — Markdown konvencija u repositoryju i strukturisani `AgentReport` u bazi. Novi YAML front matter se ne parsira. Postoje i konkretna contract/model neslaganja u zatečenom, prljavom working treeju, zbog kojih neke nove funkcije ne mogu raditi kako su napisane.
+Najvažnija činjenica za migraciju jeste da postoje paralelni koncepti: generički `Task` i planski `PlanItem`; direktna veza sesije sa jednim taskom i jednim plan itemom; najmanje četiri odvojena trajna toka aktivnosti/događaja; te dva različita značenja „agent reporta“ — Markdown konvencija u repositoryju i strukturisani `AgentReport` u bazi. Novi YAML front matter se ne parsira. Postoje i konkretna contract/model neslaganja u sada commitovanom kodu, zbog kojih neke nove funkcije ne mogu raditi kako su napisane.
+
+## Osvježenje nakon commitovanja
+
+Audit je prvobitno napravljen dok je dio pregledanog stanja bio necommitovan. To stanje je potom sačuvano u dva commita i više nije privremeni working-tree snapshot:
+
+- `729c8da` — `fix: close P0 bugs, add P1 workflow, evidence bundle, and GUI fixes`: Crushov commit sa 21 fajlom, 2.423 dodate i 210 obrisanih linija. Uključuje prošireni GUI wiring i prikaze, shutdown/agent scan API, WebSocket i session/completion promjene, `EvidenceService` i njegove unit testove.
+- `25ae36f` — `chore: preserve current FlowOS architecture and tooling work`: objedinjeni commit preostalih 37 fajlova, 14.451 dodatom i 181 obrisanom linijom. Uključuje arhitektonske ADR/feasibility dokumente, funkcionalne analize, PyInstaller/package artefakte, preostale CLI/GUI/backend fajlove, GitNexus skillove i ovaj audit.
+
+Prije commita `25ae36f` pokrenut je `python scripts/verify.py`. Verifikacija nije prošla: Ruff je prijavio neformatirane fajlove, a migration roundtrip `sqlite3.OperationalError: table projects already exists`. Promjene su, po eksplicitnom korisničkom zahtjevu, commitovane bez popravljanja ili preformatiranja zatečenog koda. Poslije commita working tree je bio čist. Osvježavanje ovog dokumenta je jedina naknadna izmjena.
 
 # 1. Identitet projekta
 
@@ -16,8 +25,9 @@ Najvažnija činjenica za migraciju jeste da postoje paralelni koncepti: generi�
 |---|---|---|
 | Root | `C:\Users\38765\Desktop\FolowOS` | Git i filesystem pregled |
 | Branch | `main` | `git branch --show-current` |
-| HEAD | `5bd1f88db464472f83553a26231af51aee601c78` (`fix(gui): read service port from runtime descriptor`) | `git rev-parse HEAD`, `git log -5 --oneline` |
-| Working tree | Prljav: 27 izmijenjenih praćenih putanja i više novih/nepraćenih putanja prije ovog audita | `git status --short` |
+| HEAD | `25ae36f` (`chore: preserve current FlowOS architecture and tooling work`) prije ovog osvježenja dokumenta | `git rev-parse HEAD`, `git log --oneline` |
+| Prethodni funkcionalni commit | `729c8da` (`fix: close P0 bugs, add P1 workflow, evidence bundle, and GUI fixes`) | `git show --stat 729c8da` |
+| Working tree | Bio čist poslije `25ae36f`; sada sadrži samo ovo traženo osvježenje audit dokumenta | `git status --short` |
 | Jezik/framework | Python ≥3.12; FastAPI, SQLAlchemy/Alembic, SQLite/WAL; PySide6 Qt Widgets; Typer | `pyproject.toml` |
 | Backend start | `flowos-service` → `flowos.service.app:main`; alternativno `scripts/run_service.py`; PyInstaller spec postoji | `pyproject.toml`, `src/flowos/service/app.py`, `flowos-service.spec` |
 | GUI start | `flowos-gui` → `flowos.gui.app:main`; alternativno `scripts/run_gui.py`; bez `--live` radi u mock režimu | `pyproject.toml`, `src/flowos/gui/app.py` → `main()` |
@@ -25,7 +35,7 @@ Najvažnija činjenica za migraciju jeste da postoje paralelni koncepti: generi�
 
 Glavni dependency/config fajlovi su `pyproject.toml`, `alembic.ini`, `alembic/env.py`, `.gitignore`, tri `flowos*.spec` PyInstaller fajla, `scripts/build.py`, `scripts/package.py`, `scripts/verify.py` i `scripts/guard_architecture.py`. Nema Node/Electron/QML build sloja.
 
-Važna ograda: ovaj audit opisuje i necommitovane fajlove kao trenutno vidljivo stanje, ali oni nisu dio HEAD-a i mogu pripadati drugom agentu ili korisniku.
+Važna ograda: arhitektonske ocjene opisuju sadržaj commitova `729c8da` i `25ae36f`. Commitovanje dokazuje da su fajlovi sačuvani u Git istoriji, ali ne dokazuje da je svaka funkcionalnost ispravna; puna verifikacija prije `25ae36f` je pala.
 
 # 2. Struktura repositoryja
 
@@ -51,7 +61,7 @@ FolowOS/
 ├── scripts/                     start, build/package, verify, architecture guard
 ├── agent_reports/               ručno održavani Markdown izvještaji
 ├── docs/                        planovi, korektivni nalozi, GUI specifikacije, backlog
-├── arhitektura/                 novi ADR/feasibility dokumenti, trenutno necommitovani
+├── arhitektura/                 ADR i agent-observability feasibility dokumenti
 ├── project_rooms/               plan rada visokog rizika
 ├── artifacts/                   runtime/verifikacioni artefakti; nije programski kod
 ├── assets/, screenshots/        GUI reference i snimci
@@ -352,10 +362,10 @@ Očigledno slabo ili nepokriveno: stvarni PySide6 GUI interakcijski testovi, GUI
 | `docs/FlowOS-novi-detaljan-plan-PySide6.md` | DJELIMIČNO USKLAĐEN | arhitektonske granice prate kod; mnoge kasnije faze nisu implementirane |
 | `docs/FlowOS-kompletan-plan.md` | DJELIMIČNO USKLAĐEN | dobar referentni backend koncept, nije snapshot implementacije |
 | v2 plan-progress / v3 project-resume planovi | DJELIMIČNO USKLAĐEN | modeli uglavnom postoje, ali contract/wiring i artifact report tok nisu završeni |
-| `docs/phase3-backlog.md`, `phase3-migration-history.md` | NE MOŽE SE POTPUNO UTVRDITI | operativni istorijski dokumenti; dio stanja je pretečen necommitovanim kodom |
+| `docs/phase3-backlog.md`, `phase3-migration-history.md` | NE MOŽE SE POTPUNO UTVRDITI | operativni istorijski dokumenti; dio stanja je pretečen novijim commitovanim kodom |
 | `docs/FlowOS-Faza3-novi-bundle-nezavisni-pregled.md` | DJELIMIČNO USKLAĐEN | opisuje stvarne phase-3 koncepte, ali nije trenutni inventar |
 | `CLAUDE.md` | DJELIMIČNO USKLAĐEN | pravila su ciljna; „Evergreen N/A — nema koda“ je zastarjelo |
-| `arhitektura/ADR-*` | NE MOŽE SE UTVRDITI kao usvojeno | necommitovani dokumenti; više fajlova koristi isti ADR-005 broj |
+| `arhitektura/ADR-*` | DJELIMIČNO USKLAĐEN | dokumenti su sada commitovani, ali više fajlova koristi isti ADR-005 broj i Git commit sam ne razrješava koji je kanonski/usvojen |
 | postojeći `agent_reports/*.md` | istorijski dokazi, ne trenutni autoritet | korisni za porijeklo, ali trenutni kod/testovi imaju prednost |
 
 # 17. Duplikati i paralelni sistemi
@@ -430,14 +440,14 @@ Očigledno slabo ili nepokriveno: stvarni PySide6 GUI interakcijski testovi, GUI
 
 # 21. Šta nisam mogao pouzdano utvrditi
 
-- Da li su sve necommitovane izmjene namijenjene zajedničkom finalnom stanju ili su privremeni rad drugog agenta.
+- Koji dijelovi objedinjeni u `25ae36f` predstavljaju usvojenu ciljnu odluku, a koji su samo sačuvani istraživački ili pomoćni artefakti.
 - Da li PyInstaller executable-i iz `dist/` odgovaraju trenutnom source treeju; build nije pokrenut.
 - Da li svih 295 testova prolazi; urađena je samo kolekcija.
 - Stvarno stanje korisničke lokalne SQLite baze i koja migracijska grana je nad njom primijenjena; baza nije otvarana.
-- Koji novi ADR dokument je usvojen, jer su necommitovani i tri nose oznaku ADR-005.
+- Koji od tri dokumenta sa oznakom ADR-005 je kanonski/usvojen; sva tri su sada commitovana.
 - Da li vanjski CLI alati stvarno prihvataju sve argumente koje adapteri generišu; nisu pokretani.
-- Da li GUI render radi bez greške u trenutnom dirty stanju; nije pokrenut niti vizuelno testiran.
-- Da li route/field greške već popravlja paralelna sesija; dokument opisuje snapshot pregledan tokom ovog audita.
+- Da li GUI render radi bez greške na HEAD-u `25ae36f`; nije pokrenut niti vizuelno testiran.
+- Da li će route/field greške biti popravljene u narednom radu; na pregledanom HEAD-u ostaju dokumentovane, a standardna verifikacija nije prošla.
 
 # 22. Preporučeni prvi migration korak
 

@@ -10,6 +10,7 @@ Tok:
 7. WebSocket emitovanje
 """
 
+import hashlib
 import json
 import logging
 from datetime import UTC, datetime
@@ -64,16 +65,15 @@ class ReconciliationService:
             .first()
         )
         if not ws_state:
+            changed_files = git_state.changed_files + git_state.untracked_files
             ws_state = ProjectWorkspaceState(
                 project_id=project_id,
                 last_known_commit_sha=git_state.commit_sha,
                 last_known_branch=git_state.branch,
-                is_dirty=git_state.is_dirty,
+                last_known_status_porcelain="\n".join(changed_files),
+                last_known_dirty_fingerprint=_dirty_fingerprint(changed_files),
             )
             self._db.add(ws_state)
-            changed_files = git_state.changed_files + git_state.untracked_files
-            ws_state.external_dirty = len(changed_files)
-            ws_state.external_commits = 0
             ws_state.reconciliation_status = "CURRENT"
             self._db.flush()
             return None
@@ -82,26 +82,32 @@ class ReconciliationService:
         categories: list[str] = []
         changes_detected = False
 
-        if git_state.commit_sha and ws_state.last_known_commit_sha:
-            if git_state.commit_sha != ws_state.last_known_commit_sha:
-                categories.append("HEAD_CHANGED")
-                categories.append("EXTERNAL_COMMIT")
-                ws_state.external_commits = (ws_state.external_commits or 0) + 1
-                changes_detected = True
+        if (
+            git_state.commit_sha
+            and ws_state.last_known_commit_sha
+            and git_state.commit_sha != ws_state.last_known_commit_sha
+        ):
+            categories.append("HEAD_CHANGED")
+            categories.append("EXTERNAL_COMMIT")
+            changes_detected = True
 
-        if git_state.branch and ws_state.last_known_branch:
-            if git_state.branch != ws_state.last_known_branch:
-                categories.append("BRANCH_CHANGED")
-                changes_detected = True
-
-        if git_state.is_dirty != ws_state.is_dirty:
-            categories.append("WORKTREE_DIRTY")
+        if (
+            git_state.branch
+            and ws_state.last_known_branch
+            and git_state.branch != ws_state.last_known_branch
+        ):
+            categories.append("BRANCH_CHANGED")
             changes_detected = True
 
         changed_files = git_state.changed_files + git_state.untracked_files
+        dirty_fingerprint = _dirty_fingerprint(changed_files)
+        previous_dirty = bool(ws_state.last_known_status_porcelain)
+        if git_state.is_dirty != previous_dirty:
+            categories.append("WORKTREE_DIRTY")
+            changes_detected = True
+
         if changed_files:
             categories.append("FILES_CHANGED")
-            ws_state.external_dirty = len(changed_files)
             changes_detected = True
 
         if not changes_detected:
@@ -111,20 +117,30 @@ class ReconciliationService:
             return None
 
         # 4. Ažuriraj workspace state
+        previous_commit_sha = ws_state.last_known_commit_sha
+        previous_branch = ws_state.last_known_branch
+        previous_dirty_fingerprint = ws_state.last_known_dirty_fingerprint
         ws_state.last_known_commit_sha = git_state.commit_sha
         ws_state.last_known_branch = git_state.branch
-        ws_state.is_dirty = git_state.is_dirty
+        ws_state.last_known_status_porcelain = "\n".join(changed_files)
+        ws_state.last_known_dirty_fingerprint = dirty_fingerprint
         ws_state.reconciliation_status = "EXTERNAL_CHANGES"
+        ws_state.external_change_summary = ", ".join(categories)
         ws_state.last_reconciled_at = datetime.now(tz=UTC)
 
         # 5. Kreiraj reconciliation event
         event = ProjectReconciliationEvent(
             project_id=project_id,
-            categories_json=json.dumps(categories),
-            detected_at=datetime.now(tz=UTC),
-            git_commit_sha=git_state.commit_sha,
-            git_branch=git_state.branch,
+            previous_commit_sha=previous_commit_sha,
+            current_commit_sha=git_state.commit_sha,
+            previous_branch=previous_branch,
+            current_branch=git_state.branch,
+            previous_dirty_fingerprint=previous_dirty_fingerprint,
+            current_dirty_fingerprint=dirty_fingerprint,
+            result="EXTERNAL_CHANGES",
+            new_commit_shas_json=json.dumps([git_state.commit_sha] if git_state.commit_sha else []),
             changed_files_json=json.dumps(changed_files),
+            occurred_at=datetime.now(tz=UTC),
         )
         self._db.add(event)
 
@@ -143,12 +159,15 @@ class ReconciliationService:
         try:
             from flowos.service.controllers.websocket.events import event_bus
 
-            event_bus.emit_sync("reconciliation.created", {
-                "project_id": project_id,
-                "categories": categories,
-                "commit": git_state.commit_sha,
-                "branch": git_state.branch,
-            })
+            event_bus.emit_sync(
+                "reconciliation.created",
+                {
+                    "project_id": project_id,
+                    "categories": categories,
+                    "commit": git_state.commit_sha,
+                    "branch": git_state.branch,
+                },
+            )
         except Exception:
             pass
 
@@ -166,3 +185,10 @@ class ReconciliationService:
             "changed_files": len(changed_files),
             "dirty": git_state.is_dirty,
         }
+
+
+def _dirty_fingerprint(changed_files: list[str]) -> str | None:
+    if not changed_files:
+        return None
+    payload = "\n".join(sorted(changed_files)).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()

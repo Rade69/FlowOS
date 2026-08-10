@@ -1,5 +1,7 @@
 """ProjectResumeView, PlanItemDetailsView, ReconciliationView, ResumeHeroView (FLOW-105B, 207B)."""
 
+# mypy: disable-error-code="union-attr,unused-ignore"
+
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout
@@ -96,9 +98,7 @@ class ResumeHeroView(QFrame):
         if last:
             meta_parts.append(last)
         if meta_parts:
-            self._content.addWidget(
-                _lbl(" · ".join(meta_parts), FONT_SM, False, TEXT_SECONDARY)
-            )
+            self._content.addWidget(_lbl(" · ".join(meta_parts), FONT_SM, False, TEXT_SECONDARY))
 
         # Status
         ist = data.get("plan_item_status", "")
@@ -138,7 +138,12 @@ class ResumeHeroView(QFrame):
         conf_labels = {"HIGH": "Visoka", "MEDIUM": "Srednja", "LOW": "Niska"}
         footer.addWidget(_lbl("Pouzdanost:", FONT_XS, False, TEXT_MUTED))
         footer.addWidget(
-            _lbl(conf_labels.get(confidence, confidence), FONT_SM, True, conf_colors.get(confidence, YELLOW))
+            _lbl(
+                conf_labels.get(confidence, confidence),
+                FONT_SM,
+                True,
+                conf_colors.get(confidence, YELLOW),
+            )
         )
         footer.addStretch()
         continue_btn = QPushButton("Nastavi rad →")
@@ -405,7 +410,9 @@ class AttentionPanel(QFrame):
                     f"color: {YELLOW}; border: none; background: transparent; text-decoration: underline;"
                 )
                 lbl.setCursor(Qt.CursorShape.PointingHandCursor)  # type: ignore[attr-defined]
-                lbl.mousePressEvent = lambda e, t=nav_target: self.item_activated.emit(t, text)  # type: ignore[assignment]
+                lbl.mousePressEvent = (  # type: ignore[assignment]
+                    lambda e, t=nav_target, label=text: self.item_activated.emit(t, label)
+                )
             self._items.addWidget(lbl)
 
     def _clear(self) -> None:

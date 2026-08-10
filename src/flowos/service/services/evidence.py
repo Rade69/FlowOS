@@ -54,14 +54,12 @@ class EvidenceService:
 
         bundle = EvidenceBundle(
             plan_item_id=plan_item_id,
-            plan_item_key=plan_item.item_key if hasattr(plan_item, 'item_key') else None,
+            plan_item_key=plan_item.item_key,
         )
 
         # ID projekta iz plana
         project_id = (
-            plan_item.plan.phase.project_id
-            if hasattr(plan_item, 'plan') and plan_item.plan and plan_item.plan.phase
-            else None
+            plan_item.phase.plan.project_id if plan_item.phase and plan_item.phase.plan else None
         )
 
         # Primarna sesija za ovu plan stavku (najnovija)
@@ -79,9 +77,7 @@ class EvidenceService:
 
             # Izmenjeni fajlovi iz FileActivity
             activities = (
-                self._db.query(FileActivity)
-                .filter(FileActivity.session_id == session.id)
-                .all()
+                self._db.query(FileActivity).filter(FileActivity.session_id == session.id).all()
             )
             bundle.changed_files = list({a.file_path for a in activities})
 
@@ -109,24 +105,22 @@ class EvidenceService:
                     pass
 
         # Izveštaj
-        report = (
-            self._db.query(AgentReport)
-            .filter(AgentReport.session_id == session.id if session else None)
-            .order_by(AgentReport.created_at.desc())
-            .first()
-        ) if session else None
+        report = None
+        if session:
+            report = (
+                self._db.query(AgentReport)
+                .filter(AgentReport.session_id == session.id)
+                .order_by(AgentReport.created_at.desc())
+                .first()
+            )
         if report:
             bundle.report_id = report.id
             bundle.report_verdict = report.user_verdict
 
         # Konflikti — samo oni vezani za ovaj plan item/sesiju/worktree
-        if session:
+        if session and project_id:
             changed = set(bundle.changed_files)
-            conflicts = (
-                self._db.query(Conflict)
-                .filter(Conflict.project_id == project_id)
-                .all()
-            )
+            conflicts = self._db.query(Conflict).filter(Conflict.project_id == project_id).all()
             relevant: list[Conflict] = []
             for c in conflicts:
                 if c.status != "OPEN":
@@ -144,12 +138,14 @@ class EvidenceService:
             .filter(PlanItemCriterion.plan_item_id == plan_item_id)
             .all()
         )
-        for c in criteria:
-            bundle.criteria.append({
-                "criterion_id": c.id,
-                "description": c.description,
-                "status": c.status,
-                "evidence_artifact_id": c.evidence_artifact_id,
-            })
+        for criterion in criteria:
+            bundle.criteria.append(
+                {
+                    "criterion_id": criterion.id,
+                    "description": criterion.description,
+                    "status": criterion.status,
+                    "evidence_artifact_id": criterion.evidence_artifact_id,
+                }
+            )
 
         return bundle

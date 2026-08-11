@@ -11,11 +11,16 @@ from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
-from flowos.service.services.infrastructure.persistence.report_models import AgentReport
+from flowos.service.services.infrastructure.persistence.report_models import (
+    AgentReport,
+    AgentReportBindingLink,
+)
 
 
 class ReportService:
     """Upravljanje agentskim izveštajima."""
+
+    _WORK_STATUSES = {"completed", "partial", "blocked"}
 
     def __init__(self, session: Session) -> None:
         self._session = session
@@ -31,11 +36,16 @@ class ReportService:
         verification_summary: str | None = None,
         open_risks: str | None = None,
         agent_job_id: str | None = None,
+        report_type: str | None = None,
+        work_status: str | None = None,
     ) -> AgentReport:
         """Kreira draft izveštaja za sesiju."""
+        self._validate_work_status(work_status)
         report = AgentReport(
             session_id=session_id,
             agent_job_id=agent_job_id,
+            report_type=report_type,
+            work_status=work_status,
             status="DRAFT",
             scope=scope,
             summary=summary,
@@ -72,6 +82,8 @@ class ReportService:
         "conflicting_sources",
         "commit_shas_json",
         "changed_files_json",
+        "report_type",
+        "work_status",
     }
 
     # Polja zabranjena za update_report (samo kroz specijalizovane metode)
@@ -109,11 +121,56 @@ class ReportService:
                 )
             if key not in self._ALLOWED_UPDATE_FIELDS:
                 raise ValueError(f"Polje '{key}' nije na allowlisti za update_report.")
+            if key == "work_status":
+                self._validate_work_status(value)
             setattr(report, key, value)
 
         report.updated_at = datetime.now(tz=UTC)
         self._session.flush()
         return report
+
+    def link_report_to_binding(
+        self, report_id: str, session_task_binding_id: str
+    ) -> AgentReportBindingLink:
+        """Vezuje report samo za istorijski binding iste sesije."""
+        from flowos.service.services.infrastructure.persistence.models import (
+            SessionTaskBinding,
+            Task,
+        )
+
+        report = self._session.get(AgentReport, report_id)
+        if not report:
+            raise ValueError(f"Report {report_id} ne postoji")
+        binding = self._session.get(SessionTaskBinding, session_task_binding_id)
+        if not binding:
+            raise ValueError(f"SessionTaskBinding {session_task_binding_id} ne postoji")
+        if binding.session_id != report.session_id:
+            raise ValueError("Report i SessionTaskBinding moraju pripadati istoj sesiji")
+
+        existing = (
+            self._session.query(AgentReportBindingLink)
+            .filter(
+                AgentReportBindingLink.report_id == report_id,
+                AgentReportBindingLink.session_task_binding_id == session_task_binding_id,
+            )
+            .first()
+        )
+        if existing:
+            raise ValueError("Report je već povezan sa ovim SessionTaskBindingom")
+
+        resolved_plan_item_id = binding.plan_item_id
+        if not resolved_plan_item_id and binding.task_id:
+            task = self._session.get(Task, binding.task_id)
+            resolved_plan_item_id = task.plan_item_id if task else None
+
+        link = AgentReportBindingLink(
+            report_id=report_id,
+            session_task_binding_id=session_task_binding_id,
+            resolved_plan_item_id=resolved_plan_item_id,
+        )
+        self._session.add(link)
+        self._session.flush()
+        return link
 
     def set_verdict(
         self,
@@ -180,36 +237,80 @@ class ReportService:
         return self._session.get(AgentReport, report_id)
 
     def _reopen_plan_item(self, report: AgentReport) -> None:
-        """Vraća PlanItem u IN_PROGRESS kada je verdict NEEDS_WORK ili REJECTED."""
+        """Vraća samo PlanItem-e dokazive iz report bindinga u IN_PROGRESS."""
         import logging
 
         logger = logging.getLogger("flowos.reports")
         try:
-            from flowos.service.services.infrastructure.persistence.models import AgentSession
+            from flowos.service.services.infrastructure.persistence.models import SessionTaskBinding
             from flowos.service.services.infrastructure.persistence.plan_models import PlanItem
             from flowos.service.services.plan_progress import PlanProgressService
 
-            session = self._session.get(AgentSession, report.session_id)
-            if not session or not session.plan_item_id:
-                return
-
-            plan_item = self._session.get(PlanItem, session.plan_item_id)
-            if not plan_item or plan_item.status not in ("IMPLEMENTED", "VERIFIED"):
-                return
-
             progress_svc = PlanProgressService(self._session)
-            progress_svc.validate_transition(
-                plan_item,
-                "IN_PROGRESS",
-                reason=f"Verdict: {report.user_verdict}",
+            links = (
+                self._session.query(AgentReportBindingLink)
+                .filter(AgentReportBindingLink.report_id == report.id)
+                .order_by(AgentReportBindingLink.session_task_binding_id.asc())
+                .all()
             )
-            logger.info(
-                "ReportService: plan_item %s → IN_PROGRESS (verdict=%s)",
-                plan_item.item_key,
-                report.user_verdict,
-            )
+            if links:
+                plan_item_ids = {
+                    link.resolved_plan_item_id
+                    for link in links
+                    if link.resolved_plan_item_id is not None
+                }
+            else:
+                bindings = (
+                    self._session.query(SessionTaskBinding)
+                    .filter(
+                        SessionTaskBinding.session_id == report.session_id,
+                        (SessionTaskBinding.task_id.is_not(None))
+                        | (SessionTaskBinding.plan_item_id.is_not(None)),
+                    )
+                    .order_by(SessionTaskBinding.started_at.asc(), SessionTaskBinding.id.asc())
+                    .all()
+                )
+                if len(bindings) != 1:
+                    logger.warning(
+                        "ReportService: legacy report %s nema jedinstven istorijski binding; "
+                        "PlanItem nije reopenovan",
+                        report.id,
+                    )
+                    return
+                binding = bindings[0]
+                if binding.plan_item_id:
+                    plan_item_ids = {binding.plan_item_id}
+                else:
+                    logger.warning(
+                        "ReportService: legacy report %s nema istorijski PlanItem snapshot; "
+                        "PlanItem nije reopenovan",
+                        report.id,
+                    )
+                    return
+
+            for plan_item_id in sorted(plan_item_ids):
+                plan_item = self._session.get(PlanItem, plan_item_id)
+                if not plan_item or plan_item.status not in ("IMPLEMENTED", "VERIFIED"):
+                    continue
+                progress_svc.validate_transition(
+                    plan_item,
+                    "IN_PROGRESS",
+                    reason=f"Verdict: {report.user_verdict}",
+                    allow_verdict_reopen=True,
+                )
+                logger.info(
+                    "ReportService: plan_item %s → IN_PROGRESS (verdict=%s)",
+                    plan_item.item_key,
+                    report.user_verdict,
+                )
         except Exception as e:
             logger.warning("ReportService: reopen plan_item nije uspelo: %s", e)
+
+    def _validate_work_status(self, work_status: object) -> None:
+        if work_status is not None and work_status not in self._WORK_STATUSES:
+            raise ValueError(
+                f"Nedozvoljen work_status: {work_status}. Dozvoljeni: {sorted(self._WORK_STATUSES)}"
+            )
 
     def get_report_for_session(self, session_id: str) -> AgentReport | None:
         """Vraća izveštaj za datu sesiju (najnoviji)."""

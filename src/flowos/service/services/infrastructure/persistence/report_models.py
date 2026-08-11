@@ -6,11 +6,23 @@ Markdown verzija se čuva kao artefakt, a strukturisani podaci u bazi.
 
 import uuid
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Index, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Index,
+    String,
+    Text,
+    UniqueConstraint,
+)
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from flowos.service.services.infrastructure.persistence.base import Base
+
+if TYPE_CHECKING:
+    from flowos.service.services.infrastructure.persistence.models import SessionTaskBinding
 
 
 def _new_uuid() -> str:
@@ -35,6 +47,10 @@ class AgentReport(Base):
         String(36), ForeignKey("agent_sessions.id", ondelete="CASCADE"), nullable=False
     )
     agent_job_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+
+    # Deterministička implementer semantika; legacy reporti ostaju NULL.
+    report_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    work_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     # Status izveštaja
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="DRAFT")  # DRAFT, FINAL
@@ -79,7 +95,55 @@ class AgentReport(Base):
         DateTime(timezone=True), nullable=True, onupdate=_utcnow
     )
 
+    binding_links: Mapped[list["AgentReportBindingLink"]] = relationship(
+        "AgentReportBindingLink",
+        back_populates="report",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
     __table_args__ = (
+        CheckConstraint(
+            "work_status IS NULL OR work_status IN ('completed', 'partial', 'blocked')",
+            name="ck_agent_reports_work_status",
+        ),
         Index("ix_agent_reports_session_id", "session_id"),
         Index("ix_agent_reports_status", "status"),
+    )
+
+
+class AgentReportBindingLink(Base):
+    """Veza reporta sa autoritativnim istorijskim binding segmentom."""
+
+    __tablename__ = "agent_report_binding_links"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_new_uuid)
+    report_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("agent_reports.id", ondelete="CASCADE"), nullable=False
+    )
+    session_task_binding_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("session_task_bindings.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    resolved_plan_item_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("plan_items.id", ondelete="RESTRICT"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utcnow
+    )
+
+    report: Mapped["AgentReport"] = relationship("AgentReport", back_populates="binding_links")
+    session_task_binding: Mapped["SessionTaskBinding"] = relationship(
+        "SessionTaskBinding", back_populates="report_links"
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "report_id",
+            "session_task_binding_id",
+            name="uq_agent_report_binding_links_report_binding",
+        ),
+        Index("ix_agent_report_binding_links_report_id", "report_id"),
+        Index("ix_agent_report_binding_links_binding_id", "session_task_binding_id"),
     )

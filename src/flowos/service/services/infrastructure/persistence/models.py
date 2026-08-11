@@ -10,11 +10,17 @@ ih koristi interno, a API Controlleri dobijaju samo DTO objekte.
 
 import uuid
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, Integer, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from flowos.service.services.infrastructure.persistence.base import Base
+
+if TYPE_CHECKING:
+    from flowos.service.services.infrastructure.persistence.report_models import (
+        AgentReportBindingLink,
+    )
 
 
 def _new_uuid() -> str:
@@ -187,6 +193,11 @@ class SessionTaskBinding(Base):
     binding_source: Mapped[str] = mapped_column(String(30), nullable=False)
 
     session: Mapped["AgentSession"] = relationship("AgentSession", back_populates="task_bindings")
+    report_links: Mapped[list["AgentReportBindingLink"]] = relationship(
+        "AgentReportBindingLink",
+        back_populates="session_task_binding",
+        passive_deletes=True,
+    )
 
     __table_args__ = (
         CheckConstraint(

@@ -227,6 +227,21 @@ class TestStatusActions:
         resp = client.post(f"/plan-items/{item_id}/accept", json={"reason": "Skoci"})
         assert resp.status_code == 409
 
+    @pytest.mark.parametrize("initial_status", ["IMPLEMENTED", "VERIFIED"])
+    def test_start_cannot_reopen_terminal_item(
+        self, app, client: TestClient, plan_data: dict, initial_status: str
+    ):
+        item_id = plan_data["item_ids"][0]
+        with app.state.session_factory() as session:
+            item = session.get(PlanItem, item_id)
+            assert item is not None
+            item.status = initial_status
+            session.commit()
+
+        response = client.post(f"/plan-items/{item_id}/start", json={"reason": "generic"})
+
+        assert response.status_code == 409
+
 
 # ═══════════════════════════════════════════════════════════════════
 # Kriterijumi i progres

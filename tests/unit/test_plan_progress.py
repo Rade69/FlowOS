@@ -113,6 +113,10 @@ class TestTransitionMatrix:
     def test_forbidden_in_progress_to_accepted(self):
         assert not PlanProgressService.is_transition_allowed("IN_PROGRESS", "ACCEPTED")
 
+    def test_forbidden_terminal_states_to_in_progress_without_verdict_context(self):
+        assert not PlanProgressService.is_transition_allowed("IMPLEMENTED", "IN_PROGRESS")
+        assert not PlanProgressService.is_transition_allowed("VERIFIED", "IN_PROGRESS")
+
     def test_invalid_statuses(self):
         assert not PlanProgressService.is_transition_allowed("NEPOSTOJECI", "IN_PROGRESS")
         assert not PlanProgressService.is_transition_allowed("IN_PROGRESS", "NEPOSTOJECI")
@@ -163,6 +167,23 @@ class TestTransitionWithAudit:
         # Status NIJE promenjen
         session.refresh(item)
         assert item.status == "NOT_STARTED"
+
+    @pytest.mark.parametrize("initial_status", ["IMPLEMENTED", "VERIFIED"])
+    def test_normal_caller_cannot_reopen_terminal_item(
+        self, plan_and_phase, svc: PlanProgressService, session: Session, initial_status: str
+    ):
+        _, phase = plan_and_phase
+        item = PlanItem(
+            plan_phase_id=phase.id,
+            item_key=f"FLOW-{initial_status}",
+            title="Closed",
+            status=initial_status,
+        )
+        session.add(item)
+        session.commit()
+
+        with pytest.raises(PlanProgressError, match="nije dozvoljena"):
+            svc.validate_transition(item, "IN_PROGRESS")
 
     def test_full_happy_path(self, plan_and_phase, svc: PlanProgressService, session: Session):
         """NOT_STARTED → IN_PROGRESS → IMPLEMENTED → VERIFIED → ACCEPTED."""

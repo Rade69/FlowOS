@@ -51,6 +51,7 @@ ALL_STATUSES = {
     "REJECTED",
 }
 DEPENDENCY_TYPES = {"BLOCKS_START", "BLOCKS_VERIFICATION", "INFORMATIONAL"}
+_VERDICT_REOPEN_TRANSITIONS = {("IMPLEMENTED", "IN_PROGRESS"), ("VERIFIED", "IN_PROGRESS")}
 
 
 class PlanProgressError(ValueError):
@@ -77,7 +78,12 @@ class PlanProgressService:
         return to_status in ALLOWED_TRANSITIONS.get(from_status, set())
 
     def validate_transition(
-        self, item: PlanItem, to_status: str, *, reason: str | None = None
+        self,
+        item: PlanItem,
+        to_status: str,
+        *,
+        reason: str | None = None,
+        allow_verdict_reopen: bool = False,
     ) -> None:
         """Validira i izvršava statusnu tranziciju sa auditom.
 
@@ -86,7 +92,15 @@ class PlanProgressService:
         """
         from_status = item.status
 
-        if not self.is_transition_allowed(from_status, to_status):
+        is_verdict_reopen = (
+            allow_verdict_reopen
+            and (
+                from_status,
+                to_status,
+            )
+            in _VERDICT_REOPEN_TRANSITIONS
+        )
+        if not self.is_transition_allowed(from_status, to_status) and not is_verdict_reopen:
             raise PlanProgressError(
                 f"Tranzicija {from_status} → {to_status} nije dozvoljena. "
                 f"Dozvoljeni prelazi: {ALLOWED_TRANSITIONS.get(from_status, set())}"

@@ -588,7 +588,7 @@ Ne raditi ovu podjelu unaprijed "za svaki slučaj". Uvesti je kad prvi put stvar
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **FolowOS** (6135 symbols, 9794 relationships, 162 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **FlowOS** (7187 symbols, 11494 relationships, 175 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -611,10 +611,10 @@ This project is indexed by GitNexus as **FolowOS** (6135 symbols, 9794 relations
 
 | Resource | Use for |
 |----------|---------|
-| `gitnexus://repo/FolowOS/context` | Codebase overview, check index freshness |
-| `gitnexus://repo/FolowOS/clusters` | All functional areas |
-| `gitnexus://repo/FolowOS/processes` | All execution flows |
-| `gitnexus://repo/FolowOS/process/{name}` | Step-by-step execution trace |
+| `gitnexus://repo/FlowOS/context` | Codebase overview, check index freshness |
+| `gitnexus://repo/FlowOS/clusters` | All functional areas |
+| `gitnexus://repo/FlowOS/processes` | All execution flows |
+| `gitnexus://repo/FlowOS/process/{name}` | Step-by-step execution trace |
 
 ## CLI
 

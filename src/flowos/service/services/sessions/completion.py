@@ -224,92 +224,7 @@ class SessionCompletionService:
                     len(dirty_files),
                 )
 
-        # 7. Automatska tranzicija plan itema: IN_PROGRESS → IMPLEMENTED
-        if session.plan_item_id:
-            plan_item = self._db.get(PlanItem, session.plan_item_id)
-            if plan_item and plan_item.status == "IN_PROGRESS":
-                from flowos.service.services.plan_progress import PlanProgressService
-
-                progress_svc = PlanProgressService(self._db)
-
-                # Dokaz implementacije: commit koji se razlikuje od base, ILI stvarne izmene
-                has_result_commit = (
-                    result_commit_sha is not None and result_commit_sha != session.base_commit_sha
-                )
-                has_real_changes = git_verified and dirty_files
-                evidence = has_result_commit or has_real_changes
-
-                # Provera: konflikt vezan za ovu sesiju/worktree/plan item
-                has_blocking_conflict = False
-                if evidence:
-                    from flowos.service.services.infrastructure.persistence.conflict_models import (
-                        Conflict,
-                    )
-
-                    blocking = (
-                        self._db.query(Conflict)
-                        .filter(
-                            Conflict.project_id == project_id,
-                            Conflict.conflict_level == "CRITICAL",
-                            Conflict.status == "OPEN",
-                        )
-                        .all()
-                    )
-                    for c in blocking:
-                        if (
-                            c.file_path
-                            and dirty_files
-                            and str(c.file_path) in [str(f) for f in dirty_files]
-                        ):
-                            has_blocking_conflict = True
-                            break
-                    if not has_blocking_conflict:
-                        has_blocking_conflict = len(blocking) > 0
-
-                if evidence and not has_blocking_conflict:
-                    try:
-                        progress_svc.validate_transition(
-                            plan_item, "IMPLEMENTED", reason="Sesija završena, dokazi postoje"
-                        )
-                        session.result_commit_sha = result_commit_sha or (
-                            git_state.commit_sha if git_state else None
-                        )
-                        logger.info(
-                            "SessionCompletion: plan_item %s → IMPLEMENTED", plan_item.item_key
-                        )
-                    except Exception as e:
-                        logger.warning("SessionCompletion: tranzicija nije uspela: %s", e)
-                elif has_blocking_conflict:
-                    logger.warning(
-                        "SessionCompletion: tranzicija blokirana — kritični konflikt za %s",
-                        plan_item.item_key,
-                    )
-                elif not evidence:
-                    logger.info(
-                        "SessionCompletion: nema dokaza implementacije za %s "
-                        "(result_commit=%s, base=%s, dirty=%s)",
-                        plan_item.item_key,
-                        result_commit_sha,
-                        session.base_commit_sha,
-                        bool(dirty_files),
-                    )
-
-        # 8. Automatska verifikacija: IMPLEMENTED → VERIFIED (ako verify prošao)
-        if session.plan_item_id and verify_result and verify_result.success:
-            plan_item = self._db.get(PlanItem, session.plan_item_id)
-            if plan_item and plan_item.status == "IMPLEMENTED":
-                from flowos.service.services.plan_progress import PlanProgressService
-
-                progress_svc = PlanProgressService(self._db)
-                try:
-                    progress_svc.validate_transition(
-                        plan_item, "VERIFIED", reason="Automatska verifikacija prošla"
-                    )
-                    logger.info("SessionCompletion: plan_item %s → VERIFIED", plan_item.item_key)
-                except Exception as e:
-                    logger.warning("SessionCompletion: verify tranzicija nije uspela: %s", e)
-
-        # 9. Resume regeneracija
+        # 7. Resume regeneracija
         try:
             from flowos.service.services.project_resume import ProjectResumeService
 
@@ -322,7 +237,7 @@ class SessionCompletionService:
         self._db.commit()
         logger.info("SessionCompletion: zavrseno za %s", session_id)
 
-        # 10. Emituj WebSocket događaje
+        # 8. Emituj WebSocket događaje
         try:
             from flowos.service.controllers.websocket.events import event_bus
 
@@ -336,14 +251,6 @@ class SessionCompletionService:
                     "verification_passed": verify_result.success if verify_result else None,
                 },
             )
-            if session.plan_item_id:
-                event_bus.emit_sync(
-                    "plan_progress.updated",
-                    {
-                        "plan_item_id": session.plan_item_id,
-                        "project_id": project_id,
-                    },
-                )
             event_bus.emit_sync(
                 "project.resume.updated",
                 {

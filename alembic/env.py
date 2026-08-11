@@ -36,6 +36,7 @@ import flowos.service.services.infrastructure.persistence.models  # noqa: E402, 
 import flowos.service.services.infrastructure.persistence.plan_models  # noqa: E402, F401
 import flowos.service.services.infrastructure.persistence.report_models  # noqa: E402, F401
 import flowos.service.services.infrastructure.persistence.resume_models  # noqa: E402, F401
+import flowos.service.services.infrastructure.persistence.workflow_ledger_models  # noqa: E402, F401
 import flowos.service.services.infrastructure.persistence.worktree_models  # noqa: E402, F401
 
 target_metadata = Base.metadata

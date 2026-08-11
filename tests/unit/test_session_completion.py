@@ -19,7 +19,12 @@ import flowos.service.services.infrastructure.persistence.plan_models  # noqa: F
 import flowos.service.services.infrastructure.persistence.report_models  # noqa: F401
 from flowos.service.services.infrastructure.persistence.base import Base
 from flowos.service.services.infrastructure.persistence.conflict_models import Conflict
-from flowos.service.services.infrastructure.persistence.models import AgentSession, Project
+from flowos.service.services.infrastructure.persistence.models import (
+    AgentSession,
+    Project,
+    SessionEvent,
+)
+from flowos.service.services.infrastructure.persistence.plan_models import Plan, PlanItem, PlanPhase
 from flowos.service.services.infrastructure.persistence.report_models import AgentReport
 from flowos.service.services.sessions.completion import SessionCompletionService
 
@@ -85,6 +90,27 @@ def _mock_verify_result(success=True, exit_code=0):
         timed_out=False,
         verified_at="2026-08-02T12:00:00Z",
     )
+
+
+def _plan_item(db: Session, project: Project, status: str) -> PlanItem:
+    plan = Plan(id=f"plan-{status}", project_id=project.id, title=status, status="ACTIVE")
+    phase = PlanPhase(
+        id=f"phase-{status}",
+        plan_id=plan.id,
+        phase_key=status,
+        title=status,
+        sequence=0,
+    )
+    item = PlanItem(
+        id=f"item-{status}",
+        plan_phase_id=phase.id,
+        item_key=f"FLOW-{status}",
+        title=status,
+        status=status,
+    )
+    db.add_all([plan, phase, item])
+    db.flush()
+    return item
 
 
 class TestSessionCompletion:
@@ -233,6 +259,106 @@ class TestSessionCompletion:
 
         conflicts = db_session.query(Conflict).filter(Conflict.conflict_type == "NO_COMMIT").all()
         assert len(conflicts) == 0
+
+    def test_result_commit_does_not_mark_plan_item_implemented(
+        self, db_session: Session, project: Project, active_session: AgentSession
+    ):
+        """Commit je Git činjenica, ne workflow authority za IMPLEMENTED."""
+        item = _plan_item(db_session, project, "IN_PROGRESS")
+        active_session.plan_item_id = item.id
+        active_session.base_commit_sha = "abc123"
+        db_session.flush()
+        svc = SessionCompletionService(db_session)
+
+        with (
+            patch("flowos.service.services.sessions.completion.GitStateReader") as mock_reader,
+            patch("flowos.service.services.sessions.completion.VerificationService") as mock_verify,
+        ):
+            mock_reader.return_value.read_state.return_value = _mock_git_state(
+                changed=["src/a.py"], commit="def456", dirty=True
+            )
+            mock_verify.return_value.run_verify.return_value = None
+
+            svc.complete_session(
+                session_id=active_session.id,
+                exit_code=0,
+                result_commit_sha="def456",
+            )
+
+        db_session.refresh(item)
+        db_session.refresh(active_session)
+        assert item.status == "IN_PROGRESS"
+        assert active_session.result_commit_sha == "def456"
+
+    def test_dirty_files_do_not_mark_plan_item_implemented(
+        self, db_session: Session, project: Project, active_session: AgentSession
+    ):
+        """Dirty files su filesystem/Git činjenica, ne workflow authority."""
+        item = _plan_item(db_session, project, "IN_PROGRESS")
+        active_session.plan_item_id = item.id
+        db_session.flush()
+        svc = SessionCompletionService(db_session)
+
+        with (
+            patch("flowos.service.services.sessions.completion.GitStateReader") as mock_reader,
+            patch("flowos.service.services.sessions.completion.VerificationService") as mock_verify,
+        ):
+            mock_reader.return_value.read_state.return_value = _mock_git_state(
+                changed=["src/a.py"], untracked=["new.py"], dirty=True
+            )
+            mock_verify.return_value.run_verify.return_value = None
+
+            svc.complete_session(
+                session_id=active_session.id,
+                exit_code=0,
+                result_commit_sha=None,
+            )
+
+        db_session.refresh(item)
+        assert item.status == "IN_PROGRESS"
+        assert db_session.query(Conflict).filter(Conflict.conflict_type == "NO_COMMIT").count() == 1
+
+    def test_verify_pass_does_not_mark_plan_item_verified_but_keeps_verify_event(
+        self,
+        db_session: Session,
+        project: Project,
+        active_session: AgentSession,
+        tmp_path,
+    ):
+        """Verify PASS ostaje verification činjenica, ne PlanItem status authority."""
+        repo = tmp_path / "repo"
+        scripts = repo / "scripts"
+        scripts.mkdir(parents=True)
+        (scripts / "verify.py").write_text("print('ok')", encoding="utf-8")
+        project.repo_path = str(repo)
+        active_session.repo_path = str(repo)
+        item = _plan_item(db_session, project, "IMPLEMENTED")
+        active_session.plan_item_id = item.id
+        db_session.flush()
+        svc = SessionCompletionService(db_session)
+
+        with (
+            patch("flowos.service.services.sessions.completion.GitStateReader") as mock_reader,
+            patch("flowos.service.services.sessions.completion.VerificationService") as mock_verify,
+        ):
+            mock_reader.return_value.read_state.return_value = _mock_git_state(dirty=False)
+            mock_verify.return_value.run_verify.return_value = _mock_verify_result(
+                success=True, exit_code=0
+            )
+
+            svc.complete_session(session_id=active_session.id, exit_code=0)
+
+        db_session.refresh(item)
+        assert item.status == "IMPLEMENTED"
+        verify_event = (
+            db_session.query(SessionEvent)
+            .filter(
+                SessionEvent.session_id == active_session.id,
+                SessionEvent.event_type == "VERIFY_RESULT",
+            )
+            .one()
+        )
+        assert '"success": true' in (verify_event.payload_json or "")
 
     def test_derive_status(self):
         """Testira _derive_status za sve varijante."""

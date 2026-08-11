@@ -30,6 +30,7 @@ from flowos.service.services.reports.front_matter import (
     AgentReportFrontMatterParser,
 )
 from flowos.service.services.reports.service import ReportService
+from flowos.service.services.workflow.ledger import WorkflowLedgerService
 
 
 class AgentReportIngestionOutcome(StrEnum):
@@ -145,6 +146,9 @@ class AgentReportIngestionService:
             for binding_id in binding_ids:
                 report_service.link_report_to_binding(report.id, binding_id)
             self._session.flush()
+            WorkflowLedgerService(self._session).append_implementation_completed_from_report(
+                report.id
+            )
         except IntegrityError as exc:
             if not self._is_source_identity_integrity_error(exc):
                 raise

@@ -155,9 +155,15 @@ def _create_watcher_callback(project_id: str, repo_path: str, *, session_factory
     from flowos.service.services.activity.service import ActivityService
     from flowos.service.services.attribution.service import ActiveSession
     from flowos.service.services.infrastructure.persistence.models import AgentSession
+    from flowos.service.services.reports.ingestion import (
+        AgentReportIngestionOutcome,
+        AgentReportIngestionService,
+        is_agent_report_markdown_path,
+    )
     from flowos.shared.enums.session import SessionStatus
 
     db_factory = session_factory
+    logger = __import__("logging").getLogger("flowos")
 
     def _callback(event):
         correlation_id = str(_uuid.uuid4())
@@ -199,7 +205,7 @@ def _create_watcher_callback(project_id: str, repo_path: str, *, session_factory
 
                 activity_svc.register_conflict_callback(_make_conflict_cb(project_id, active))
 
-            activity_svc.record_file_event(
+            activity = activity_svc.record_file_event(
                 file_path=event.path,
                 event_type=event.event_type,
                 project_id=project_id,
@@ -212,18 +218,97 @@ def _create_watcher_callback(project_id: str, repo_path: str, *, session_factory
 
         except Exception:
             db.rollback()
-            import logging
-
-            logging.getLogger("flowos").exception(
+            logger.exception(
                 "Watcher callback greška [%s]: %s %s",
                 correlation_id,
                 event.event_type,
                 event.path,
             )
+        else:
+            if event.event_type in {"CREATED", "MODIFIED"} and is_agent_report_markdown_path(
+                event.path, repo_path
+            ):
+                try:
+                    result = AgentReportIngestionService(db).ingest_file(
+                        event.path,
+                        project_id=project_id,
+                        repo_path=repo_path,
+                    )
+                    if result.outcome != AgentReportIngestionOutcome.IGNORED:
+                        _attach_report_ingestion_metadata(db, activity.id, result)
+                    db.commit()
+                except Exception:
+                    db.rollback()
+                    logger.exception(
+                        "AgentReport ingestion greška [%s]: %s %s",
+                        correlation_id,
+                        event.event_type,
+                        event.path,
+                    )
         finally:
             db.close()
 
     return _callback
+
+
+def _attach_report_ingestion_metadata(db, activity_id: str, result) -> None:
+    """Dodaje watcher ingestion outcome u postojeći FileActivity audit zapis."""
+    import json
+
+    from flowos.service.services.infrastructure.persistence.activity_models import FileActivity
+
+    activity = db.get(FileActivity, activity_id)
+    if not activity:
+        return
+    try:
+        metadata = json.loads(activity.metadata_json or "{}")
+    except (json.JSONDecodeError, TypeError):
+        metadata = {}
+    if not isinstance(metadata, dict):
+        metadata = {}
+    metadata["agent_report_ingestion"] = {
+        "outcome": result.outcome.value,
+        "source_report_id": result.source_report_id,
+        "report_db_id": result.report_db_id,
+        "message": result.message,
+    }
+    activity.metadata_json = json.dumps(metadata, ensure_ascii=False)
+
+
+def _scan_existing_agent_reports_for_project(
+    project_id: str, repo_path: str, session_factory, logger
+):
+    """Startup scan postojećih <repo_path>/agent_reports/*.md artefakata."""
+    from pathlib import Path
+
+    from flowos.service.services.reports.ingestion import AgentReportIngestionService
+
+    reports_dir = Path(repo_path) / "agent_reports"
+    if not reports_dir.is_dir():
+        return []
+
+    results = []
+    for report_path in sorted(reports_dir.glob("*.md")):
+        db = session_factory()
+        try:
+            result = AgentReportIngestionService(db).ingest_file(
+                report_path,
+                project_id=project_id,
+                repo_path=repo_path,
+            )
+            db.commit()
+            results.append(result)
+            logger.info(
+                "AgentReport startup ingestion: %s %s",
+                result.outcome.value,
+                result.source_path,
+            )
+        except Exception:
+            db.rollback()
+            logger.exception("AgentReport startup ingestion nije uspio: %s", report_path)
+        finally:
+            db.close()
+    return results
 
 
 def _make_lifespan(runtime: RuntimeManager):
@@ -269,6 +354,12 @@ def _make_lifespan(runtime: RuntimeManager):
                     w.start(proj.repo_path)
                     app.state.watchers[proj.id] = w
                     logger.info("Watcher pokrenut za projekat %s: %s", proj.id, proj.repo_path)
+                    _scan_existing_agent_reports_for_project(
+                        proj.id,
+                        proj.repo_path,
+                        app.state.session_factory,
+                        logger,
+                    )
                 except FileNotFoundError:
                     logger.warning(
                         "Repo putanja ne postoji za projekat %s: %s — preskačem",

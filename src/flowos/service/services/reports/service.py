@@ -38,6 +38,9 @@ class ReportService:
         agent_job_id: str | None = None,
         report_type: str | None = None,
         work_status: str | None = None,
+        source_report_id: str | None = None,
+        source_path: str | None = None,
+        source_content_sha256: str | None = None,
     ) -> AgentReport:
         """Kreira draft izveštaja za sesiju."""
         self._validate_work_status(work_status)
@@ -46,6 +49,9 @@ class ReportService:
             agent_job_id=agent_job_id,
             report_type=report_type,
             work_status=work_status,
+            source_report_id=source_report_id,
+            source_path=source_path,
+            source_content_sha256=source_content_sha256,
             status="DRAFT",
             scope=scope,
             summary=summary,

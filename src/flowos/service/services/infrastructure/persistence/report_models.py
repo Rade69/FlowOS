@@ -51,6 +51,9 @@ class AgentReport(Base):
     # Deterministička implementer semantika; legacy reporti ostaju NULL.
     report_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
     work_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    source_report_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    source_path: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    source_content_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     # Status izveštaja
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="DRAFT")  # DRAFT, FINAL
@@ -109,6 +112,8 @@ class AgentReport(Base):
         ),
         Index("ix_agent_reports_session_id", "session_id"),
         Index("ix_agent_reports_status", "status"),
+        Index("ix_agent_reports_source_report_id", "source_report_id", unique=True),
+        Index("ix_agent_reports_source_path", "source_path", unique=True),
     )
 
 

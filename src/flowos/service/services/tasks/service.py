@@ -1,5 +1,6 @@
 """Task Service — CRUD za zadatke."""
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from flowos.service.services.infrastructure.persistence.models import Task
@@ -21,6 +22,9 @@ class TaskService:
 
     def get_task(self, task_id: str) -> Task | None:
         return self._session.get(Task, task_id)
+
+    def task_exists(self, task_id: str) -> bool:
+        return self._session.get(Task, task_id) is not None
 
     def create_task(
         self,
@@ -77,5 +81,9 @@ class TaskService:
         if not task:
             return False
         self._session.delete(task)
-        self._session.flush()
+        try:
+            self._session.flush()
+        except IntegrityError:
+            self._session.rollback()
+            return False
         return True

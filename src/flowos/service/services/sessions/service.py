@@ -5,7 +5,8 @@ from datetime import UTC, datetime
 from sqlalchemy.orm import Session
 
 from flowos.service.services.infrastructure.persistence.models import AgentSession
-from flowos.shared.enums.session import SessionStatus
+from flowos.service.services.sessions.bindings import SessionTaskBindingService
+from flowos.shared.enums.session import SessionStatus, SessionTaskBindingSource
 
 
 class SessionService:
@@ -49,6 +50,9 @@ class SessionService:
         if not project:
             raise ValueError(f"Projekat {project_id} ne postoji")
 
+        task = None
+        plan_item = None
+
         # Validacija: task pripada projektu
         if task_id:
             task = self._session.get(Task, task_id)
@@ -66,6 +70,11 @@ class SessionService:
             plan = self._session.get(Plan, phase.plan_id) if phase else None
             if not plan or plan.project_id != project_id:
                 raise ValueError(f"PlanItem {plan_item_id} ne pripada projektu {project_id}")
+
+        if task_id and plan_item_id and task and task.plan_item_id != plan_item_id:
+            raise ValueError(
+                f"Task {task_id} nije povezan sa proslijeđenim PlanItem {plan_item_id}"
+            )
 
         # Validacija: worktree nije zauzet drugom aktivnom sesijom
         if worktree_path:
@@ -86,6 +95,8 @@ class SessionService:
                         f"Jedan worktree = najviše jedna writer sesija."
                     )
 
+        legacy_plan_item_id = task.plan_item_id if task else plan_item_id
+
         session_obj = AgentSession(
             project_id=project_id,
             task_id=task_id,
@@ -95,7 +106,7 @@ class SessionService:
             repo_path=repo_path,
             branch_name=branch_name,
             worktree_path=worktree_path,
-            plan_item_id=plan_item_id,
+            plan_item_id=legacy_plan_item_id,
             base_commit_sha=base_commit_sha,
             pid=pid,
             status=SessionStatus.ACTIVE.value,
@@ -104,6 +115,16 @@ class SessionService:
         )
         self._session.add(session_obj)
         self._session.flush()
+
+        binding_task_id = task_id
+        binding_plan_item_id = None if task_id else plan_item_id
+        SessionTaskBindingService(self._session).switch_binding(
+            session_obj.id,
+            task_id=binding_task_id,
+            plan_item_id=binding_plan_item_id,
+            binding_source=SessionTaskBindingSource.LEGACY_DIRECT_FK,
+            switched_at=session_obj.started_at,
+        )
 
         # Ako je sesija povezana sa worktree-jem, ažuriraj Worktree model
         if worktree_path:
@@ -153,6 +174,9 @@ class SessionService:
         session_obj.exit_code = exit_code
         if result_commit_sha:
             session_obj.result_commit_sha = result_commit_sha
+        SessionTaskBindingService(self._session).close_active_binding(
+            session_id, ended_at=session_obj.ended_at
+        )
         self._session.flush()
         return session_obj
 

@@ -22,6 +22,7 @@ from flowos.service.services.infrastructure.git_poller import GitStateReader
 from flowos.service.services.infrastructure.persistence.models import AgentSession
 from flowos.service.services.infrastructure.persistence.plan_models import PlanItem
 from flowos.service.services.reports.service import ReportService
+from flowos.service.services.sessions.bindings import SessionTaskBindingService
 from flowos.service.services.verification.service import VerificationService
 
 logger = logging.getLogger("flowos.session_completion")
@@ -111,6 +112,7 @@ class SessionCompletionService:
         now = datetime.now(tz=UTC)
         session.ended_at = now
         session.exit_code = exit_code
+        SessionTaskBindingService(self._db).close_active_binding(session_id, ended_at=now)
 
         if result_commit_sha:
             session.result_commit_sha = result_commit_sha

@@ -1,10 +1,19 @@
 """HTTP API Controllers — Sesije (Pydantic ugovori)."""
 
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from flowos.service.services.sessions.bindings import SessionTaskBindingService
 from flowos.service.services.sessions.service import SessionService
+from flowos.shared.contracts.sessions import (
+    SessionTaskBindingResponse,
+    SessionTaskBindingSwitchRequest,
+)
+from flowos.shared.enums.session import SessionTaskBindingSource
 
 router = APIRouter(prefix="/sessions", tags=["Sessions"])
 
@@ -62,6 +71,26 @@ def _session_to_dict(s) -> dict:
     }
 
 
+def _binding_to_response(binding: Any) -> SessionTaskBindingResponse:
+    if binding.task_id:
+        binding_kind = "TASK"
+    elif binding.plan_item_id:
+        binding_kind = "PLAN_ITEM"
+    else:
+        binding_kind = "UNASSIGNED"
+    return SessionTaskBindingResponse(
+        id=binding.id,
+        session_id=binding.session_id,
+        task_id=binding.task_id,
+        plan_item_id=binding.plan_item_id,
+        started_at=binding.started_at,
+        ended_at=binding.ended_at,
+        binding_source=SessionTaskBindingSource(binding.binding_source),
+        binding_kind=binding_kind,
+        is_active=binding.ended_at is None,
+    )
+
+
 @router.post("")
 def create_session(data: SessionCreateRequest, session: Session = Depends(get_session)):
     svc = SessionService(session)
@@ -79,6 +108,40 @@ def create_session(data: SessionCreateRequest, session: Session = Depends(get_se
         pid=data.pid,
     )
     return _session_to_dict(s)
+
+
+@router.get("/{session_id}/bindings", response_model=list[SessionTaskBindingResponse])
+def list_session_bindings(session_id: str, session: Session = Depends(get_session)):
+    svc = SessionTaskBindingService(session)
+    if not SessionService(session).get_session(session_id):
+        raise HTTPException(status_code=404, detail="Sesija nije pronađena")
+    return [_binding_to_response(binding) for binding in svc.get_bindings(session_id)]
+
+
+@router.post("/{session_id}/bindings/switch", response_model=SessionTaskBindingResponse)
+def switch_session_binding(
+    session_id: str,
+    data: SessionTaskBindingSwitchRequest,
+    session: Session = Depends(get_session),
+):
+    try:
+        binding = SessionTaskBindingService(session).switch_binding(
+            session_id,
+            task_id=data.task_id,
+            plan_item_id=data.plan_item_id,
+            binding_source=SessionTaskBindingSource.USER,
+        )
+    except ValueError as e:
+        message = str(e)
+        if "ne postoji" in message:
+            raise HTTPException(status_code=404, detail=message) from e
+        raise HTTPException(status_code=409, detail=message) from e
+    except IntegrityError as e:
+        raise HTTPException(
+            status_code=409,
+            detail="Binding je u međuvremenu promijenjen. Osvježi stanje i pokušaj ponovo.",
+        ) from e
+    return _binding_to_response(binding)
 
 
 @router.get("/active")

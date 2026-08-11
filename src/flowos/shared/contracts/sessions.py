@@ -3,9 +3,9 @@
 from datetime import datetime
 from pathlib import Path
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
-from flowos.shared.enums.session import ExecutionMode, SessionStatus
+from flowos.shared.enums.session import ExecutionMode, SessionStatus, SessionTaskBindingSource
 
 
 class SessionCreate(BaseModel):
@@ -104,3 +104,28 @@ class SessionResponse(BaseModel):
     last_activity_at: datetime | None
     ended_at: datetime | None
     exit_code: int | None
+
+
+class SessionTaskBindingSwitchRequest(BaseModel):
+    task_id: str | None = None
+    plan_item_id: str | None = None
+
+    model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="after")
+    def exactly_one_target_kind_or_unassigned(self):
+        if self.task_id is not None and self.plan_item_id is not None:
+            raise ValueError("Binding može imati task_id ili plan_item_id, ne oba")
+        return self
+
+
+class SessionTaskBindingResponse(BaseModel):
+    id: str
+    session_id: str
+    task_id: str | None
+    plan_item_id: str | None
+    started_at: datetime
+    ended_at: datetime | None
+    binding_source: SessionTaskBindingSource
+    binding_kind: str
+    is_active: bool

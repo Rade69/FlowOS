@@ -16,3 +16,8 @@ class SessionStatus(StrEnum):
     COMPLETED = "COMPLETED"
     ABANDONED = "ABANDONED"
     NEEDS_REVIEW = "NEEDS_REVIEW"
+
+
+class SessionTaskBindingSource(StrEnum):
+    USER = "USER"
+    LEGACY_DIRECT_FK = "LEGACY_DIRECT_FK"

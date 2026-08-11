@@ -83,8 +83,15 @@ def update_task(task_id: str, data: TaskUpdate, session: Session = Depends(get_s
 
 @router.delete("/{task_id}")
 def delete_task(task_id: str, session: Session = Depends(get_session)):
-    ok = TaskService(session).delete_task(task_id)
-    if not ok:
+    svc = TaskService(session)
+    if not svc.task_exists(task_id):
         raise HTTPException(status_code=404, detail="Zadatak nije pronađen")
+
+    ok = svc.delete_task(task_id)
+    if not ok:
+        raise HTTPException(
+            status_code=409,
+            detail="Task ne može biti obrisan jer postoji istorijska session/task veza.",
+        )
     session.commit()
     return {"status": "deleted", "id": task_id}

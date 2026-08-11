@@ -1,13 +1,14 @@
 ---
+flowos_report_version: 1
+agent: codex
+model: gpt-5
+session_id: unknown
 report_type: fix
 tasks:
   - unassigned
-agent: codex
-model: gpt-5
-timestamp: 2026-08-10T17:45:19+02:00
-branch: main
-head_sha: 25ae36f1081a0435cd605afa38a6188c514ecded
-status: GREEN_BASELINE
+commits:
+  - 0206df00e345643cb7f3ee9a49077a4b48c71d8e
+created_at: 2026-08-10T17:45:19+02:00
 ---
 
 # FlowOS baseline stabilizacija
@@ -57,7 +58,7 @@ Baseline prije izmjene:
 
 Nisu implementirani `SessionTaskBinding`, `DecisionItem`, `ImplementationTask`, novi `WorkflowEvent`, Workflow Ledger, novi agent observer sistem, Claude/Codex/Pi/Crush telemetry adapteri, YAML `agent_reports` parser, nova reconciliation arhitektura, managed execution niti novi GUI koncept.
 
-Nije napravljen commit, po nalogu.
+Baseline stabilizacija je commitovana kao 0206df00e345643cb7f3ee9a49077a4b48c71d8e.
 
 ## Pronađeni problemi
 
@@ -77,8 +78,8 @@ Sljedeći arhitektonski korak može biti `SessionTaskBinding`, ali tek nakon pre
 
 ## Potrebna korisnička potvrda
 
-Potrebna je korisnička potvrda da je ovaj baseline prihvaćen i da smijemo u sljedećem koraku krenuti na arhitektonsku migraciju. Commit nije napravljen.
+Preporučeni ljudski review: pregledati diff za `GuiApiClient._handle_response`, `ReconciliationService`, `scripts/verify.py` i nove regresione testove. Ako review potvrdi scope, baseline commit `0206df00e345643cb7f3ee9a49077a4b48c71d8e` prihvatiti kao zvaničnu polaznu tačku za arhitektonsku migraciju.
 
 ## Ljudsko usvajanje rezultata
 
-Preporučeni ljudski review: pregledati diff za `GuiApiClient._handle_response`, `ReconciliationService`, `scripts/verify.py` i nove regresione testove. Ako review potvrdi scope, baseline se može commitovati kao jedna stabilizaciona cjelina.
+Preporučeni ljudski review: pregledati diff za `GuiApiClient._handle_response`, `ReconciliationService`, `scripts/verify.py` i nove regresione testove. Ako review potvrdi scope, baseline commit `0206df00e345643cb7f3ee9a49077a4b48c71d8e` prihvatiti kao zvaničnu polaznu tačku za arhitektonsku migraciju.

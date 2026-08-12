@@ -149,6 +149,8 @@ class AgentReportIngestionService:
             WorkflowLedgerService(self._session).append_implementation_completed_from_report(
                 report.id
             )
+            if front_matter.report_type == "review":
+                WorkflowLedgerService(self._session).append_review_completed_from_report(report.id)
         except IntegrityError as exc:
             if not self._is_source_identity_integrity_error(exc):
                 raise

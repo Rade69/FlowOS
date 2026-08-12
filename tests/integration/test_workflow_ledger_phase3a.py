@@ -315,7 +315,12 @@ def test_non_qualifying_report_types_and_statuses_create_no_event(
     )
 
     assert _ingest(db_session, project, path) == AgentReportIngestionOutcome.INGESTED
-    assert db_session.query(WorkflowLedgerEvent).count() == 0
+    assert (
+        db_session.query(WorkflowLedgerEvent)
+        .filter(WorkflowLedgerEvent.event_type == IMPLEMENTATION_COMPLETED)
+        .count()
+        == 0
+    )
 
 
 def test_unassigned_creates_no_event(db_session: Session, project: Project):

@@ -32,6 +32,8 @@ AGENT_REPORT_SOURCE = "agent_report"
 TEST_RESULT = "TEST_RESULT"
 VERIFICATION_ARTIFACT_SOURCE = "verification_artifact"
 
+REVIEW_COMPLETED = "REVIEW_COMPLETED"
+
 
 @dataclass(frozen=True)
 class _TargetGroup:
@@ -345,6 +347,101 @@ class WorkflowLedgerService:
                 f"VerificationResult.verified_at mora biti timezone-aware: {verified_at!r}"
             )
         return parsed
+
+    def _is_qualifying_review_report(self, report: AgentReport) -> bool:
+        """Review report se kvalifikuje ako ima report_type=review i source identity."""
+        return (
+            report.report_type == "review"
+            and report.source_report_id is not None
+            and report.source_path is not None
+            and report.source_content_sha256 is not None
+            and report.session_id is not None
+        )
+
+    def append_review_completed_from_report(self, report_id: str) -> list[WorkflowLedgerEvent]:
+        """Appenduje REVIEW_COMPLETED evente za qualifying review AgentReport.
+
+        Koristi isti strogi grouping kao Phase 3A — binding.session_id
+        mora odgovarati report.session_id (same-session ingestion).
+
+        Non-qualifying reporti su deterministički no-op.
+        Review za unassigned → 0 eventa.
+        """
+
+        report = self._session.get(AgentReport, report_id)
+        if report is None or not self._is_qualifying_review_report(report):
+            return []
+
+        groups = self._build_target_groups(report)
+        if not groups:
+            return []
+
+        reviewer_identity = self._reviewer_identity(report.session_id)
+
+        events: list[WorkflowLedgerEvent] = []
+        for group in groups:
+            key = self._review_idempotency_key(report.id, group.target_kind, group.target_id)
+            existing = self._existing_event(key)
+            if existing is not None:
+                events.append(existing)
+                continue
+
+            payload: dict = {
+                "source_report_id": report.source_report_id,
+                "source_path": report.source_path,
+                "source_content_sha256": report.source_content_sha256,
+                "report_type": report.report_type,
+                "target_kind": group.target_kind,
+                "target_id": group.target_id,
+                "binding_link_ids": group.binding_link_ids,
+                "session_task_binding_ids": group.session_task_binding_ids,
+                "resolved_plan_item_ids": group.resolved_plan_item_ids,
+            }
+            if group.task_id is not None:
+                payload["task_id"] = group.task_id
+            if group.plan_item_id is not None:
+                payload["plan_item_id"] = group.plan_item_id
+            if reviewer_identity is not None:
+                payload.update(reviewer_identity)
+
+            event = WorkflowLedgerEvent(
+                project_id=self._project_id_for_report(report),
+                event_type=REVIEW_COMPLETED,
+                session_id=report.session_id,
+                task_id=group.task_id,
+                plan_item_id=group.plan_item_id,
+                source_kind=AGENT_REPORT_SOURCE,
+                source_id=report.id,
+                occurred_at=report.created_at,
+                recorded_at=datetime.now(tz=UTC),
+                idempotency_key=key,
+                payload_json=json.dumps(payload, ensure_ascii=False, sort_keys=True),
+            )
+            self._session.add(event)
+            self._session.flush()
+            events.append(event)
+
+        return events
+
+    def _reviewer_identity(self, session_id: str) -> dict | None:
+        """Snapshootuje reviewer identity iz AgentSession."""
+        session_obj = self._session.get(AgentSession, session_id)
+        if session_obj is None:
+            return None
+        identity: dict = {
+            "reviewer_session_id": session_obj.id,
+            "reviewer_agent_type": session_obj.agent_type,
+        }
+        if session_obj.model_name:
+            identity["reviewer_model_name"] = session_obj.model_name
+        return identity
+
+    @staticmethod
+    def _review_idempotency_key(report_id: str, target_kind: str, target_id: str) -> str:
+        return (
+            "workflow-ledger:v1:REVIEW_COMPLETED:"
+            f"agent_report:{report_id}:{target_kind}:{target_id}"
+        )
 
     @staticmethod
     def _test_result_idempotency_key(artifact_id: str) -> str:

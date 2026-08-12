@@ -183,6 +183,7 @@ class ReportService:
         report_id: str,
         verdict: str,
         notes: str | None = None,
+        decision_id: str | None = None,
     ) -> AgentReport | None:
         """Postavlja korisnički verdict sa audit zapisom.
 
@@ -190,53 +191,23 @@ class ReportService:
             report_id: ID izveštaja.
             verdict: ACCEPTED, NEEDS_WORK, ili REJECTED.
             notes: Opcione napomene korisnika.
+            decision_id: Opcioni UUID za idempotentnost odluke.
 
         Returns:
             Ažurirani AgentReport ili None.
 
-        Audit zapis sadrži: ko, kada, vrednost, razlog, prethodna vrednost.
+        Nakon Phase 3D, authority je delegiran na WorkflowDecisionService.
+        WorkflowLedgerEvent(TASK_DECISION) je canonical history korisničkih
+        workflow odluka.
         """
-        allowed = {"ACCEPTED", "NEEDS_WORK", "REJECTED"}
-        if verdict not in allowed:
-            raise ValueError(f"Nedozvoljen verdict: {verdict}. Dozvoljeni: {sorted(allowed)}")
+        from flowos.service.services.workflow.decisions import WorkflowDecisionService
 
-        report = self._session.get(AgentReport, report_id)
-        if not report:
-            return None
-
-        # Kreiraj audit zapis
-        previous_verdict = report.user_verdict
-        previous_status = report.status
-        audit_entry = {
-            "timestamp": datetime.now(tz=UTC).isoformat(),
-            "report_id": report_id,
-            "previous_verdict": previous_verdict,
-            "new_verdict": verdict,
-            "previous_status": previous_status,
-            "new_status": "FINAL",
-            "actor": "user",
-            "notes": notes,
-        }
-
-        # Dodaj u listu audit zapisa
-        try:
-            audit_list: list[dict] = json.loads(report.verdict_audit_json or "[]")
-        except (json.JSONDecodeError, TypeError):
-            audit_list = []
-        audit_list.append(audit_entry)
-        report.verdict_audit_json = json.dumps(audit_list, ensure_ascii=False)
-
-        report.user_verdict = verdict
-        report.user_notes = notes
-        report.status = "FINAL"
-        report.updated_at = datetime.now(tz=UTC)
-        self._session.flush()
-
-        # NEEDS_WORK / REJECTED → vrati PlanItem u IN_PROGRESS
-        if verdict in ("NEEDS_WORK", "REJECTED"):
-            self._reopen_plan_item(report)
-
-        return report
+        return WorkflowDecisionService(self._session).record_report_decision(
+            report_id=report_id,
+            verdict=verdict,
+            notes=notes,
+            decision_id=decision_id,
+        )
 
     def get_report(self, report_id: str) -> AgentReport | None:
         """Vraća izveštaj po ID-ju."""

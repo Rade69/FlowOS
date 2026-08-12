@@ -7,6 +7,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 import flowos.service.services.infrastructure.persistence.plan_models  # noqa: F401
+import flowos.service.services.infrastructure.persistence.workflow_ledger_models  # noqa: F401
 from flowos.service.services.infrastructure.persistence.base import Base
 from flowos.service.services.infrastructure.persistence.models import AgentSession, Project
 from flowos.service.services.reports.service import ReportService

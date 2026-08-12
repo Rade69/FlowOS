@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 import flowos.service.services.infrastructure.persistence.plan_models  # noqa: F401
 import flowos.service.services.infrastructure.persistence.report_models  # noqa: F401
+import flowos.service.services.infrastructure.persistence.workflow_ledger_models  # noqa: F401
 from flowos.service.services.infrastructure.persistence.base import Base
 from flowos.service.services.infrastructure.persistence.conflict_models import Conflict
 from flowos.service.services.infrastructure.persistence.models import (
@@ -26,7 +27,12 @@ from flowos.service.services.infrastructure.persistence.models import (
 )
 from flowos.service.services.infrastructure.persistence.plan_models import Plan, PlanItem, PlanPhase
 from flowos.service.services.infrastructure.persistence.report_models import AgentReport
+from flowos.service.services.infrastructure.persistence.workflow_ledger_models import (
+    WorkflowLedgerEvent,
+)
 from flowos.service.services.sessions.completion import SessionCompletionService
+from flowos.service.services.verification.service import VerificationResult
+from flowos.service.services.workflow.ledger import WorkflowLedgerService
 
 
 @pytest.fixture
@@ -89,6 +95,24 @@ def _mock_verify_result(success=True, exit_code=0):
         duration_seconds=1.5,
         timed_out=False,
         verified_at="2026-08-02T12:00:00Z",
+    )
+
+
+def _mock_verify_result_with_artifact(
+    artifact_path: str, *, success=True, exit_code=0, timed_out=False
+) -> VerificationResult:
+    """Fabrika za realističan VerificationResult sa postavljenim artifact_path."""
+    return VerificationResult(
+        artifact_id="artifact-with-path",
+        verify_path="scripts/verify.py",
+        success=success,
+        exit_code=exit_code,
+        stdout="All tests passed." if success else "FAIL",
+        stderr="",
+        duration_seconds=1.5,
+        timed_out=timed_out,
+        verified_at=datetime.now(tz=UTC).isoformat(),
+        artifact_path=artifact_path,
     )
 
 
@@ -359,6 +383,121 @@ class TestSessionCompletion:
             .one()
         )
         assert '"success": true' in (verify_event.payload_json or "")
+
+    def test_verify_pass_creates_test_result_ledger_event(
+        self,
+        db_session: Session,
+        project: Project,
+        active_session: AgentSession,
+        tmp_path,
+    ):
+        """Verify PASS sa stvarnim artifact_path proizvodi TEST_RESULT event."""
+        repo = tmp_path / "repo"
+        scripts = repo / "scripts"
+        scripts.mkdir(parents=True)
+        (scripts / "verify.py").write_text("print('ok')", encoding="utf-8")
+        artifact_dir = tmp_path / "artifacts" / "verification" / "artifact-with-path"
+        artifact_dir.mkdir(parents=True)
+        project.repo_path = str(repo)
+        active_session.repo_path = str(repo)
+        db_session.flush()
+        svc = SessionCompletionService(db_session)
+
+        with (
+            patch("flowos.service.services.sessions.completion.GitStateReader") as mock_reader,
+            patch("flowos.service.services.sessions.completion.VerificationService") as mock_verify,
+        ):
+            mock_reader.return_value.read_state.return_value = _mock_git_state(dirty=False)
+            mock_verify.return_value.run_verify.return_value = _mock_verify_result_with_artifact(
+                str(artifact_dir), success=True
+            )
+
+            svc.complete_session(session_id=active_session.id, exit_code=0)
+
+        event = db_session.query(WorkflowLedgerEvent).one()
+        assert event.event_type == "TEST_RESULT"
+        assert event.session_id == active_session.id
+        assert event.project_id == project.id
+        assert event.task_id is None
+        assert event.plan_item_id is None
+
+    def test_ledger_savepoint_failure_does_not_break_session_completion(
+        self,
+        db_session: Session,
+        project: Project,
+        active_session: AgentSession,
+        tmp_path,
+        monkeypatch: pytest.MonkeyPatch,
+    ):
+        """SAVEPOINT izolacija: TEST_RESULT append neuspjeh ne smije oboriti
+        ostatak SessionCompletion transakcije niti ostaviti sesiju u failed
+        transaction stanju. Koristi stvaran SQLAlchemy/SQLite begin_nested(),
+        ne mockuje transakcionu mehaniku — mockuje se samo ishod
+        append_test_result()-a."""
+        repo = tmp_path / "repo"
+        scripts = repo / "scripts"
+        scripts.mkdir(parents=True)
+        (scripts / "verify.py").write_text("print('ok')", encoding="utf-8")
+        artifact_dir = tmp_path / "artifacts" / "verification" / "savepoint-artifact"
+        artifact_dir.mkdir(parents=True)
+        project.repo_path = str(repo)
+        active_session.repo_path = str(repo)
+        item = _plan_item(db_session, project, "IMPLEMENTED")
+        active_session.plan_item_id = item.id
+        db_session.flush()
+
+        def _raise(self, **kwargs):  # noqa: ARG001
+            raise RuntimeError("forced ledger failure")
+
+        monkeypatch.setattr(WorkflowLedgerService, "append_test_result", _raise)
+
+        svc = SessionCompletionService(db_session)
+        with (
+            patch("flowos.service.services.sessions.completion.GitStateReader") as mock_reader,
+            patch("flowos.service.services.sessions.completion.VerificationService") as mock_verify,
+        ):
+            mock_reader.return_value.read_state.return_value = _mock_git_state(dirty=False)
+            mock_verify.return_value.run_verify.return_value = _mock_verify_result_with_artifact(
+                str(artifact_dir), success=True
+            )
+
+            # NE SMIJE baciti izuzetak van complete_session — SAVEPOINT hvata
+            # grešku lokalno, complete_session nastavlja i sam commit-uje.
+            svc.complete_session(session_id=active_session.id, exit_code=0)
+
+        # 1. TEST_RESULT event ne postoji (append je pukao unutar SAVEPOINT-a).
+        assert db_session.query(WorkflowLedgerEvent).count() == 0
+
+        # 2. Outer SessionCompletion se ipak uspješno commitovao (complete_session
+        #    interno zove self._db.commit() — da je sesija bila u failed
+        #    transaction stanju, taj poziv bi sam pukao unutar complete_session).
+        db_session.refresh(active_session)
+        assert active_session.status == "COMPLETED"
+        assert active_session.ended_at is not None
+        assert active_session.exit_code == 0
+
+        # 3. VERIFY_RESULT SessionEvent postoji — nije obrisan SAVEPOINT rollbackom.
+        verify_event = (
+            db_session.query(SessionEvent)
+            .filter(
+                SessionEvent.session_id == active_session.id,
+                SessionEvent.event_type == "VERIFY_RESULT",
+            )
+            .one()
+        )
+        assert '"success": true' in (verify_event.payload_json or "")
+
+        # 4. PlanItem status nije promijenjen.
+        db_session.refresh(item)
+        assert item.status == "IMPLEMENTED"
+
+        # 5. Sesija nije ostala u SQLAlchemy failed-transaction stanju — može
+        #    dalje raditi normalan rad (flush/commit) van complete_session poziva.
+        extra = Project(id="after-savepoint-failure-check", name="X", repo_path="C:/x")
+        db_session.add(extra)
+        db_session.flush()
+        db_session.commit()
+        assert db_session.get(Project, "after-savepoint-failure-check") is not None
 
     def test_derive_status(self):
         """Testira _derive_status za sve varijante."""

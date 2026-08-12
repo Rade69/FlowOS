@@ -24,6 +24,7 @@ from flowos.service.services.infrastructure.persistence.plan_models import PlanI
 from flowos.service.services.reports.service import ReportService
 from flowos.service.services.sessions.bindings import SessionTaskBindingService
 from flowos.service.services.verification.service import VerificationService
+from flowos.service.services.workflow.ledger import WorkflowLedgerService
 
 logger = logging.getLogger("flowos.session_completion")
 
@@ -123,7 +124,7 @@ class SessionCompletionService:
         if verify_path.is_file():
             logger.info("SessionCompletion: pokrecem verify.py za %s", session_id)
             svc = VerificationService()
-            verify_result = svc.run_verify(repo_path)
+            verify_result = svc.run_verify(repo_path, session_id=session_id, project_id=project_id)
             logger.info(
                 "SessionCompletion: verify.py zavrsen (exit=%d, success=%s)",
                 verify_result.exit_code,
@@ -166,6 +167,27 @@ class SessionCompletionService:
                 payload_json=_json.dumps(verify_metadata),
             )
             self._db.add(verify_event)
+            # Flush PRIJE otvaranja SAVEPOINT-a: bez ovoga bi autoflush unutar
+            # append_test_result() izvršio INSERT za verify_event TEK nakon
+            # što je SAVEPOINT već otvoren, pa bi ga eventualni rollback do
+            # savepoint-a obrisao zajedno sa neuspjelim Ledger appendom.
+            self._db.flush()
+
+            # TEST_RESULT Ledger append — izolovan SAVEPOINT-om (nested
+            # transakcija) da neuspjeh ovog koraka ne obori ostatak
+            # SessionCompletion transakcije (session facts, VERIFY_RESULT
+            # SessionEvent i kasniji koraci moraju ostati commitabilni).
+            try:
+                with self._db.begin_nested():
+                    WorkflowLedgerService(self._db).append_test_result(
+                        project_id=project_id,
+                        session_id=session_id,
+                        result=verify_result,
+                    )
+            except Exception:
+                logger.exception(
+                    "SessionCompletion: TEST_RESULT Ledger append nije uspeo za %s", session_id
+                )
 
         # Izvedi status — uzima u obzir exit code, verify
         session.status = self._derive_status(exit_code, verify_result)

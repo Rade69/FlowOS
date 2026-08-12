@@ -1,7 +1,8 @@
 """Workflow Ledger service.
 
-Phase 3A appenduje samo IMPLEMENTATION_COMPLETED događaje iz canonical DB
-AgentReport-a. Service ne nudi update/delete contract jer je Ledger append-only.
+Phase 3A appenduje IMPLEMENTATION_COMPLETED događaje iz canonical DB
+AgentReport-a. Phase 3B dodaje TEST_RESULT događaje iz VerificationResult-a.
+Service ne nudi update/delete contract jer je Ledger append-only.
 """
 
 from __future__ import annotations
@@ -23,9 +24,13 @@ from flowos.service.services.infrastructure.persistence.report_models import (
 from flowos.service.services.infrastructure.persistence.workflow_ledger_models import (
     WorkflowLedgerEvent,
 )
+from flowos.service.services.verification.service import VerificationResult
 
 IMPLEMENTATION_COMPLETED = "IMPLEMENTATION_COMPLETED"
 AGENT_REPORT_SOURCE = "agent_report"
+
+TEST_RESULT = "TEST_RESULT"
+VERIFICATION_ARTIFACT_SOURCE = "verification_artifact"
 
 
 @dataclass(frozen=True)
@@ -74,11 +79,7 @@ class WorkflowLedgerService:
         events: list[WorkflowLedgerEvent] = []
         for group in groups:
             key = self._idempotency_key(report.id, group.target_kind, group.target_id)
-            existing = (
-                self._session.query(WorkflowLedgerEvent)
-                .filter(WorkflowLedgerEvent.idempotency_key == key)
-                .one_or_none()
-            )
+            existing = self._existing_event(key)
             if existing is not None:
                 events.append(existing)
                 continue
@@ -118,6 +119,72 @@ class WorkflowLedgerService:
             events.append(event)
 
         return events
+
+    def append_test_result(
+        self,
+        *,
+        project_id: str,
+        session_id: str | None,
+        result: VerificationResult,
+    ) -> WorkflowLedgerEvent | None:
+        """Appenduje TEST_RESULT event za qualifying VerificationResult.
+
+        TEST_RESULT bilježi isključivo da je scripts/verify.py stvarno
+        izvršen i proizveo konkretan PASS/FAIL/TIMEOUT ishod. Ne znači da je
+        implementacija ispravna, da je review prošao ili da je PlanItem
+        VERIFIED — poziv ove metode ne smije nikad mijenjati PlanItem.status.
+
+        Event je uvijek session/project-scoped (task_id i plan_item_id
+        ostaju NULL) jer scripts/verify.py nema dokazivu task-level
+        atribuciju — ne izmišlja se veza sa aktivnim/istorijskim bindingom.
+
+        Vraća None (bez ikakve mutacije) ako `result.artifact_path` nije
+        postavljen — to znači da ne postoji stvarno persistovan verification
+        artefakt na koji bi source_id mogao pokazivati (npr. verify.py nije
+        pronađen, ili je artifact save pao). Postojeći VERIFY_RESULT
+        SessionEvent ostaje jedini zapis za taj slučaj.
+
+        Baca ValueError ako `session_id` ne odgovara postojećoj AgentSession
+        koja pripada `project_id` — poziv se ne oslanja samo na parametre bez
+        DB provjere.
+        """
+        session_obj = self._validate_session_for_project(session_id, project_id)
+
+        if result.artifact_path is None:
+            return None
+
+        occurred_at = self._parse_verified_at(result.verified_at)
+        key = self._test_result_idempotency_key(result.artifact_id)
+        existing = self._existing_event(key)
+        if existing is not None:
+            return existing
+
+        payload = {
+            "artifact_id": result.artifact_id,
+            "verify_path": result.verify_path,
+            "exit_code": result.exit_code,
+            "success": result.success,
+            "timed_out": result.timed_out,
+            "duration_seconds": result.duration_seconds,
+            "artifact_path": result.artifact_path,
+        }
+
+        event = WorkflowLedgerEvent(
+            project_id=project_id,
+            event_type=TEST_RESULT,
+            session_id=session_obj.id if session_obj else None,
+            task_id=None,
+            plan_item_id=None,
+            source_kind=VERIFICATION_ARTIFACT_SOURCE,
+            source_id=result.artifact_id,
+            occurred_at=occurred_at,
+            recorded_at=datetime.now(tz=UTC),
+            idempotency_key=key,
+            payload_json=json.dumps(payload, ensure_ascii=False, sort_keys=True),
+        )
+        self._session.add(event)
+        self._session.flush()
+        return event
 
     def list_for_project(self, project_id: str) -> list[WorkflowLedgerEvent]:
         """Vraća Ledger evente za projekat stabilno sortirane za test/read modele."""
@@ -234,3 +301,51 @@ class WorkflowLedgerService:
         if session_obj is None:
             raise ValueError(f"Report {report.id} nema validnu AgentSession")
         return session_obj.project_id
+
+    def _existing_event(self, idempotency_key: str) -> WorkflowLedgerEvent | None:
+        return (
+            self._session.query(WorkflowLedgerEvent)
+            .filter(WorkflowLedgerEvent.idempotency_key == idempotency_key)
+            .one_or_none()
+        )
+
+    def _validate_session_for_project(
+        self, session_id: str | None, project_id: str
+    ) -> AgentSession | None:
+        """Provjerava da session_id, ako je dat, stvarno pripada project_id.
+
+        Ne vjeruje samo parametrima pozivaoca — poziv se odbija sa ValueError
+        ako sesija ne postoji ili pripada drugom projektu.
+        """
+        if session_id is None:
+            return None
+        session_obj = self._session.get(AgentSession, session_id)
+        if session_obj is None:
+            raise ValueError(f"Sesija {session_id} ne postoji")
+        if session_obj.project_id != project_id:
+            raise ValueError(f"Sesija {session_id} ne pripada projektu {project_id}")
+        return session_obj
+
+    @staticmethod
+    def _parse_verified_at(verified_at: str) -> datetime:
+        """Parsira VerificationResult.verified_at u timezone-aware datetime.
+
+        Ne pada tiho nazad na datetime.now() ako timestamp nije validan —
+        occurred_at mora biti stvarno izmjereno vrijeme završetka provjere,
+        ne trenutak append-a.
+        """
+        try:
+            parsed = datetime.fromisoformat(verified_at)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                f"VerificationResult.verified_at nije validan ISO-8601 timestamp: {verified_at!r}"
+            ) from exc
+        if parsed.tzinfo is None or parsed.utcoffset() is None:
+            raise ValueError(
+                f"VerificationResult.verified_at mora biti timezone-aware: {verified_at!r}"
+            )
+        return parsed
+
+    @staticmethod
+    def _test_result_idempotency_key(artifact_id: str) -> str:
+        return f"workflow-ledger:v1:TEST_RESULT:verification_artifact:{artifact_id}"

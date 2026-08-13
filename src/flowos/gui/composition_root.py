@@ -8,6 +8,7 @@ Svaka zavisnost se prosleđuje eksplicitno kroz konstruktor.
 """
 
 from contextlib import suppress
+from pathlib import Path
 
 from PySide6.QtCore import QTimer, QUrl
 from PySide6.QtWidgets import QVBoxLayout, QWidget
@@ -486,8 +487,7 @@ def create_gui(use_live: bool = True) -> FlowOsGui:
     controller = None
     api = None
     if use_live:
-        _ensure_service_running()
-        port = _get_service_port()
+        port = ensure_service_running()
         api = GuiApiClient(base_url=f"http://127.0.0.1:{port}")
         controller = OverviewController(api)
 
@@ -514,55 +514,78 @@ def create_gui(use_live: bool = True) -> FlowOsGui:
     )
 
 
-def _get_service_port() -> int:
+def _service_descriptor_path() -> Path:
+    from flowos.service.services.infrastructure.app_paths import get_runtime_dir
+
+    return get_runtime_dir() / "service.json"
+
+
+class ServiceStartupError(RuntimeError):
+    """Backend servis nije postao zdrav unutar dozvoljenog perioda."""
+
+
+def _read_descriptor_port() -> int | None:
+    """Čita port iz runtime descriptor-a, ili None ako descriptor nije validan."""
     import json
-    import os
 
-    descriptor_path = os.path.join(
-        os.environ.get("LOCALAPPDATA", os.path.expanduser("~")),
-        "FlowOS",
-        "runtime",
-        "service.json",
-    )
+    path = _service_descriptor_path()
     try:
-        with open(descriptor_path) as f:
+        with open(path) as f:
             data = json.load(f)
-            port = data.get("port", 9100)
-            if isinstance(port, int) and 1024 <= port <= 65535:
-                return port
-    except Exception:
-        pass
-    return 9100
+        port = data.get("port")
+        if isinstance(port, int) and 1024 <= port <= 65535:
+            return port
+    except (OSError, json.JSONDecodeError):
+        return None
+    return None
 
 
-def _ensure_service_running() -> None:
-    import subprocess
-    import time
-
+def _is_service_healthy(port: int) -> bool:
     import httpx
 
-    port = _get_service_port()
     try:
         resp = httpx.get(f"http://127.0.0.1:{port}/health", timeout=2)
-        if resp.status_code == 200:
-            return
+        return resp.status_code == 200
     except Exception:
-        pass
+        return False
 
-    try:
-        subprocess.Popen(
-            ["flowos-service.exe"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        for _ in range(20):
-            try:
-                resp = httpx.get(f"http://127.0.0.1:{port}/health", timeout=1)
-                if resp.status_code == 200:
-                    return
-            except Exception:
-                time.sleep(0.5)
-    except FileNotFoundError:
-        pass
-    except Exception:
-        pass
+
+def ensure_service_running() -> int:
+    """Obezbeđuje pokrenut FlowOS servis i vraća potvrđeni port.
+
+    Redoslijed:
+    1. Ako descriptor već postoji i /health je zdrav, ponovo koristi taj port.
+    2. Inače pokreće servis kroz trenutni Python environment.
+    3. Čeka da servis upiše descriptor i postane zdrav.
+    4. Vraća port iz descriptor-a (autoritativan), ne fallback.
+
+    Raises:
+        ServiceStartupError: ako servis ne postane zdrav u bounded periodu.
+    """
+    import subprocess
+    import sys
+    import time
+
+    existing_port = _read_descriptor_port()
+    if existing_port is not None and _is_service_healthy(existing_port):
+        return existing_port
+
+    proc = subprocess.Popen(
+        [sys.executable, "-m", "flowos.service.app"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+    deadline = time.monotonic() + 30.0
+    last_port: int | None = None
+    while time.monotonic() < deadline:
+        if proc.poll() is not None:
+            raise ServiceStartupError(
+                f"FlowOS servis se ugasio pri pokretanju (exit code {proc.returncode})."
+            )
+        last_port = _read_descriptor_port()
+        if last_port is not None and _is_service_healthy(last_port):
+            return last_port
+        time.sleep(0.5)
+
+    raise ServiceStartupError("FlowOS servis nije postao zdrav unutar 30 sekundi.")

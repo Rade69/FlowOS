@@ -343,35 +343,42 @@ def _make_lifespan(runtime: RuntimeManager):
                 project_id, repo_path, session_factory=app.state.session_factory
             )
 
-        # Učitaj aktivne projekte i pokreni watcher-e
+        # Učitaj aktivne projekte kao plain podatke, zatim ODMAN zatvori listing
+        # session. Listing session drži jedinu SQLite connection iz pool-a
+        # (pool_size=1, max_overflow=0); ako ostane otvorena dok startup scan
+        # otvara nove sesije, dobija se QueuePool TimeoutError.
         init_db = app.state.session_factory()
         try:
-            projects = init_db.query(Project).all()
-            for proj in projects:
-                try:
-                    cb = _make_watcher_callback(proj.id, proj.repo_path)
-                    w = WatcherPipeline(callback=cb)
-                    w.start(proj.repo_path)
-                    app.state.watchers[proj.id] = w
-                    logger.info("Watcher pokrenut za projekat %s: %s", proj.id, proj.repo_path)
-                    _scan_existing_agent_reports_for_project(
-                        proj.id,
-                        proj.repo_path,
-                        app.state.session_factory,
-                        logger,
-                    )
-                except FileNotFoundError:
-                    logger.warning(
-                        "Repo putanja ne postoji za projekat %s: %s — preskačem",
-                        proj.id,
-                        proj.repo_path,
-                    )
-                except Exception:
-                    logger.exception("Greška pri pokretanju watcher-a za projekat %s", proj.id)
+            project_rows = init_db.query(Project.id, Project.repo_path).all()
+            # Materijalizuj u plain tuple-e pre zatvaranja sesije
+            project_rows = [(row.id, row.repo_path) for row in project_rows]
         except Exception:
             logger.exception("Greška pri učitavanju projekata za watcher-e")
+            project_rows = []
         finally:
             init_db.close()
+
+        for project_id, repo_path in project_rows:
+            try:
+                cb = _make_watcher_callback(project_id, repo_path)
+                w = WatcherPipeline(callback=cb)
+                w.start(repo_path)
+                app.state.watchers[project_id] = w
+                logger.info("Watcher pokrenut za projekat %s: %s", project_id, repo_path)
+                _scan_existing_agent_reports_for_project(
+                    project_id,
+                    repo_path,
+                    app.state.session_factory,
+                    logger,
+                )
+            except FileNotFoundError:
+                logger.warning(
+                    "Repo putanja ne postoji za projekat %s: %s — preskačem",
+                    project_id,
+                    repo_path,
+                )
+            except Exception:
+                logger.exception("Greška pri pokretanju watcher-a za projekat %s", project_id)
 
         # Periodični konflikt detektor — proverava svakih 60s
         async def _conflict_detector():

@@ -443,3 +443,92 @@ class TestProductionWatcherWiring:
         finally:
             watcher.stop()
             assert not watcher.is_running
+
+
+class TestStartupSessionBoundary:
+    """FLOW-1101: startup listing session mora biti zatvorena pre AgentReport scan-a."""
+
+    def test_startup_scan_releases_listing_connection(self, db_path, tmp_path: Path):
+        """Dokazuje da scan dobija DB connection kada je listing session zatvorena."""
+        from flowos.service.composition_root import _scan_existing_agent_reports_for_project
+
+        # Stvarni file-backed SQLite sa pool_size=1, max_overflow=0, kratak timeout
+        engine = create_engine(
+            f"sqlite:///{db_path}",
+            echo=False,
+            pool_size=1,
+            max_overflow=0,
+            pool_timeout=2,
+            connect_args={"check_same_thread": False},
+        )
+        Base.metadata.create_all(engine)
+        from sqlalchemy.orm import sessionmaker
+
+        factory = sessionmaker(bind=engine)
+
+        # Kreiraj Project sa repo_path koji ima agent_reports/*.md
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        reports_dir = repo / "agent_reports"
+        reports_dir.mkdir()
+        report_file = reports_dir / "2026-08-12_startup.md"
+        import uuid
+
+        valid_uuid = str(uuid.uuid4())
+        report_file.write_text(
+            "---\n"
+            "flowos_report_version: 1\n"
+            f"report_id: {valid_uuid}\n"
+            "agent: codex\n"
+            "model: gpt-5\n"
+            "session_id: unknown\n"
+            "report_type: implementation\n"
+            "work_status: completed\n"
+            "tasks:\n  - unassigned\n"
+            "commits: []\n"
+            "created_at: 2026-08-12T00:00:00+02:00\n"
+            "---\n\n# Startup report\n",
+            encoding="utf-8",
+        )
+
+        project_id = "flw-1101-proj"
+        init_db = factory()
+        try:
+            project = Project(id=project_id, name="FLOW-1101", repo_path=str(repo))
+            init_db.add(project)
+            init_db.commit()
+        finally:
+            init_db.close()
+
+        # Simuliraj startup listing session (kao _make_lifespan)
+        listing_db = factory()
+        try:
+            rows = [
+                (r.id, r.repo_path) for r in listing_db.query(Project.id, Project.repo_path).all()
+            ]
+        finally:
+            listing_db.close()  # OVO je popravka — listing session mora biti zatvorena
+
+        assert len(rows) == 1
+
+        # Pool status: checked out connections mora biti 0 pre scan-a
+        pool = engine.pool
+        assert pool.checkedout() == 0, (
+            f"Listing session nije vratila connection u pool: {pool.checkedout()} checked out"
+        )
+
+        # Pokreni stvarni startup scan — mora proći bez TimeoutError
+        import logging
+
+        logger = logging.getLogger("test_startup_scan")
+        results = _scan_existing_agent_reports_for_project(
+            project_id,
+            str(repo),
+            factory,
+            logger,
+        )
+
+        # Scan je stvarno došao do ingestion logike (NEEDS_LINK je prihvatljiv dokaz)
+        assert len(results) == 1
+        assert results[0].outcome.value in ("NEEDS_LINK", "INGESTED", "ALREADY_INGESTED")
+        engine.dispose()

@@ -126,23 +126,31 @@ class GuiApiClient(QObject):
         if reply.error() == QNetworkReply.NetworkError.NoError:
             try:
                 data = json.loads(reply.readAll().data().decode())  # type: ignore[union-attr]  # PySide6 QByteArray
-                if callable(signal):
-                    signal(data)
-                elif signal:
-                    signal.emit(data)
-                elif callback:
-                    callback(data)
+                self._dispatch(signal, callback, data)
             except json.JSONDecodeError:
                 self.error_occurred.emit(-1, "Neispravan JSON odgovor")
         else:
-            code = reply.error()
+            code = reply.error().value if reply.error() is not None else -1
             msg = reply.errorString()
             self.error_occurred.emit(code, msg)
-            if callable(signal):
-                signal({"error": msg})
-            elif signal:
-                signal.emit({"error": msg})
+            self._dispatch(signal, callback, {"error": msg})
         reply.deleteLater()
+
+    @staticmethod
+    def _dispatch(signal: Any, callback, payload: Any) -> None:
+        """Emitovanje payload-a: Qt signal pre plain Python callable-a.
+
+        Bound Qt SignalInstance je callable == True, ali direktan poziv
+        `signal(...)` baca TypeError. Zato se Qt signali prepoznaju i
+        emituju kroz `.emit()`, a tek obične Python callable funkcije se
+        pozivaju direktno.
+        """
+        if signal is not None and hasattr(signal, "emit"):
+            signal.emit(payload)
+        elif callable(signal):
+            signal(payload)
+        elif callback is not None:
+            callback(payload)
 
     # ── Worktrees ───────────────────────────────────────
 

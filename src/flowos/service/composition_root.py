@@ -33,7 +33,12 @@ from flowos.service.services.infrastructure.persistence.engine import (
     create_session_factory,
     create_sqlite_engine,
 )
-from flowos.service.services.infrastructure.runtime import RuntimeManager
+from flowos.service.services.infrastructure.runtime import RuntimeManager, verify_bearer_token
+
+# Rute koje ostaju dostupne bez auth tokena. /health mora ostati javan da bi
+# FLOW-1103 bootstrap mogao provjeriti da servis postoji prije nego što GUI
+# završi klijent setup (i prije nego što ima token za slanje).
+PUBLIC_PATHS = frozenset({"/health"})
 
 
 def create_app(runtime: RuntimeManager, engine=None) -> FastAPI:
@@ -51,6 +56,20 @@ def create_app(runtime: RuntimeManager, engine=None) -> FastAPI:
         description="Lokalni lični operativni sistem za koordinaciju agentskih sesija",
         lifespan=_make_lifespan(runtime),
     )
+
+    # FLOW-1107: jedna centralna auth provjera za sve rute osim PUBLIC_PATHS.
+    # /health ostaje javan (FLOW-1103 bootstrap ga proverava pre nego što GUI
+    # ima token). Sve ostalo, uključujući /shutdown, zahteva
+    # `Authorization: Bearer <current-instance-token>`.
+    @app.middleware("http")
+    async def _instance_auth_middleware(request: Request, call_next):
+        if request.url.path in PUBLIC_PATHS:
+            return await call_next(request)
+        runtime_mgr = getattr(request.app.state, "runtime", None)
+        expected = getattr(runtime_mgr, "token", None) if runtime_mgr is not None else None
+        if not verify_bearer_token(expected, request.headers.get("authorization")):
+            return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
+        return await call_next(request)
 
     # Rute
     app.include_router(system_router, tags=["System"])

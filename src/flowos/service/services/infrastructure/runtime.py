@@ -4,10 +4,14 @@ Upravlja životnim ciklusom servisa:
 - Single-instance mutex (samo jedan flowos-service u jednom trenutku)
 - Runtime descriptor JSON za GUI/CLI otkrivanje
 - Pronalazak slobodnog loopback porta
+- Per-instance auth token (FLOW-1107) — nov pri svakom pokretanju, isporučen
+  kroz descriptor legitimnom lokalnom GUI/CLI klijentu
 """
 
+import hmac
 import json
 import os
+import secrets
 import socket
 import sys
 import uuid
@@ -37,6 +41,7 @@ class RuntimeManager:
     - Single-instance lock (mutex na Windows, flock na Unix)
     - Runtime descriptor JSON
     - Pronalazak slobodnog loopback porta
+    - Generisanje per-instance auth token-a (FLOW-1107)
     """
 
     MUTEX_NAME = "Global\\FlowOS_Service_Mutex"
@@ -48,6 +53,10 @@ class RuntimeManager:
         self._mutex_handle: Any = None
         self._port: int | None = None
         self._pid: int = os.getpid()
+        # FLOW-1107: per-instance auth token — kriptografski nasumičan,
+        # nov pri svakom pokretanju. Nije isto što i instance_id (koji
+        # nije tajna i ne koristi se za autorizaciju).
+        self._token: str = secrets.token_urlsafe(32)
 
     # ── Single-instance lock ──────────────────────────────
 
@@ -133,6 +142,7 @@ class RuntimeManager:
             "version": "0.1.0",
             "api_version": 1,
             "instance_id": str(uuid.uuid4()),
+            "token": self._token,
             "started_at": self._utcnow_iso(),
             "data_directory": str(self.DESCRIPTOR_DIR.parent / "data"),
             "status": "running",
@@ -161,3 +171,31 @@ class RuntimeManager:
     @property
     def pid(self) -> int:
         return self._pid
+
+    @property
+    def token(self) -> str:
+        """Per-instance auth token. Nov pri svakom pokretanju, nije tajna instance_id."""
+        return self._token
+
+
+def verify_bearer_token(expected: str | None, header_value: str | None) -> bool:
+    """Constant-time provjera `Authorization: Bearer <token>` header-a.
+
+    Jedina auth provjera koju koriste i HTTP middleware i WebSocket endpoint —
+    izbjegava dva odvojena, potencijalno divergentna implementacije iste
+    provjere (FLOW-1107).
+
+    Args:
+        expected: token trenutne service instance (RuntimeManager.token), ili
+            None ako runtime nije dostupan.
+        header_value: sirova vrijednost Authorization header-a od klijenta.
+
+    Returns:
+        True samo ako je scheme "Bearer" i token se tačno poklapa.
+    """
+    if not expected or not header_value:
+        return False
+    scheme, _, received = header_value.partition(" ")
+    if scheme.lower() != "bearer" or not received:
+        return False
+    return hmac.compare_digest(received, expected)

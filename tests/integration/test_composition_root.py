@@ -25,9 +25,12 @@ from flowos.service.services.infrastructure.watcher import WatcherPipeline
 class NoOpRuntimeManager:
     """RuntimeManager bez mutex-a — za testiranje."""
 
+    TOKEN = "noop-test-token"
+
     def __init__(self):
         self.pid = os.getpid()
         self.port = 9101
+        self.token = self.TOKEN
 
     def acquire_lock(self) -> None:
         pass
@@ -91,6 +94,7 @@ class TestCreateAppLifespan:
     def test_project_and_session_crud(self, app):
         """API rute za projekte i sesije rade kroz stvarni create_app."""
         with TestClient(app) as client:
+            client.headers["Authorization"] = f"Bearer {NoOpRuntimeManager.TOKEN}"
             resp = client.post("/projects", json={"name": "CRT", "repo_path": "C:/t"})
             assert resp.status_code == 200
             pid = resp.json()["id"]
@@ -116,6 +120,7 @@ class TestCreateAppLifespan:
         repo_str = str(repo_path)
 
         with TestClient(app) as client:
+            client.headers["Authorization"] = f"Bearer {NoOpRuntimeManager.TOKEN}"
             resp = client.post("/projects", json={"name": "WR", "repo_path": repo_str})
             assert resp.status_code == 200
             project_id = resp.json()["id"]
@@ -532,3 +537,136 @@ class TestStartupSessionBoundary:
         assert len(results) == 1
         assert results[0].outcome.value in ("NEEDS_LINK", "INGESTED", "ALREADY_INGESTED")
         engine.dispose()
+
+
+class TestInstanceAuth:
+    """FLOW-1107: per-instance bearer token boundary za HTTP API."""
+
+    def test_health_without_token_passes(self, app):
+        """A: /health ostaje dostupan bez tokena."""
+        with TestClient(app) as client:
+            resp = client.get("/health")
+            assert resp.status_code == 200
+
+    def test_protected_get_without_token_rejected(self, app):
+        """B: zaštićen GET bez tokena je odbijen."""
+        with TestClient(app) as client:
+            resp = client.get("/projects")
+            assert resp.status_code == 401
+
+    def test_protected_get_with_wrong_token_rejected(self, app):
+        """C: zaštićen GET sa pogrešnim tokenom je odbijen."""
+        with TestClient(app) as client:
+            resp = client.get("/projects", headers={"Authorization": "Bearer wrong-token"})
+            assert resp.status_code == 401
+
+    def test_protected_get_with_valid_token_passes(self, app):
+        """D: zaštićen GET sa ispravnim trenutnim tokenom prolazi."""
+        with TestClient(app) as client:
+            resp = client.get(
+                "/projects", headers={"Authorization": f"Bearer {NoOpRuntimeManager.TOKEN}"}
+            )
+            assert resp.status_code == 200
+
+    def test_mutating_post_without_token_rejected(self, app):
+        """E: mutirajući POST bez tokena je odbijen."""
+        with TestClient(app) as client:
+            resp = client.post("/projects", json={"name": "X", "repo_path": "C:/x"})
+            assert resp.status_code == 401
+
+    def test_shutdown_without_token_rejected(self, app):
+        """F: POST /shutdown bez tokena je odbijen."""
+        with TestClient(app) as client:
+            resp = client.post("/shutdown")
+            assert resp.status_code == 401
+
+    def test_shutdown_with_valid_token_works(self, app):
+        """G: POST /shutdown sa validnim tokenom radi postojeću shutdown semantiku."""
+        with TestClient(app) as client:
+            resp = client.post(
+                "/shutdown", headers={"Authorization": f"Bearer {NoOpRuntimeManager.TOKEN}"}
+            )
+            assert resp.status_code == 200
+            assert resp.json()["status"] == "ok"
+
+    def test_previous_instance_token_rejected_on_new_instance(self, db_path):
+        """H + I: token instance A ne radi na instanci B; token instance B radi."""
+        engine_a = create_engine(
+            f"sqlite:///{db_path}", echo=False, connect_args={"check_same_thread": False}
+        )
+        Base.metadata.create_all(engine_a)
+
+        class _RuntimeA(NoOpRuntimeManager):
+            TOKEN = "token-instance-a"
+
+            def __init__(self):
+                super().__init__()
+                self.token = self.TOKEN
+
+        class _RuntimeB(NoOpRuntimeManager):
+            TOKEN = "token-instance-b"
+
+            def __init__(self):
+                super().__init__()
+                self.token = self.TOKEN
+
+        app_b = create_app(_RuntimeB(), engine=engine_a)
+
+        with TestClient(app_b) as client_b:
+            # H: token prethodne (A) instance ne radi na B
+            resp = client_b.get("/projects", headers={"Authorization": f"Bearer {_RuntimeA.TOKEN}"})
+            assert resp.status_code == 401
+
+            # I: token trenutne (B) instance radi
+            resp = client_b.get("/projects", headers={"Authorization": f"Bearer {_RuntimeB.TOKEN}"})
+            assert resp.status_code == 200
+
+    def test_missing_authorization_header(self, app):
+        """Self-attack: nema Authorization header-a uopšte."""
+        with TestClient(app) as client:
+            resp = client.get("/runtime")
+            assert resp.status_code == 401
+
+    def test_wrong_scheme_rejected(self, app):
+        """Self-attack: Basic umesto Bearer scheme."""
+        with TestClient(app) as client:
+            resp = client.get(
+                "/runtime", headers={"Authorization": f"Basic {NoOpRuntimeManager.TOKEN}"}
+            )
+            assert resp.status_code == 401
+
+    def test_empty_bearer_token_rejected(self, app):
+        """Self-attack: prazan token nakon 'Bearer '."""
+        with TestClient(app) as client:
+            resp = client.get("/runtime", headers={"Authorization": "Bearer "})
+            assert resp.status_code == 401
+
+    def test_token_with_extra_whitespace_rejected(self, app):
+        """Self-attack: token sa dodatnim razmakom ne smije tiho proći."""
+        with TestClient(app) as client:
+            resp = client.get(
+                "/runtime",
+                headers={"Authorization": f"Bearer  {NoOpRuntimeManager.TOKEN}"},
+            )
+            # Dodatan razmak menja received vrednost — mora biti odbijeno,
+            # ne tiho tolerisano.
+            assert resp.status_code == 401
+
+    def test_401_body_does_not_leak_expected_token(self, app):
+        """Self-attack: error body ne otkriva očekivani token."""
+        with TestClient(app) as client:
+            resp = client.get("/projects")
+            assert resp.status_code == 401
+            assert NoOpRuntimeManager.TOKEN not in resp.text
+
+    def test_unknown_path_without_token_also_rejected(self, app):
+        """Auth se proverava pre routing-a — i nepostojeća putanja traži token."""
+        with TestClient(app) as client:
+            resp = client.get("/nepostojeci-endpoint")
+            assert resp.status_code == 401
+
+            resp = client.get(
+                "/nepostojeci-endpoint",
+                headers={"Authorization": f"Bearer {NoOpRuntimeManager.TOKEN}"},
+            )
+            assert resp.status_code == 404

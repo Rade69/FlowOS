@@ -32,14 +32,31 @@ class GuiApiClient(QObject):
     agents_scanned = Signal(object)
     error_occurred = Signal(int, str)
 
-    def __init__(self, base_url: str = "http://127.0.0.1:9100", parent=None):
+    def __init__(
+        self, base_url: str = "http://127.0.0.1:9100", token: str | None = None, parent=None
+    ):
         super().__init__(parent)
         self._base_url = base_url.rstrip("/")
+        self._token = token
         self._nam = QNetworkAccessManager(self)
 
     @property
     def base_url(self) -> str:
         return self._base_url
+
+    @property
+    def token(self) -> str | None:
+        """Auth token trenutne service instance (FLOW-1107), ili None u MOCK modu."""
+        return self._token
+
+    def _apply_auth_header(self, req: QNetworkRequest) -> None:
+        """Dodaje Authorization: Bearer <token> ako je token poznat.
+
+        /health backend prihvata i bez tokena, ali slanje ne šteti — nema
+        potrebe za posebnim izuzetkom po ruti na klijentu.
+        """
+        if self._token:
+            req.setRawHeader(b"Authorization", f"Bearer {self._token}".encode())
 
     # ── System ─────────────────────────────────────────
 
@@ -98,6 +115,7 @@ class GuiApiClient(QObject):
         req = QNetworkRequest()
         req.setUrl(url)
         req.setRawHeader(b"Accept", b"application/json")
+        self._apply_auth_header(req)
         reply = self._nam.get(req)
         reply.finished.connect(lambda r=reply, s=signal: self._handle_response(r, s))
 
@@ -106,6 +124,7 @@ class GuiApiClient(QObject):
         req = QNetworkRequest()
         req.setUrl(url)
         req.setHeader(QNetworkRequest.KnownHeaders.ContentTypeHeader, "application/json")
+        self._apply_auth_header(req)
         data = json.dumps(body).encode("utf-8")
         reply = self._nam.post(req, data)
         reply.finished.connect(lambda r=reply, s=signal: self._handle_response(r, s))
@@ -114,6 +133,7 @@ class GuiApiClient(QObject):
         url = f"{self._base_url}{path}"
         req = QNetworkRequest()
         req.setUrl(url)
+        self._apply_auth_header(req)
         reply = self._nam.deleteResource(req)
         reply.finished.connect(lambda r=reply, cb=callback: self._handle_response(r, None, cb))
 

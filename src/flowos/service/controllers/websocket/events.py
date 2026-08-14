@@ -16,6 +16,8 @@ from typing import Any
 
 from fastapi import WebSocket
 
+from flowos.service.services.infrastructure.runtime import verify_bearer_token
+
 logger = logging.getLogger("flowos.websocket")
 
 
@@ -84,8 +86,27 @@ class EventBus:
 event_bus = EventBus()
 
 
+def _is_authorized(ws: WebSocket) -> bool:
+    """FLOW-1107: konekcija mora posjedovati trenutni instance token.
+
+    Isti `verify_bearer_token()` primitiv kao HTTP middleware — jedan
+    autoritativan način provjere, ne odvojena WS-specifična logika.
+    """
+    runtime_mgr = getattr(ws.app.state, "runtime", None)
+    expected = getattr(runtime_mgr, "token", None) if runtime_mgr is not None else None
+    return verify_bearer_token(expected, ws.headers.get("authorization"))
+
+
 async def ws_endpoint(ws: WebSocket):
-    """WebSocket endpoint — prima konekcije i drži ih otvorenim."""
+    """WebSocket endpoint — prima konekcije i drži ih otvorenim.
+
+    Auth se provjerava PRIJE `accept()` — bez validnog tokena konekcija se
+    nikad ne pretvara u aktivan FlowOS event klijent.
+    """
+    if not _is_authorized(ws):
+        await ws.close(code=4401)
+        return
+
     await event_bus.connect(ws)
     try:
         while True:

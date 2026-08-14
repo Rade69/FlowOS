@@ -8,9 +8,11 @@ Svaka zavisnost se prosleđuje eksplicitno kroz konstruktor.
 """
 
 from contextlib import suppress
+from dataclasses import dataclass
 from pathlib import Path
 
 from PySide6.QtCore import QTimer, QUrl
+from PySide6.QtNetwork import QNetworkRequest
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 try:
@@ -165,6 +167,7 @@ class FlowOsGui:
         # Prvo proveri stanje servisa
         url = f"{self._api.base_url}/system/shutdown/prepare"
         req = QNetworkRequest(QUrl(url))
+        self._api._apply_auth_header(req)
         reply = self._api._nam.get(req)
 
         def _on_prepare_ready():
@@ -401,7 +404,11 @@ class FlowOsGui:
             self._projects_page.render(projects)
 
     def _connect_ws(self) -> None:
-        """Povezuje se na WebSocket za real-time događaje."""
+        """Povezuje se na WebSocket za real-time događaje.
+
+        FLOW-1107: token se šalje kroz Authorization header na handshake
+        zahtjevu (QNetworkRequest), nikad kroz URL query string.
+        """
         if not HAS_WEBSOCKET:
             return
 
@@ -409,9 +416,13 @@ class FlowOsGui:
         if self._api:
             port = int(self._api.base_url.split(":")[-1]) if ":" in self._api.base_url else 9100
 
+        req = QNetworkRequest(QUrl(f"ws://127.0.0.1:{port}/ws"))
+        if self._api and self._api.token:
+            req.setRawHeader(b"Authorization", f"Bearer {self._api.token}".encode())
+
         self._ws = QWebSocket()
         self._ws.textMessageReceived.connect(self._on_ws_message)
-        self._ws.open(QUrl(f"ws://127.0.0.1:{port}/ws"))
+        self._ws.open(req)
 
     def _on_ws_message(self, raw: str) -> None:
         import json
@@ -487,8 +498,8 @@ def create_gui(use_live: bool = True) -> FlowOsGui:
     controller = None
     api = None
     if use_live:
-        port = ensure_service_running()
-        api = GuiApiClient(base_url=f"http://127.0.0.1:{port}")
+        connection = ensure_service_running()
+        api = GuiApiClient(base_url=f"http://127.0.0.1:{connection.port}", token=connection.token)
         controller = OverviewController(api)
 
     return FlowOsGui(
@@ -524,20 +535,35 @@ class ServiceStartupError(RuntimeError):
     """Backend servis nije postao zdrav unutar dozvoljenog perioda."""
 
 
-def _read_descriptor_port() -> int | None:
-    """Čita port iz runtime descriptor-a, ili None ako descriptor nije validan."""
+@dataclass(frozen=True)
+class ServiceConnection:
+    """Potvrđena konekcija ka tekućoj FlowOS servis instanci (FLOW-1107).
+
+    `port` i `token` se UVIJEK čitaju iz istog descriptor snapshot-a — nikad
+    port jedne instance sa tokenom neke druge (npr. stale/prethodne).
+    """
+
+    port: int
+    token: str
+
+
+def _read_descriptor() -> ServiceConnection | None:
+    """Čita port+token iz runtime descriptor-a atomski, ili None ako nije validan."""
     import json
 
     path = _service_descriptor_path()
     try:
         with open(path) as f:
             data = json.load(f)
-        port = data.get("port")
-        if isinstance(port, int) and 1024 <= port <= 65535:
-            return port
     except (OSError, json.JSONDecodeError):
         return None
-    return None
+    port = data.get("port")
+    token = data.get("token")
+    if not (isinstance(port, int) and 1024 <= port <= 65535):
+        return None
+    if not (isinstance(token, str) and token):
+        return None
+    return ServiceConnection(port=port, token=token)
 
 
 def _is_service_healthy(port: int) -> bool:
@@ -550,14 +576,15 @@ def _is_service_healthy(port: int) -> bool:
         return False
 
 
-def ensure_service_running() -> int:
-    """Obezbeđuje pokrenut FlowOS servis i vraća potvrđeni port.
+def ensure_service_running() -> ServiceConnection:
+    """Obezbeđuje pokrenut FlowOS servis i vraća potvrđenu konekciju (port+token).
 
     Redoslijed:
-    1. Ako descriptor već postoji i /health je zdrav, ponovo koristi taj port.
+    1. Ako descriptor već postoji i /health je zdrav, ponovo koristi taj (port, token).
     2. Inače pokreće servis kroz trenutni Python environment.
-    3. Čeka da servis upiše descriptor i postane zdrav.
-    4. Vraća port iz descriptor-a (autoritativan), ne fallback.
+    3. Čeka da servis upiše NOVI descriptor i postane zdrav.
+    4. Vraća (port, token) iz TOG istog descriptor čitanja — nikad mješavinu
+       starog i novog stanja.
 
     Raises:
         ServiceStartupError: ako servis ne postane zdrav u bounded periodu.
@@ -566,9 +593,9 @@ def ensure_service_running() -> int:
     import sys
     import time
 
-    existing_port = _read_descriptor_port()
-    if existing_port is not None and _is_service_healthy(existing_port):
-        return existing_port
+    existing = _read_descriptor()
+    if existing is not None and _is_service_healthy(existing.port):
+        return existing
 
     proc = subprocess.Popen(
         [sys.executable, "-m", "flowos.service.app"],
@@ -577,15 +604,14 @@ def ensure_service_running() -> int:
     )
 
     deadline = time.monotonic() + 30.0
-    last_port: int | None = None
     while time.monotonic() < deadline:
         if proc.poll() is not None:
             raise ServiceStartupError(
                 f"FlowOS servis se ugasio pri pokretanju (exit code {proc.returncode})."
             )
-        last_port = _read_descriptor_port()
-        if last_port is not None and _is_service_healthy(last_port):
-            return last_port
+        candidate = _read_descriptor()
+        if candidate is not None and _is_service_healthy(candidate.port):
+            return candidate
         time.sleep(0.5)
 
     raise ServiceStartupError("FlowOS servis nije postao zdrav unutar 30 sekundi.")

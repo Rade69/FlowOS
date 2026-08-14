@@ -97,6 +97,25 @@ class TestRuntimeManager:
         mgr2.acquire_lock()
         mgr2.release_lock()
 
+    def test_token_is_new_per_instance(self, runtime: RuntimeManager):
+        """FLOW-1107: svaka RuntimeManager instanca dobija drugačiji token."""
+        mgr2 = RuntimeManager()
+
+        assert isinstance(runtime.token, str)
+        assert len(runtime.token) >= 32
+        assert runtime.token != mgr2.token
+
+    def test_token_written_to_descriptor(self, runtime: RuntimeManager):
+        """Descriptor sadrži token trenutne instance, ne instance_id kao supstitut."""
+        import json
+
+        port = runtime.find_free_port()
+        runtime.write_descriptor(port)
+
+        data = json.loads(runtime.DESCRIPTOR_FILE.read_text())
+        assert data["token"] == runtime.token
+        assert data["token"] != data["instance_id"]
+
 
 # ═══════════════════════════════════════════════════════════════════
 # FastAPI endpointi
@@ -111,25 +130,32 @@ class TestSystemEndpoints:
         assert data["status"] == "ok"
         assert "uptime" in data
 
-    def test_version(self, client: TestClient):
-        resp = client.get("/version")
+    def test_version(self, client: TestClient, runtime: RuntimeManager):
+        resp = client.get("/version", headers={"Authorization": f"Bearer {runtime.token}"})
         assert resp.status_code == 200
         data = resp.json()
         assert data["version"] == "0.1.0"
         assert data["api_version"] == 1
 
+    def test_version_without_token_rejected(self, client: TestClient):
+        """FLOW-1107: /version nije javna ruta — samo /health je."""
+        resp = client.get("/version")
+        assert resp.status_code == 401
+
     def test_runtime(self, client: TestClient, runtime: RuntimeManager):
         port = runtime.find_free_port()
         runtime.write_descriptor(port)
 
-        resp = client.get("/runtime")
+        resp = client.get("/runtime", headers={"Authorization": f"Bearer {runtime.token}"})
         assert resp.status_code == 200
         data = resp.json()
         assert data["port"] == port
         assert data["pid"] is not None
 
-    def test_404(self, client: TestClient):
-        resp = client.get("/nepostojeci-endpoint")
+    def test_404(self, client: TestClient, runtime: RuntimeManager):
+        resp = client.get(
+            "/nepostojeci-endpoint", headers={"Authorization": f"Bearer {runtime.token}"}
+        )
         assert resp.status_code == 404
 
     def test_cors_headers(self, client: TestClient):

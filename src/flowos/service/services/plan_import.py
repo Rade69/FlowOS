@@ -111,12 +111,12 @@ class PlanMarkdownParser:
 
         result.phases = self._parse_phase_sections(sections)
 
-        # Sakupi nejasnoće
+        # Sakupi nejasnoće — samo neprepoznati LEVEL-2 (##) heading
         for section in sections:
             heading = section["heading"]
             if (
                 heading
-                and heading.startswith("##")
+                and section["level"] == 2
                 and not self.PHASE_HEADING.match(heading)
                 and heading not in result.unclear_sections
             ):
@@ -314,7 +314,7 @@ class PlanMarkdownParser:
             for i, line in enumerate(lines):
                 stripped = line.strip()
                 if re.match(r"^\d+\.", stripped):
-                    desc = re.sub(r"^\d+\.\s*`?\s*", "", stripped).strip("`; ")
+                    desc = re.sub(r"^\d+\.\s*", "", stripped).strip()
                     if desc and desc not in seen:
                         criteria.append(
                             ParsedCriterion(key=f"REQ-{i + 1:02d}", description=desc[:500])
@@ -421,7 +421,7 @@ class PlanImportService:
 
         # Parsiraj
         parser = PlanMarkdownParser()
-        result = self._parse_with_phases(parser, markdown)
+        result = parser.parse(markdown)
 
         # Kreiraj Plan
         plan = Plan(
@@ -512,22 +512,4 @@ class PlanImportService:
                         self._session.add(dep)
 
         self._session.flush()
-        return result
-
-    @staticmethod
-    def _parse_with_phases(parser: PlanMarkdownParser, markdown: str) -> ImportResult:
-        """Parse koristeći phase-aware grupisanje."""
-        lines = markdown.split("\n")
-        title = parser._extract_title(lines)
-        sections = parser._split_into_sections(lines)
-        phases = parser._parse_phase_sections(sections)
-
-        result = ImportResult(title=title, phases=phases)
-        result.stats = {
-            "phases": len(phases),
-            "items": sum(len(p.items) for p in phases),
-            "criteria": sum(len(item.criteria) for p in phases for item in p.items),
-            "dependencies": sum(len(item.dependencies) for p in phases for item in p.items),
-            "unclear": len(result.unclear_sections),
-        }
         return result

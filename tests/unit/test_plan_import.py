@@ -7,6 +7,7 @@ import pytest
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 
+import flowos.service.services.infrastructure.persistence.report_models  # noqa: F401
 from flowos.service.services.infrastructure.persistence.base import Base
 from flowos.service.services.infrastructure.persistence.models import Project
 from flowos.service.services.plan_import import (
@@ -318,3 +319,120 @@ class TestPlanImportService:
         assert flow_000 is not None
         assert "git status --short" in flow_000.description
         assert "GUI funkcionalnost" in flow_000.description
+
+    def test_service_path_unclear_consistent_with_direct_parser(self, session: Session):
+        """FLOW-1104 H1: service parser putanja prijavljuje unclear isto kao direktni parser."""
+        markdown = "## Faza 1 — Test\n\n#### FLOW-001 — Valid\n\n## Nepoznata sekcija\n"
+
+        project = Project(name="Test", repo_path="C:/test")
+        session.add(project)
+        session.commit()
+
+        svc = PlanImportService(session)
+        service_result = svc.import_plan(project.id, markdown)
+
+        direct_result = PlanMarkdownParser().parse(markdown)
+
+        assert service_result.unclear_sections == ["## Nepoznata sekcija"]
+        assert direct_result.unclear_sections == ["## Nepoznata sekcija"]
+        assert service_result.stats["unclear"] == 1
+        assert direct_result.stats["unclear"] == 1
+
+
+# ═══════════════════════════════════════════════════════════════════
+# FLOW-1104 regression testovi
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestFlow1104ParserReporting:
+    """BUG A: validan H4 FLOW heading ne sme biti prijavljen kao unclear."""
+
+    def test_valid_h4_flow_heading_not_unclear(self):
+        markdown = """# Plan
+
+## Faza 11 — Runtime
+
+#### FLOW-1104 — Parser fix
+
+**Rizik:** MEDIUM
+
+Obavezno:
+1. `IMPLEMENTATION_COMPLETED` prikazati kao završenu implementaciju.
+"""
+        result = PlanMarkdownParser().parse(markdown)
+
+        assert len(result.phases) == 1
+        assert len(result.phases[0].items) == 1
+        assert result.unclear_sections == []
+
+    def test_unknown_h2_still_reported_unclear(self):
+        markdown = """# Plan
+
+## Nepoznata sekcija
+
+Neki tekst.
+
+## Faza 1 — Temelj
+
+#### FLOW-100 — Nesto
+
+**Rizik:** LOW
+"""
+        result = PlanMarkdownParser().parse(markdown)
+
+        assert "## Nepoznata sekcija" in result.unclear_sections
+
+    def test_unknown_h2_and_valid_h4_mixed(self):
+        """Oba slučaja: nepoznat H2 prijavljen, validan H4 FLOW nije."""
+        markdown = """# Plan
+
+## Faza 11 — Runtime
+
+#### FLOW-1104 — Parser fix
+
+**Rizik:** MEDIUM
+
+## Nepoznata sekcija
+
+Tekst.
+"""
+        result = PlanMarkdownParser().parse(markdown)
+
+        assert len(result.phases) == 1
+        assert len(result.phases[0].items) == 1
+        assert result.unclear_sections == ["## Nepoznata sekcija"]
+
+
+class TestFlow1104InlineCode:
+    """BUG B: inline-code, quotes, brackets i interpunkcija moraju biti tačno sačuvani."""
+
+    def test_criterion_descriptions_exact(self):
+        markdown = """# Plan
+
+## Faza 1 — Temelj
+
+#### FLOW-100 — Nesto
+
+**Rizik:** LOW
+
+Obavezno:
+1. `IMPLEMENTATION_COMPLETED` prikazati kao završenu implementaciju.
+2. `TEST_RESULT` prikazati rezultat.
+3. Akcija `Prihvati rezultat` mapira se na TASK_DECISION.
+4. "Quoted value" ostaje quoted.
+5. [Bracketed] ostaje bracketed.
+6. Trailing punctuation ostaje nepromijenjena!
+"""
+        result = PlanMarkdownParser().parse(markdown)
+
+        item = result.phases[0].items[0]
+        descriptions = [c.description for c in item.criteria]
+
+        assert descriptions == [
+            "`IMPLEMENTATION_COMPLETED` prikazati kao završenu implementaciju.",
+            "`TEST_RESULT` prikazati rezultat.",
+            "Akcija `Prihvati rezultat` mapira se na TASK_DECISION.",
+            '"Quoted value" ostaje quoted.',
+            "[Bracketed] ostaje bracketed.",
+            "Trailing punctuation ostaje nepromijenjena!",
+        ]

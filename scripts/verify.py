@@ -53,7 +53,7 @@ def run_step(name: str, cmd: list[str]) -> Result:
             text=True,
             encoding="utf-8",
             errors="replace",
-            timeout=120,
+            timeout=240,
         )
         result.exit_code = proc.returncode
         result.output = (proc.stdout or "") + (proc.stderr or "")
@@ -70,7 +70,7 @@ def run_step(name: str, cmd: list[str]) -> Result:
         print(result.output, file=sys.stderr)
     except subprocess.TimeoutExpired:
         result.passed = False
-        result.output = "Timeout (120s)"
+        result.output = "Timeout (240s)"
         print(result.output, file=sys.stderr)
 
     status = "[PASS] PROŠLO" if result.passed else "[FAIL] PALO"

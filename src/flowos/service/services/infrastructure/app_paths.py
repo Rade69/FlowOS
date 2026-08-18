@@ -19,6 +19,11 @@ def _get_local_appdata() -> Path:
 _BASE = _get_local_appdata() / "FlowOS"
 
 
+def get_flowos_root() -> Path:
+    """%LOCALAPPDATA%/FlowOS — korijen svih FlowOS-owned application-data putanja."""
+    return _BASE
+
+
 def get_runtime_dir() -> Path:
     """%LOCALAPPDATA%/FlowOS/runtime/ — runtime descriptor i lock fajlovi."""
     return _BASE / "runtime"

@@ -109,6 +109,8 @@ module = [
     "PySide6.*",
     "watchdog.*",
     "pywin32.*",
+    "win32api",
+    "win32security",
     "httpx.*",
     "starlette.*",
     "fastapi.*",

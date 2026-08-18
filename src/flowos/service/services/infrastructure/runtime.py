@@ -6,6 +6,7 @@ Upravlja životnim ciklusom servisa:
 - Pronalazak slobodnog loopback porta
 - Per-instance auth token (FLOW-1107) — nov pri svakom pokretanju, isporučen
   kroz descriptor legitimnom lokalnom GUI/CLI klijentu
+- ACL hardening runtime direktorijuma (FLOW-1108) prije upisa descriptora
 """
 
 import hmac
@@ -19,6 +20,7 @@ from ctypes import windll, wintypes
 from typing import Any
 
 from flowos.service.services.infrastructure.app_paths import get_runtime_dir
+from flowos.service.services.infrastructure.dir_security import ensure_private_directory
 
 kernel32 = windll.kernel32
 
@@ -134,8 +136,15 @@ class RuntimeManager:
     # ── Runtime descriptor ──────────────────────────────────
 
     def write_descriptor(self, port: int) -> None:
-        """Upisuje runtime descriptor JSON fajl atomski (tmp → rename)."""
-        self.DESCRIPTOR_DIR.mkdir(parents=True, exist_ok=True)
+        """Upisuje runtime descriptor JSON fajl atomski (tmp → rename).
+
+        FLOW-1108: ACL hardening runtime direktorijuma se izvršava PRIJE
+        upisa descriptora (koji od FLOW-1107 nosi API bearer token) — nikad
+        obrnuto. `ensure_private_directory` je fail-closed: ako hardening ne
+        uspije na Windows-u, baca prije nego što sensitive descriptor ikad
+        bude zapisan.
+        """
+        ensure_private_directory(self.DESCRIPTOR_DIR)
         descriptor = {
             "pid": self._pid,
             "port": port,

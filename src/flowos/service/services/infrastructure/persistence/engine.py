@@ -11,11 +11,17 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
+from flowos.service.services.infrastructure.dir_security import ensure_private_directory
+
 
 def get_data_directory() -> Path:
-    """Vraća putanju do FlowOS data direktorijuma."""
+    """Vraća putanju do FlowOS data direktorijuma.
+
+    FLOW-1108: direktorijum (koji drži SQLite bazu — .db/-wal/-shm) se
+    hardenuje pri svakom pozivu, uključujući već postojeće instalacije.
+    """
     base = Path.home() / "AppData" / "Local" / "FlowOS" / "data"
-    base.mkdir(parents=True, exist_ok=True)
+    ensure_private_directory(base)
     return base
 
 

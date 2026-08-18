@@ -21,6 +21,8 @@ from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
+from flowos.service.services.infrastructure.dir_security import harden_existing_directory
+
 ALEMBIC_HEAD = "b7c2e1d4a903"
 KNOWN_STALE_REVISIONS = {"03de14cbf6aa", None}
 
@@ -376,6 +378,10 @@ def create_schema_backup(db_path: str | Path) -> SchemaBackup:
     stamp = datetime.now(tz=UTC).strftime("%Y%m%dT%H%M%SZ")
     backup_dir = source.parent / "backups" / f"schema-repair-{stamp}-{uuid.uuid4()}"
     backup_dir.mkdir(parents=True, exist_ok=False)
+    # FLOW-1108: hardenuje TEK kreiran, collision-safe backup direktorijum —
+    # ne dira mkdir(exist_ok=False) semantiku iznad, samo ograničava ACL na
+    # direktorijumu koji sadrži kopiju cijele baze.
+    harden_existing_directory(backup_dir)
     backup_db = backup_dir / source.name
 
     try:

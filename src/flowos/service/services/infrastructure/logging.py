@@ -10,6 +10,8 @@ import logging
 import sys
 from pathlib import Path
 
+from flowos.service.services.infrastructure.dir_security import ensure_private_directory
+
 
 def setup_logging(
     *,
@@ -29,13 +31,21 @@ def setup_logging(
     Returns:
         Root logger za FlowOS.
     """
+    used_default_log_dir = log_dir is None
     if log_dir is None:
         import os
 
         base = Path(os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local")))
         log_dir = base / "FlowOS" / "logs"
 
-    log_dir.mkdir(parents=True, exist_ok=True)
+    if used_default_log_dir:
+        # FLOW-1108: default lokacija se hardenuje pri svakom pozivu,
+        # uključujući već postojeće instalacije. Eksplicitno prosleđen
+        # `log_dir` (npr. budući test override) ostaje van FlowOS/temp
+        # allowlist provjere i zadržava plain mkdir ponašanje.
+        ensure_private_directory(log_dir)
+    else:
+        log_dir.mkdir(parents=True, exist_ok=True)
 
     root = logging.getLogger("flowos")
     root.setLevel(level)

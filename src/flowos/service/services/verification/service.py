@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
+from flowos.service.services.infrastructure.redaction import redact_text
+
 
 @dataclass
 class VerificationResult:
@@ -68,10 +70,13 @@ class ArtifactStore:
         if ".." in verification_id or "/" in verification_id or "\\" in verification_id:
             raise ValueError(f"Neispravan verification_id: {verification_id}")
 
-        # Ograničenje veličine izlaza (max 1MB po fajlu)
+        # Ograničenje veličine izlaza (max 1MB po fajlu).
+        # FLOW-1109: subprocess stdout/stderr/command prolaze redaction boundary
+        # PRIJE trajnog upisa u FlowOS-generisan artifact (verification dir).
         max_size = 1_000_000
-        stdout = stdout[:max_size]
-        stderr = stderr[:max_size]
+        stdout = redact_text(stdout)[:max_size]
+        stderr = redact_text(stderr)[:max_size]
+        command = redact_text(command)
         artifact_dir = self._base / "verification" / verification_id
         tmp_dir = self._base / "verification" / f".tmp_{verification_id}"
         tmp_dir.mkdir(parents=True, exist_ok=True)

@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 
 from flowos.service.services.infrastructure.dir_security import ensure_private_directory
+from flowos.service.services.infrastructure.redaction import redact_text
 
 
 def setup_logging(
@@ -51,11 +52,12 @@ def setup_logging(
     root.setLevel(level)
     root.handlers.clear()
 
-    # Formater
+    # Formater (FLOW-1109: svaki log zapis prolazi kroz redakciju tajni)
+    formatter: logging.Formatter
     if json_format:
         formatter = _JsonFormatter()
     else:
-        formatter = logging.Formatter(  # type: ignore[assignment]
+        formatter = _RedactingFormatter(
             fmt="%(asctime)s [%(levelname)-7s] %(name)s: %(message)s",
             datefmt="%Y-%m-%dT%H:%M:%S",
         )
@@ -101,13 +103,36 @@ class _JsonFormatter(logging.Formatter):
             "ts": datetime.now(tz=UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             "level": record.levelname,
             "logger": record.name,
-            "msg": record.getMessage(),
+            "msg": redact_text(record.getMessage()),
         }
         if record.exc_info and record.exc_info[1]:
-            payload["exc"] = str(record.exc_info[1])
+            payload["exc"] = redact_text(str(record.exc_info[1]))
         return json.dumps(payload)
 
 
 def get_logger(name: str) -> logging.Logger:
     """Vraća logger za dati modul."""
     return logging.getLogger(f"flowos.{name}")
+
+
+class _RedactingFormatter(logging.Formatter):
+    """Formatter koji rediguje poznate tajne prije ispisa u log fajl/konzolu.
+
+    Pokriva tri puta kroz koja tajna može stići u log:
+    - ``record.msg`` (poruka),
+    - ``record.args`` (``%s``/``{}`` format parametri),
+    - ``record.exc_text`` / ``formatException`` (traceback iz ``logger.exception``).
+    """
+
+    def format(self, record: logging.LogRecord) -> str:
+        record.msg = redact_text(str(record.msg))
+        if record.args:
+            record.args = tuple(
+                redact_text(arg) if isinstance(arg, str) else arg for arg in record.args
+            )
+        if record.exc_text:
+            record.exc_text = redact_text(record.exc_text)
+        return super().format(record)
+
+    def formatException(self, ei) -> str:
+        return redact_text(super().formatException(ei))

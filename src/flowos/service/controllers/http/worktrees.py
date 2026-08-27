@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from flowos.service.services.infrastructure.redaction import redact_text
 from flowos.service.services.worktrees.manager import WorktreeManager
 from flowos.service.services.worktrees.service import (
     WorktreeError,
@@ -128,6 +129,6 @@ def verify_worktree(worktree_id: str, session: Session = Depends(get_session)):
         "exit_code": result.exit_code,
         "success": result.success,
         "duration_seconds": result.duration_seconds,
-        "stdout": result.stdout[:1000],
-        "stderr": result.stderr[:1000],
+        "stdout": redact_text(result.stdout)[:1000],
+        "stderr": redact_text(result.stderr)[:1000],
     }

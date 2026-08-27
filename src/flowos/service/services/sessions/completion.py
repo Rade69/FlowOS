@@ -21,6 +21,7 @@ from flowos.service.services.conflicts.service import ConflictDetectionService
 from flowos.service.services.infrastructure.git_poller import GitStateReader
 from flowos.service.services.infrastructure.persistence.models import AgentSession
 from flowos.service.services.infrastructure.persistence.plan_models import PlanItem
+from flowos.service.services.infrastructure.redaction import redact_text
 from flowos.service.services.reports.service import ReportService
 from flowos.service.services.sessions.bindings import SessionTaskBindingService
 from flowos.service.services.verification.service import VerificationService
@@ -199,8 +200,8 @@ class SessionCompletionService:
             verification_summary = (
                 f"Verify.py: {'prošao' if verify_result.success else 'pao'} "
                 f"(exit={verify_result.exit_code}, trajanje={verify_result.duration_seconds:.1f}s)\n"
-                f"stdout: {verify_result.stdout[:500]}\n"
-                f"stderr: {verify_result.stderr[:500]}"
+                f"stdout: {redact_text(verify_result.stdout)[:500]}\n"
+                f"stderr: {redact_text(verify_result.stderr)[:500]}"
             )
 
         report_svc = ReportService(self._db)

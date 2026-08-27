@@ -348,8 +348,13 @@ def _make_lifespan(runtime: RuntimeManager):
         from flowos.service.services.infrastructure.persistence.models import (
             Project,
         )
+        from flowos.service.services.infrastructure.redaction import register_secret
         from flowos.service.services.infrastructure.watcher import WatcherPipeline
 
+        # FLOW-1109: runtime bearer token (FLOW-1107) se registruje kao poznata
+        # tajna PRIJE nego što logging boundary počne da piše — svaki log zapis
+        # koji bi ga sadržao biva redigovan.
+        register_secret(runtime.token)
         logger = setup_logging(level=logging.INFO)
         app.state.runtime = runtime
 

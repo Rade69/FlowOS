@@ -506,3 +506,54 @@ class TestSessionCompletion:
         assert SessionCompletionService._derive_status(127) == "FAILED"
         assert SessionCompletionService._derive_status(-1) == "FAILED"
         assert SessionCompletionService._derive_status(None) == "NEEDS_REVIEW"
+
+    def test_verification_summary_rediguje_secret(
+        self, db_session: Session, active_session: AgentSession, tmp_path
+    ):
+        """FLOW-1109 REV-1109-H1: DB verification_summary je redigovan, raw ostaje."""
+        from flowos.service.services.infrastructure.redaction import (
+            register_secret,
+            reset_redactor,
+        )
+
+        # verify.py mora postojati da complete_session uđe u verify granu.
+        scripts = tmp_path / "scripts"
+        scripts.mkdir()
+        (scripts / "verify.py").write_text("# stub", encoding="utf-8")
+        active_session.repo_path = str(tmp_path)
+        db_session.commit()
+
+        secret = "sk-completion-test-secret-abcdef123456"
+        verify_result = VerificationResult(
+            artifact_id="art-secret",
+            verify_path="scripts/verify.py",
+            success=True,
+            exit_code=0,
+            stdout=f"before {secret} after",
+            stderr=f"err {secret}",
+            duration_seconds=1.0,
+            timed_out=False,
+            verified_at="2026-08-19T00:00:00Z",
+        )
+        register_secret(secret)
+        try:
+            svc = SessionCompletionService(db_session)
+            with (
+                patch("flowos.service.services.sessions.completion.GitStateReader") as mock_reader,
+                patch(
+                    "flowos.service.services.sessions.completion.VerificationService"
+                ) as mock_verify,
+            ):
+                mock_reader.return_value.read_state.return_value = _mock_git_state(dirty=False)
+                mock_verify.return_value.run_verify.return_value = verify_result
+                svc.complete_session(session_id=active_session.id, exit_code=0)
+        finally:
+            reset_redactor()
+
+        report = db_session.query(AgentReport).one()
+        summary = report.verification_summary or ""
+        assert secret not in summary
+        assert "[REDACTED]" in summary
+        # RAW verification result (in-memory computation data) nije mutiran.
+        assert secret in verify_result.stdout
+        assert secret in verify_result.stderr

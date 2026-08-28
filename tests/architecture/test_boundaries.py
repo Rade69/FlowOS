@@ -21,10 +21,14 @@ SRC = Path(__file__).resolve().parent.parent.parent / "src"
 # Granice iz §4.5 — svaka je (izvorni_modul, zabranjeni_import_prefixi)
 BOUNDARIES: list[tuple[str, tuple[str, ...]]] = [
     ("flowos.shared", ("flowos.gui", "flowos.service", "flowos.cli")),
-    ("flowos.gui.views", ("flowos.gui.services",)),
+    ("flowos.gui.views", ("flowos.gui.services", "subprocess", "os")),
     ("flowos.gui.controllers", ("flowos.service.services",)),
     ("flowos.service.services", ("flowos.gui", "PySide6", "flowos.cli")),
     ("flowos.service.controllers", ("flowos.service.services.infrastructure.persistence",)),
+    (
+        "flowos.cli",
+        ("flowos.service.services.infrastructure.persistence", "sqlalchemy", "PySide6"),
+    ),
 ]
 
 
@@ -121,4 +125,93 @@ def test_shared_does_not_depend_on_other_layers() -> None:
 
     assert not violations, "flowos.shared nesme zavisiti od gui/service/cli:\n" + "\n".join(
         f"  • {v}" for v in violations
+    )
+
+
+# ── composition_root call-level granice (FLOW-1156) ──────────────────
+#
+# Import-based provjera iznad hvata samo `import X`/`from X import Y`.
+# composition_root.py je god-fajl rizik: privatna metoda API klijenta
+# (self._api._post(...)) se poziva kroz javni GuiApiClient objekat, ne
+# kroz zaseban import, pa mora AST provjera poziva/atributa, ne importa.
+# Ogledalo scripts/guard_architecture.py _CompositionRootVisitor — vidi
+# agent_reports/2026-08-28-FLOW-1156-*.md za dokaz replaya na b83f197.
+
+FORBIDDEN_PRIVATE_API_ATTRS = frozenset({"_post", "_get", "_nam", "_apply_auth_header"})
+COMPOSITION_ROOT_SUBPROCESS_EXEMPT_FUNCTIONS = frozenset({"ensure_service_running"})
+
+
+class _CompositionRootCallVisitor(ast.NodeVisitor):
+    def __init__(self) -> None:
+        self.violations: list[tuple[int, str]] = []
+        self._func_stack: list[str] = []
+
+    def _in_exempt_function(self) -> bool:
+        return bool(self._func_stack) and (
+            self._func_stack[-1] in COMPOSITION_ROOT_SUBPROCESS_EXEMPT_FUNCTIONS
+        )
+
+    def _visit_function(self, node) -> None:
+        self._func_stack.append(node.name)
+        self.generic_visit(node)
+        self._func_stack.pop()
+
+    visit_FunctionDef = _visit_function
+    visit_AsyncFunctionDef = _visit_function
+
+    def visit_Attribute(self, node: ast.Attribute) -> None:
+        if node.attr in FORBIDDEN_PRIVATE_API_ATTRS:
+            self.violations.append((node.lineno, f"privatan '{node.attr}' pozvan direktno"))
+        if (
+            node.attr == "system"
+            and isinstance(node.value, ast.Name)
+            and node.value.id == "os"
+            and not self._in_exempt_function()
+        ):
+            self.violations.append((node.lineno, "os.system poziv nije dozvoljen"))
+        self.generic_visit(node)
+
+    def visit_Import(self, node: ast.Import) -> None:
+        if not self._in_exempt_function():
+            for alias in node.names:
+                if alias.name == "subprocess":
+                    self.violations.append((node.lineno, "subprocess import nije dozvoljen"))
+        self.generic_visit(node)
+
+
+def _composition_root_path() -> Path:
+    return SRC / "flowos" / "gui" / "composition_root.py"
+
+
+def test_composition_root_does_not_call_private_api_client_methods() -> None:
+    """composition_root.py ne smije direktno zvati _post/_get/_nam/_apply_auth_header."""
+    path = _composition_root_path()
+    assert path.exists(), f"composition_root.py nije nadjen na {path}"
+
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    visitor = _CompositionRootCallVisitor()
+    visitor.visit(tree)
+
+    private_attr_hits = [(line, msg) for line, msg in visitor.violations if "privatan" in msg]
+    assert not private_attr_hits, (
+        "composition_root.py zove privatne metode GuiApiClient-a direktno:\n"
+        + "\n".join(f"  • linija {line}: {msg}" for line, msg in private_attr_hits)
+    )
+
+
+def test_composition_root_does_not_shell_out_except_service_bootstrap() -> None:
+    """composition_root.py ne smije subprocess/os.system osim u ensure_service_running."""
+    path = _composition_root_path()
+    assert path.exists(), f"composition_root.py nije nadjen na {path}"
+
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    visitor = _CompositionRootCallVisitor()
+    visitor.visit(tree)
+
+    shell_hits = [
+        (line, msg) for line, msg in visitor.violations if "subprocess" in msg or "os.system" in msg
+    ]
+    assert not shell_hits, (
+        "composition_root.py pokrece OS proces van ensure_service_running:\n"
+        + "\n".join(f"  • linija {line}: {msg}" for line, msg in shell_hits)
     )

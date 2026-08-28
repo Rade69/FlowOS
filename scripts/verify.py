@@ -6,8 +6,14 @@ Pokreće sve provere redom:
 1. ruff format --check    (formatiranje)
 2. ruff check             (lint)
 3. mypy                   (type checking)
-4. architecture tests     (granice slojeva)
-5. unit + integracijski testovi
+4. architecture guard     (AST granice slojeva — scripts/guard_architecture.py)
+5. architecture tests     (granice slojeva — pytest)
+6. unit + integracijski testovi
+
+Guard je blokirajući od FLOW-1156/1158 (oba uslova ispunjena: GUI i backend
+prekršaji su nula) — vidi agent_reports/2026-08-28-FLOW-1156-*.md. Ne uvoditi
+ga ranije kao blocking dok postoje poznati pre-existing prekršaji, jer trajno
+crven gate prestaje da se gleda.
 
 Svaka provera se izvršava; ne staje na prvoj grešci.
 Exit code 0 samo ako sve provere prolaze.
@@ -92,11 +98,15 @@ def main() -> int:
             ("2. Ruff lint", ["ruff", "check", "src/", "tests/", "scripts/"]),
             ("3. mypy", [sys.executable, "-m", "mypy", "src", "--explicit-package-bases"]),
             (
-                "4. Architecture boundaries",
+                "4. Architecture guard",
+                [sys.executable, str(ROOT / "scripts" / "guard_architecture.py")],
+            ),
+            (
+                "5. Architecture boundaries",
                 ["pytest", "tests/architecture/", "-v", "--tb=short", "--no-header"],
             ),
             (
-                "5. Unit tests",
+                "6. Unit tests",
                 [
                     "pytest",
                     "tests/unit/",
@@ -109,7 +119,7 @@ def main() -> int:
             ),
         ] + [
             (
-                "6. Migrations check",
+                "7. Migrations check",
                 [
                     sys.executable,
                     "-m",
@@ -121,7 +131,7 @@ def main() -> int:
                 ],
             ),
             (
-                "7. Alembic round-trip",
+                "8. Alembic round-trip",
                 [sys.executable, str(ROOT / "scripts" / "verify_roundtrip.py")],
             ),
         ]

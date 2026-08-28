@@ -23,7 +23,7 @@ BOUNDARIES: list[tuple[str, tuple[str, ...]]] = [
     ),
     (
         "flowos.service.services",
-        ("flowos.gui", "flowos.service.controllers"),
+        ("flowos.gui", "flowos.service.controllers", "PySide6", "flowos.cli"),
     ),
     ("flowos.shared", ("flowos.gui", "flowos.service", "flowos.cli")),
     (

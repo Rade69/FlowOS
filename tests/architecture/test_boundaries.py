@@ -22,8 +22,11 @@ SRC = Path(__file__).resolve().parent.parent.parent / "src"
 BOUNDARIES: list[tuple[str, tuple[str, ...]]] = [
     ("flowos.shared", ("flowos.gui", "flowos.service", "flowos.cli")),
     ("flowos.gui.views", ("flowos.gui.services", "subprocess", "os")),
-    ("flowos.gui.controllers", ("flowos.service.services",)),
-    ("flowos.service.services", ("flowos.gui", "PySide6", "flowos.cli")),
+    ("flowos.gui.controllers", ("flowos.gui.views", "flowos.service", "sqlalchemy")),
+    (
+        "flowos.service.services",
+        ("flowos.gui", "flowos.service.controllers", "PySide6", "flowos.cli"),
+    ),
     ("flowos.service.controllers", ("flowos.service.services.infrastructure.persistence",)),
     (
         "flowos.cli",

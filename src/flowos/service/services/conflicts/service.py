@@ -528,7 +528,7 @@ class ConflictDetectionService:
 
         # Emituj WebSocket događaj
         try:
-            from flowos.service.controllers.websocket.events import event_bus
+            from flowos.service.services.infrastructure.events import event_bus
 
             event_bus.emit_sync(
                 "conflict.resolved",
@@ -563,7 +563,7 @@ class ConflictDetectionService:
     @staticmethod
     def _emit_conflicts(conflicts: list[Conflict]) -> None:
         try:
-            from flowos.service.controllers.websocket.events import event_bus
+            from flowos.service.services.infrastructure.events import event_bus
 
             for c in conflicts:
                 event_bus.emit_sync(

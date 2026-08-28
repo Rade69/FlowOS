@@ -139,7 +139,7 @@ class SessionService:
                 self._session.flush()
 
         # Emituj WebSocket događaj
-        from flowos.service.controllers.websocket.events import event_bus
+        from flowos.service.services.infrastructure.events import event_bus
 
         event_bus.emit_sync(
             "session.created",

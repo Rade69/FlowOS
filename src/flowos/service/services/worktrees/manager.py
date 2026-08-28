@@ -60,7 +60,7 @@ class WorktreeManager:
 
         # Emituj WebSocket događaj
         try:
-            from flowos.service.controllers.websocket.events import event_bus
+            from flowos.service.services.infrastructure.events import event_bus
 
             event_bus.emit_sync(
                 "worktree.created",

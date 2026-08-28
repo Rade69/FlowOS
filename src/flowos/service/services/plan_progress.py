@@ -458,7 +458,7 @@ class PlanProgressService:
     def _emit_and_refresh(self, item: PlanItem) -> None:
         """Emituje WebSocket događaj i regeneriše resume nakon promene statusa."""
         try:
-            from flowos.service.controllers.websocket.events import event_bus
+            from flowos.service.services.infrastructure.events import event_bus
 
             event_bus.emit_sync(
                 "plan_progress.updated",

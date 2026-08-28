@@ -133,7 +133,7 @@ class SessionCompletionService:
             )
 
             # Emituj WebSocket događaj
-            from flowos.service.controllers.websocket.events import event_bus
+            from flowos.service.services.infrastructure.events import event_bus
 
             event_bus.emit_sync(
                 "verification.completed",
@@ -222,7 +222,7 @@ class SessionCompletionService:
         logger.info("SessionCompletion: draft izvestaja kreiran %s", report.id)
 
         # Emituj WebSocket događaj
-        from flowos.service.controllers.websocket.events import event_bus
+        from flowos.service.services.infrastructure.events import event_bus
 
         event_bus.emit_sync(
             "report.created",
@@ -262,7 +262,7 @@ class SessionCompletionService:
 
         # 8. Emituj WebSocket događaje
         try:
-            from flowos.service.controllers.websocket.events import event_bus
+            from flowos.service.services.infrastructure.events import event_bus
 
             event_bus.emit_sync(
                 "session.completed",

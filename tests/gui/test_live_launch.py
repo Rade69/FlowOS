@@ -163,6 +163,9 @@ class TestGuiCredentialPropagation:
         assert gui._api is not None
         assert gui._api.base_url == "http://127.0.0.1:9187"
         assert gui._api.token == "confirmed-token-b"
+        assert gui._plan_controller is not None
+        assert gui._agents_controller is not None
+        assert gui._system_controller is not None
 
 
 class TestMockMode:

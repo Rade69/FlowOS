@@ -700,6 +700,7 @@ class MainWindow(QMainWindow):
     """Glavni prozor sa sidebar navigacijom i QStackedWidget-om."""
 
     page_changed = Signal(str)
+    reports_folder_requested = Signal()
 
     PAGE_NAMES = [
         "Pregled",
@@ -842,9 +843,6 @@ class MainWindow(QMainWindow):
             self.page_changed.emit(page_name)
 
     def _on_action(self, action: str) -> None:
-        import os
-        import subprocess
-
         mapping = {
             "Nova sesija": "Sesije",
             "Dodaj zadatak": "Zadaci",
@@ -855,11 +853,7 @@ class MainWindow(QMainWindow):
         elif action == "Uvezi plan":
             self._on_navigate("Plan")
         elif action == "Otvori dnevnik":
-            reports_dir = os.path.join(
-                os.path.dirname(__file__), "..", "..", "..", "..", "agent_reports"
-            )
-            if os.path.isdir(reports_dir):
-                subprocess.Popen(["explorer", os.path.abspath(reports_dir)])
+            self.reports_folder_requested.emit()
 
     @property
     def overview_page(self) -> QWidget:

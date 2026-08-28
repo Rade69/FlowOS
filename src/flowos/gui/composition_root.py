@@ -22,7 +22,10 @@ try:
 except ImportError:
     HAS_WEBSOCKET = False
 
+from flowos.gui.controllers.agents import AgentsController
 from flowos.gui.controllers.overview import OverviewController
+from flowos.gui.controllers.plan import PlanController
+from flowos.gui.controllers.system import SystemController
 from flowos.gui.services.client import GuiApiClient
 from flowos.gui.views.overview_skeleton import (
     BG_PRIMARY,
@@ -59,10 +62,16 @@ class FlowOsGui:
         controller: OverviewController | None = None,
         api: GuiApiClient | None = None,
         views: dict | None = None,
+        plan_controller: PlanController | None = None,
+        agents_controller: AgentsController | None = None,
+        system_controller: SystemController | None = None,
     ):
         self._window = window
         self._controller = controller
         self._api = api
+        self._plan_controller = plan_controller
+        self._agents_controller = agents_controller
+        self._system_controller = system_controller
         self._active_project_id: str | None = None
         self._active_project_repo_path: str | None = None
         self._refresh_timer: QTimer | None = None
@@ -105,6 +114,20 @@ class FlowOsGui:
         ctrl.resume_loaded.connect(self._on_resume)
         ctrl.sessions_loaded.connect(self._on_sessions)
         ctrl.error_occurred.connect(self._on_error)
+        if self._plan_controller:
+            self._plan_controller.import_failed.connect(ctrl.error_occurred.emit)
+        if self._agents_controller:
+            self._agents_controller.tracking_failed.connect(ctrl.error_occurred.emit)
+        if self._system_controller:
+            self._system_controller.shutdown_allowed.connect(self._do_shutdown_confirm)
+            self._system_controller.shutdown_blocked.connect(self._show_shutdown_blocked_dialog)
+            self._system_controller.shutdown_failed.connect(self._quit_app)
+            self._system_controller.reports_folder_open_failed.connect(ctrl.error_occurred.emit)
+            self._window.reports_folder_requested.connect(
+                lambda: self._system_controller.open_reports_folder(
+                    str(Path(self._active_project_repo_path or Path.cwd()) / "agent_reports")
+                )
+            )
 
         # KORAK 5: selekcija plan stavke → API poziv za detalje
         if self._current_phase:
@@ -157,38 +180,10 @@ class FlowOsGui:
 
     def _on_shutdown_requested(self) -> None:
         """Poziva se kad korisnik klikne 'Zaustavi sve i ugasi FlowOS'."""
-        if not self._api:
+        if not self._system_controller:
             self._quit_app()
             return
-
-        from PySide6.QtCore import QUrl
-        from PySide6.QtNetwork import QNetworkReply, QNetworkRequest
-
-        # Prvo proveri stanje servisa
-        url = f"{self._api.base_url}/system/shutdown/prepare"
-        req = QNetworkRequest(QUrl(url))
-        self._api._apply_auth_header(req)
-        reply = self._api._nam.get(req)
-
-        def _on_prepare_ready():
-            if reply.error() != QNetworkReply.NetworkError.NoError:
-                self._quit_app()
-                return
-            try:
-                import json
-
-                data = json.loads(bytes(reply.readAll().data()).decode())
-            except Exception:
-                self._quit_app()
-                return
-
-            active = data.get("active_sessions", 0)
-            if active == 0:
-                self._do_shutdown_confirm()
-            else:
-                self._show_shutdown_blocked_dialog(active)
-
-        reply.finished.connect(_on_prepare_ready)
+        self._system_controller.request_shutdown()
 
     def _show_shutdown_blocked_dialog(self, active_count: int) -> None:
         from PySide6.QtWidgets import QMessageBox
@@ -213,7 +208,7 @@ class FlowOsGui:
         """Šalje shutdown/confirm zahtev servisu i gasi GUI."""
         if self._api:
             with suppress(Exception):
-                self._api._post("/system/shutdown/confirm", {}, lambda _data: None)
+                self._api.confirm_shutdown(lambda _data: None)
         self._quit_app()
 
     def _quit_app(self) -> None:
@@ -227,17 +222,8 @@ class FlowOsGui:
         from PySide6.QtWidgets import QFileDialog
 
         path, _ = QFileDialog.getOpenFileName(self._window, "Uvezi plan", "", "Markdown (*.md)")
-        if path and self._api and self._active_project_id:
-            import pathlib
-
-            content = pathlib.Path(path).read_text(encoding="utf-8")
-            project_id = self._active_project_id
-            api = self._api
-            self._api._post(
-                f"/projects/{project_id}/import-plan",
-                {"markdown": content},
-                lambda _data: api.get_plan_progress(project_id),
-            )
+        if path and self._plan_controller and self._active_project_id:
+            self._plan_controller.import_plan(self._active_project_id, path)
 
     def _load_plan_item_details(self, item_id: str) -> None:
         if self._api:
@@ -245,25 +231,13 @@ class FlowOsGui:
 
     def _track_agent(self, pid: int, agent_type: str) -> None:
         """Kreira EXTERNAL_TRACKED sesiju za detektovani agentski proces."""
-        if not self._api or not self._active_project_id:
+        if not self._agents_controller or not self._active_project_id:
             return
-        if not self._active_project_repo_path:
-            if self._controller:
-                self._controller.error_occurred.emit(
-                    "Nije postavljen repo_path za aktivni projekat"
-                )
-            return
-
-        self._api._post(
-            "/sessions",
-            {
-                "project_id": self._active_project_id,
-                "agent_type": agent_type.lower().replace(" ", "_"),
-                "repo_path": self._active_project_repo_path,
-                "execution_mode": "EXTERNAL_TRACKED",
-                "pid": pid,
-            },
-            self._api.sessions_received,
+        self._agents_controller.track_agent(
+            self._active_project_id,
+            self._active_project_repo_path or "",
+            pid,
+            agent_type,
         )
 
     def _start_auto_refresh(self) -> None:
@@ -496,16 +470,25 @@ def create_gui(use_live: bool = True) -> FlowOsGui:
 
     # API + Controller (samo u live modu)
     controller = None
+    plan_controller = None
+    agents_controller = None
+    system_controller = None
     api = None
     if use_live:
         connection = ensure_service_running()
         api = GuiApiClient(base_url=f"http://127.0.0.1:{connection.port}", token=connection.token)
         controller = OverviewController(api)
+        plan_controller = PlanController(api)
+        agents_controller = AgentsController(api)
+        system_controller = SystemController(api)
 
     return FlowOsGui(
         window=window,
         controller=controller,
         api=api,
+        plan_controller=plan_controller,
+        agents_controller=agents_controller,
+        system_controller=system_controller,
         views={
             "resume_hero": resume_hero,
             "status_bar": status_bar,

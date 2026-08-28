@@ -63,6 +63,32 @@ class GuiApiClient(QObject):
     def check_health(self):
         self._get("/health", self.health_received)  # type: ignore[arg-type]
 
+    def prepare_shutdown(self, on_ready) -> None:
+        """Provjerava smije li se servis ugasiti i vraća dict ili None."""
+        req = QNetworkRequest()
+        req.setUrl(f"{self._base_url}/system/shutdown/prepare")
+        req.setRawHeader(b"Accept", b"application/json")
+        self._apply_auth_header(req)
+        reply = self._nam.get(req)
+
+        def _handle_prepare_response() -> None:
+            data = None
+            if reply.error() == QNetworkReply.NetworkError.NoError:
+                try:
+                    payload = json.loads(bytes(reply.readAll().data()).decode())
+                    if isinstance(payload, dict):
+                        data = payload
+                except (json.JSONDecodeError, UnicodeDecodeError):
+                    pass
+            on_ready(data)
+            reply.deleteLater()
+
+        reply.finished.connect(_handle_prepare_response)
+
+    def confirm_shutdown(self, on_success) -> None:
+        """Potvrđuje gašenje servisa kroz javni GUI API ugovor."""
+        self._post("/system/shutdown/confirm", {}, on_success)
+
     # ── Projects ───────────────────────────────────────
 
     def get_projects(self):
@@ -80,6 +106,14 @@ class GuiApiClient(QObject):
     def get_plan_progress(self, project_id: str):
         self._get(f"/projects/{project_id}/plan-progress", self.plan_progress_received)  # type: ignore[arg-type]
 
+    def import_plan(self, project_id: str, markdown_text: str, on_success) -> None:
+        """Uvozi plan koristeći canonical PlanImportRequest polje."""
+        self._post(
+            f"/projects/{project_id}/import-plan",
+            {"markdown_text": markdown_text},
+            on_success,
+        )
+
     # ── Resume ─────────────────────────────────────────
 
     def get_resume(self, project_id: str):
@@ -92,6 +126,26 @@ class GuiApiClient(QObject):
 
     def get_active_sessions(self, project_id: str):
         self._get(f"/sessions/active?project_id={project_id}", self.sessions_received)  # type: ignore[arg-type]
+
+    def create_tracked_session(
+        self,
+        project_id: str,
+        agent_type: str,
+        repo_path: str,
+        pid: int,
+    ) -> None:
+        """Kreira EXTERNAL_TRACKED sesiju za već pokrenut agentski proces."""
+        self._post(
+            "/sessions",
+            {
+                "project_id": project_id,
+                "agent_type": agent_type,
+                "repo_path": repo_path,
+                "execution_mode": "EXTERNAL_TRACKED",
+                "pid": pid,
+            },
+            self.sessions_received,
+        )
 
     # ── Plan Items ─────────────────────────────────────
 

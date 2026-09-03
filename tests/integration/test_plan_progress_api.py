@@ -6,6 +6,7 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+import flowos.service.services.infrastructure.persistence.report_models  # noqa: F401
 from flowos.service.services.infrastructure.persistence.base import Base
 from flowos.service.services.infrastructure.persistence.models import Project
 from flowos.service.services.infrastructure.persistence.plan_models import (
@@ -323,3 +324,63 @@ Opis stavke.
         # Drugi put — 409 jer je već ACTIVE
         resp = client.post(f"/plans/{plan_id}/activate")
         assert resp.status_code == 409
+
+
+class TestPlanImportContract:
+    """FLOW-1105 — contract/regression testovi za tipizovani Plan Import boundary."""
+
+    SAMPLE_MD = """# Test Plan
+## Faza 0 — Test
+#### FLOW-001 — Test item
+**Rizik:** LOW
+Opis stavke.
+**Dokaz:** test prolazi.
+"""
+
+    def test_t1_valid_request_imports_plan(self, client: TestClient, project_id: str, app):
+        resp = client.post(
+            f"/projects/{project_id}/import-plan",
+            json={"markdown_text": self.SAMPLE_MD},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["items"] == 1
+        assert data["phases"] == 1
+        assert data["plan_id"] != ""
+        # Dokaz da je endpoint dobio isti markdown_text: parser je pročitao naslov.
+        factory = app.state.session_factory
+        with factory() as s:
+            plan = s.query(Plan).filter(Plan.id == data["plan_id"]).one()
+            assert plan.title == "Test Plan"
+
+    def test_t2_missing_markdown_text_returns_422(self, client: TestClient, project_id: str, app):
+        resp = client.post(f"/projects/{project_id}/import-plan", json={})
+        assert resp.status_code == 422
+        # Downstream (import service/parser) nije izvršen → nema Plan-a u bazi.
+        factory = app.state.session_factory
+        with factory() as s:
+            assert s.query(Plan).filter(Plan.project_id == project_id).count() == 0
+
+    def test_t3_non_string_markdown_text_returns_422(self, client: TestClient, project_id: str):
+        resp = client.post(
+            f"/projects/{project_id}/import-plan",
+            json={"markdown_text": {"not": "a string"}},
+        )
+        assert resp.status_code == 422
+
+    def test_t4_response_shape_regression(self, client: TestClient, project_id: str):
+        resp = client.post(
+            f"/projects/{project_id}/import-plan",
+            json={"markdown_text": self.SAMPLE_MD},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert set(data.keys()) == {
+            "plan_id",
+            "phases",
+            "items",
+            "criteria",
+            "dependencies",
+            "unclear_count",
+            "unclear_sections",
+        }

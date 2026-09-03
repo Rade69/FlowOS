@@ -14,6 +14,7 @@ from flowos.service.services.plan_progress import (
     _event_to_dict,
     _item_to_dict,
 )
+from flowos.shared.contracts.plan_progress import PlanImportRequest
 
 router = APIRouter(tags=["Plan Progress"])
 
@@ -176,8 +177,8 @@ def list_progress_events(item_id: str, session: Session = Depends(get_session)):
 
 
 @router.post("/projects/{project_id}/import-plan")
-def import_plan(project_id: str, body: dict, session: Session = Depends(get_session)):
-    markdown = body.get("markdown_text", "")
+def import_plan(project_id: str, data: PlanImportRequest, session: Session = Depends(get_session)):
+    markdown = data.markdown_text
     if not markdown.strip():
         raise HTTPException(status_code=400, detail="markdown_text ne sme biti prazan")
     result, _ = PlanProgressService(session).import_plan(project_id, markdown)

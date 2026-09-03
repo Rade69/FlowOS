@@ -163,6 +163,13 @@ class WorktreeManager:
         if not wt:
             raise WorktreeError(f"Worktree nije pronađen: {worktree_id}")
 
+        # Canonical project veza: WorktreeService mora biti vezan za
+        # project.repo_path, ne za wt.worktree_path, da bi managed root
+        # i `git worktree list` bili deterministički.
+        project = self._db.get(Project, wt.project_id)
+        if not project:
+            raise WorktreeError(f"Projekat nije pronađen: {wt.project_id}")
+
         # Provera aktivne sesije
         if wt.session_id:
             from flowos.service.services.infrastructure.persistence.models import AgentSession
@@ -178,7 +185,7 @@ class WorktreeManager:
             raise WorktreeError("Worktree ima otvorene konflikte. Prvo ih razrešite.")
 
         # Provera dirty stanja
-        svc = self._get_service(wt.worktree_path)
+        svc = self._get_service(project.repo_path)
         status = svc.get_status(wt.worktree_path)
         if not status.get("clean", False) and not force:
             raise WorktreeError(

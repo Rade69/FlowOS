@@ -205,23 +205,37 @@ class WorktreeService:
 
     # ── Cleanup ────────────────────────────────────────────────
 
+    def _resolve_cleanup_target(self, worktree_path: str) -> tuple[WorktreeInfo | None, str]:
+        """Vraca matched WorktreeInfo i prazan razlog kada je cleanup dozvoljen.
+
+        Hard identity/scope guard: unknown, main i unmanaged worktree se
+        odbijaju. Status provera koristi matched canonical path, ne originalni
+        caller input.
+        """
+        info = self._find_worktree(worktree_path)
+        if not info:
+            return None, "Worktree ne postoji."
+
+        if info.is_main:
+            return info, "Glavni ili unmanaged worktree se ne može obrisati."
+
+        status = self.get_status(info.path)
+        if status.get("has_conflicts"):
+            return info, "Worktree ima konflikte — prvo ih razrešite."
+
+        return info, ""
+
     def can_cleanup(self, worktree_path: str) -> tuple[bool, str]:
         """Proverava da li worktree može biti obrisan.
 
         Returns:
             (može, razlog_zašto_ne).
         """
-        info = self._find_worktree(worktree_path)
-        if not info:
-            return False, "Worktree ne postoji."
-
-        if info.is_main:
-            return False, "Glavni ili unmanaged worktree se ne može obrisati."
-
-        status = self.get_status(worktree_path)
-        if status.get("has_conflicts"):
-            return False, "Worktree ima konflikte — prvo ih razrešite."
-
+        info, reason = self._resolve_cleanup_target(worktree_path)
+        if info is None:
+            return False, reason
+        if reason:
+            return False, reason
         return True, ""
 
     def cleanup(self, worktree_path: str, force: bool = False) -> None:
@@ -233,22 +247,23 @@ class WorktreeService:
 
         force dodaje `--force` git flagu, ali NE zaobilazi hard identity/
         scope zaštite (nepoznat, glavni ili unmanaged worktree, konflikti).
+        Destructive target je uvek matched canonical path, ne originalni input.
 
         Raises:
             WorktreeError: Ako brisanje ne uspe.
         """
-        can, reason = self.can_cleanup(worktree_path)
-        if not can:
+        info, reason = self._resolve_cleanup_target(worktree_path)
+        if info is None or reason:
             raise WorktreeError(f"Worktree ne može biti obrisan: {reason}")
 
         args = ["worktree", "remove"]
         if force:
             args.append("--force")
-        args.append(worktree_path)
+        args.append(info.path)
 
         try:
             self._git(args)
-            logger.info("Worktree uklonjen: %s", worktree_path)
+            logger.info("Worktree uklonjen: %s", info.path)
         except subprocess.CalledProcessError as e:
             raise WorktreeError(f"Neuspelo uklanjanje worktree-ja: {e.stderr}") from e
 

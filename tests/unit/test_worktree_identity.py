@@ -238,3 +238,45 @@ def test_manager_cleanup_uses_project_repo_path(tmp_path: Path):
     assert result["status"] == "cleaned"
     assert captured["repo_path"] == str(repo)
     assert captured["cleanup_path"] == str(wt_path)
+
+
+# ── FLOW-1110-CX-01 / CX-02 — matched path authority ──────────
+
+
+def test_cleanup_remove_uses_registered_absolute_path(tmp_path: Path, monkeypatch):
+    """CX-01 — relative CWD input: remove dobija registered apsolutni matched path."""
+    svc = _service(tmp_path)
+    wt_path = svc.worktrees_dir / "RELATIVE"
+    wt_path.mkdir(parents=True)
+    svc.list_worktrees = lambda: [_info(str(wt_path))]
+    svc.get_status = lambda path: {"exists": True, "clean": True, "has_conflicts": False}
+    calls = _spy_git(svc)
+
+    monkeypatch.chdir(tmp_path)
+    svc.cleanup("worktrees/RELATIVE")
+
+    assert calls == [["worktree", "remove", str(wt_path)]]
+    assert calls[0][-1] != "worktrees/RELATIVE"
+
+
+def test_cleanup_status_and_remove_use_matched_path(tmp_path: Path, monkeypatch):
+    """CX-02 — matched path authority: get_status i remove primaju matched path."""
+    svc = _service(tmp_path)
+    wt_path = svc.worktrees_dir / "RELATIVE"
+    wt_path.mkdir(parents=True)
+    svc.list_worktrees = lambda: [_info(str(wt_path))]
+
+    seen_status: list[str] = []
+
+    def fake_get_status(path):
+        seen_status.append(path)
+        return {"exists": True, "clean": True, "has_conflicts": False}
+
+    svc.get_status = fake_get_status
+    calls = _spy_git(svc)
+
+    monkeypatch.chdir(tmp_path)
+    svc.cleanup("worktrees/RELATIVE")
+
+    assert seen_status == [str(wt_path)]
+    assert calls == [["worktree", "remove", str(wt_path)]]

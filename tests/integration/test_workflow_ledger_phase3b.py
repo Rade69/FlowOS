@@ -84,7 +84,11 @@ def _payload(event: WorkflowLedgerEvent) -> dict:
 
 
 def _plan_item(db: Session, project: Project, key: str, status: str = "IN_PROGRESS") -> PlanItem:
-    plan = Plan(id=f"plan-{key}", project_id=project.id, title=key, status="ACTIVE")
+    plan = (
+        db.query(Plan).filter(Plan.project_id == project.id, Plan.status == "ACTIVE").one_or_none()
+    )
+    if plan is None:
+        plan = Plan(id=f"plan-{key}", project_id=project.id, title=key, status="ACTIVE")
     phase = PlanPhase(id=f"phase-{key}", plan_id=plan.id, phase_key=key, title=key, sequence=0)
     item = PlanItem(
         id=f"item-{key}", plan_phase_id=phase.id, item_key=key, title=key, status=status

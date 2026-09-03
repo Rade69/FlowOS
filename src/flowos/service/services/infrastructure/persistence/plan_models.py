@@ -10,7 +10,7 @@ Ovi modeli su privatni za persistence sloj.
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from flowos.service.services.infrastructure.persistence.base import Base
@@ -53,7 +53,15 @@ class Plan(Base):
         "PlanPhase", back_populates="plan", order_by="PlanPhase.sequence"
     )
 
-    __table_args__ = (Index("ix_plans_project_id", "project_id"),)
+    __table_args__ = (
+        Index("ix_plans_project_id", "project_id"),
+        Index(
+            "uq_plans_one_active_per_project",
+            "project_id",
+            unique=True,
+            sqlite_where=text("status = 'ACTIVE'"),
+        ),
+    )
 
 
 # ═══════════════════════════════════════════════════════════════════

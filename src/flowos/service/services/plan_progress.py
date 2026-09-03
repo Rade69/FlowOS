@@ -431,6 +431,8 @@ class PlanProgressService:
 
     def activate_plan(self, plan_id: str) -> dict:
         from flowos.service.services.infrastructure.persistence.plan_models import Plan
+        from flowos.service.services.project_resume import ProjectResumeService
+        from flowos.service.services.workflow.ledger import WorkflowLedgerService
 
         plan = self._session.get(Plan, plan_id)
         if not plan:
@@ -439,16 +441,40 @@ class PlanProgressService:
             return {"error": f"Plan nije u DRAFT statusu (trenutno: {plan.status})"}
         from datetime import UTC, datetime
 
-        # Deaktiviraj prethodni aktivni plan
-        prev = (
+        # Stabilnim redoslijedom saniraj i legacy stanje sa više ACTIVE planova.
+        previous_active = (
             self._session.query(Plan)
             .filter(Plan.project_id == plan.project_id, Plan.status == "ACTIVE")
-            .first()
+            .order_by(Plan.id.asc())
+            .all()
         )
-        if prev:
-            prev.status = "SUPERSEDED"
+        previous_active_ids = [previous.id for previous in previous_active]
+        for previous in previous_active:
+            previous.status = "SUPERSEDED"
+
+        # Flush redoslijed sprečava privremeno kršenje partial UNIQUE indeksa.
+        self._session.flush()
         plan.status = "ACTIVE"
         plan.activated_at = datetime.now(tz=UTC)
+        self._session.flush()
+
+        ProjectResumeService(self._session).regenerate(plan.project_id)
+        WorkflowLedgerService(self._session).append_plan_activated(
+            project_id=plan.project_id,
+            plan_id=plan.id,
+            previous_active_plan_ids=previous_active_ids,
+            occurred_at=plan.activated_at,
+        )
+
+        active_count = (
+            self._session.query(Plan)
+            .filter(Plan.project_id == plan.project_id, Plan.status == "ACTIVE")
+            .count()
+        )
+        if active_count != 1:
+            raise RuntimeError(
+                f"Plan activation invariant nije zadovoljen za projekat {plan.project_id}"
+            )
         return {
             "plan_id": plan.id,
             "status": "ACTIVE",

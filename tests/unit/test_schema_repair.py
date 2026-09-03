@@ -402,16 +402,20 @@ def _set_alembic_version(db_path: Path, version: str) -> None:
         conn.close()
 
 
-def _create_fresh_alembic_head_db(db_path: Path) -> None:
+def _create_alembic_db(db_path: Path, revision: str = "head") -> None:
     url = f"sqlite:///{db_path.as_posix()}"
     result = subprocess.run(
-        [sys.executable, "-m", "alembic", "-x", f"sqlalchemy.url={url}", "upgrade", "head"],
+        [sys.executable, "-m", "alembic", "-x", f"sqlalchemy.url={url}", "upgrade", revision],
         cwd=Path(__file__).resolve().parents[2],
         capture_output=True,
         text=True,
         timeout=120,
     )
     assert result.returncode == 0, result.stderr
+
+
+def _create_fresh_alembic_head_db(db_path: Path) -> None:
+    _create_alembic_db(db_path)
 
 
 def _foreign_key_check(db_path: Path) -> list[tuple]:
@@ -469,6 +473,7 @@ def test_known_hybrid_db_repair_adds_schema_stamps_and_preserves_data(tmp_path: 
         .execute("SELECT name FROM sqlite_master WHERE type='table'")
         .fetchall()
     }
+    assert "uq_plans_one_active_per_project" in _indexes(db_path, "plans")
 
     engine = create_engine(f"sqlite:///{db_path.as_posix()}")
     try:
@@ -494,6 +499,74 @@ def test_repair_is_idempotent_on_already_repaired_db(tmp_path: Path):
     assert _indexes(db_path, "agent_reports").count("ix_agent_reports_source_path") == 1
     assert _indexes(db_path, "agent_reports").count("ix_agent_reports_source_report_id") == 1
     assert _indexes(db_path, "workflow_ledger_events").count("ix_workflow_ledger_source") == 1
+    assert _indexes(db_path, "plans").count("uq_plans_one_active_per_project") == 1
+
+
+def test_previous_head_repair_adds_active_index_without_changing_plan_rows(tmp_path: Path):
+    db_path = tmp_path / "previous-head.db"
+    _create_alembic_db(db_path, "b7c2e1d4a903")
+    conn = sqlite3.connect(str(db_path))
+    try:
+        conn.execute(
+            "INSERT INTO projects (id, name, repo_path, status, created_at) "
+            "VALUES ('project-1', 'P', 'C:/p', 'ACTIVE', '2026-09-03')"
+        )
+        conn.execute(
+            "INSERT INTO plans (id, project_id, title, status, created_at) "
+            "VALUES ('plan-1', 'project-1', 'Plan', 'ACTIVE', '2026-09-03')"
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    assert inspect_local_schema(db_path).state == SchemaState.KNOWN_REPAIRABLE_DRIFT
+    before = _fetch_one(db_path, "SELECT id, project_id, title, status FROM plans")
+
+    result = repair_database(db_path)
+
+    assert result.final_state == SchemaState.HEALTHY
+    assert _fetch_one(db_path, "SELECT id, project_id, title, status FROM plans") == before
+    assert _fetch_one(db_path, "SELECT version_num FROM alembic_version")[0] == ALEMBIC_HEAD
+    assert "uq_plans_one_active_per_project" in _indexes(db_path, "plans")
+
+
+def test_previous_head_duplicate_active_plans_abort_repair_without_data_change(tmp_path: Path):
+    db_path = tmp_path / "duplicate-active.db"
+    _create_alembic_db(db_path, "b7c2e1d4a903")
+    conn = sqlite3.connect(str(db_path))
+    try:
+        conn.execute(
+            "INSERT INTO projects (id, name, repo_path, status, created_at) "
+            "VALUES ('project-1', 'P', 'C:/p', 'ACTIVE', '2026-09-03')"
+        )
+        conn.executemany(
+            "INSERT INTO plans (id, project_id, title, status, created_at) "
+            "VALUES (?, 'project-1', ?, 'ACTIVE', '2026-09-03')",
+            [("plan-1", "One"), ("plan-2", "Two")],
+        )
+        conn.commit()
+    finally:
+        conn.close()
+    conn = sqlite3.connect(str(db_path))
+    try:
+        before = conn.execute("SELECT id, status FROM plans ORDER BY id").fetchall()
+    finally:
+        conn.close()
+
+    with pytest.raises(sqlite3.IntegrityError):
+        repair_database(db_path)
+
+    conn = sqlite3.connect(str(db_path))
+    try:
+        assert conn.execute("SELECT id, status FROM plans ORDER BY id").fetchall() == before
+        assert (
+            conn.execute("SELECT version_num FROM alembic_version").fetchone()[0] == "b7c2e1d4a903"
+        )
+        assert "uq_plans_one_active_per_project" not in {
+            row[1] for row in conn.execute("PRAGMA index_list(plans)").fetchall()
+        }
+    finally:
+        conn.close()
 
 
 def test_unknown_alembic_version_with_valid_target_schema_is_unknown_and_refused(

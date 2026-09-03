@@ -63,7 +63,11 @@ def _task(db: Session, project: Project, title: str = "Task", plan_item_id: str 
 
 
 def _plan_item(db: Session, project: Project, key: str = "FLOW-1") -> PlanItem:
-    plan = Plan(project_id=project.id, title=f"Plan {key}", status="ACTIVE")
+    plan = (
+        db.query(Plan).filter(Plan.project_id == project.id, Plan.status == "ACTIVE").one_or_none()
+    )
+    if plan is None:
+        plan = Plan(project_id=project.id, title=f"Plan {key}", status="ACTIVE")
     db.add(plan)
     db.flush()
     phase = PlanPhase(plan_id=plan.id, phase_key=f"F-{key}", title="Faza", sequence=0)

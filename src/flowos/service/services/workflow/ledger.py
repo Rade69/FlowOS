@@ -2,6 +2,7 @@
 
 Phase 3A appenduje IMPLEMENTATION_COMPLETED događaje iz canonical DB
 AgentReport-a. Phase 3B dodaje TEST_RESULT događaje iz VerificationResult-a.
+FLOW-1106 dodaje plan-level PLAN_ACTIVATED audit bez agentske atribucije.
 Service ne nudi update/delete contract jer je Ledger append-only.
 """
 
@@ -33,6 +34,9 @@ TEST_RESULT = "TEST_RESULT"
 VERIFICATION_ARTIFACT_SOURCE = "verification_artifact"
 
 REVIEW_COMPLETED = "REVIEW_COMPLETED"
+
+PLAN_ACTIVATED = "PLAN_ACTIVATED"
+PLAN_SOURCE = "plan"
 
 
 @dataclass(frozen=True)
@@ -196,6 +200,42 @@ class WorkflowLedgerService:
             .order_by(WorkflowLedgerEvent.recorded_at.asc(), WorkflowLedgerEvent.id.asc())
             .all()
         )
+
+    def append_plan_activated(
+        self,
+        *,
+        project_id: str,
+        plan_id: str,
+        previous_active_plan_ids: list[str],
+        occurred_at: datetime,
+    ) -> WorkflowLedgerEvent:
+        """Appenduje idempotentan plan-level activation audit događaj."""
+        key = f"plan-activated:{plan_id}"
+        existing = self._existing_event(key)
+        if existing is not None:
+            return existing
+
+        payload = {
+            "plan_id": plan_id,
+            "project_id": project_id,
+            "previous_active_plan_ids": sorted(previous_active_plan_ids),
+        }
+        event = WorkflowLedgerEvent(
+            project_id=project_id,
+            event_type=PLAN_ACTIVATED,
+            session_id=None,
+            task_id=None,
+            plan_item_id=None,
+            source_kind=PLAN_SOURCE,
+            source_id=plan_id,
+            occurred_at=occurred_at,
+            recorded_at=datetime.now(tz=UTC),
+            idempotency_key=key,
+            payload_json=json.dumps(payload, ensure_ascii=False, sort_keys=True),
+        )
+        self._session.add(event)
+        self._session.flush()
+        return event
 
     def list_for_task(self, task_id: str) -> list[WorkflowLedgerEvent]:
         """Vraća Ledger evente za task stabilno sortirane za test/read modele."""

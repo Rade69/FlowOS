@@ -23,8 +23,10 @@ from sqlalchemy.orm import Session
 
 from flowos.service.services.infrastructure.dir_security import harden_existing_directory
 
-ALEMBIC_HEAD = "b7c2e1d4a903"
-KNOWN_STALE_REVISIONS = {"03de14cbf6aa", None}
+ALEMBIC_HEAD = "c83f1a2d4e67"
+KNOWN_STALE_REVISIONS = {"03de14cbf6aa", "b7c2e1d4a903", None}
+
+PLAN_ACTIVE_INDEX = "uq_plans_one_active_per_project"
 
 AGENT_REPORT_COLUMNS: dict[str, str] = {
     "id": "VARCHAR(36)",
@@ -333,6 +335,9 @@ def repair_database(db_path: str | Path | None = None) -> SchemaRepairResult:
             _ensure_workflow_ledger_indexes(conn)
             details.append("workflow_ledger_events tabela je već postojala.")
 
+        _ensure_plan_active_index(conn)
+        details.append("Partial UNIQUE zaštita za jedan ACTIVE plan je osigurana.")
+
         _verify_pre_stamp_repair(conn, path, before)
         _stamp_head(conn)
         conn.commit()
@@ -501,6 +506,9 @@ def _unknown_schema_reasons(conn: sqlite3.Connection, tables: set[str]) -> list[
         if not _workflow_idempotency_unique_exists(conn):
             reasons.append("workflow_ledger_events nema unique idempotency constraint/index.")
 
+    if PLAN_ACTIVE_INDEX in _index_details(conn, "plans") and not _plan_active_index_valid(conn):
+        reasons.append(f"plans.{PLAN_ACTIVE_INDEX} nije očekivani partial UNIQUE index.")
+
     if "work_status" in _columns(conn, "agent_reports"):
         invalid = conn.execute(
             "SELECT COUNT(*) AS count FROM agent_reports "
@@ -573,6 +581,9 @@ def _target_schema_errors(conn: sqlite3.Connection, tables: set[str]) -> list[st
         if not _workflow_idempotency_unique_exists(conn):
             errors.append("workflow_ledger_events unique idempotency constraint ne postoji.")
 
+    if not _plan_active_index_valid(conn):
+        errors.append(f"plans index {PLAN_ACTIVE_INDEX} ne postoji ili nije validan.")
+
     return errors
 
 
@@ -590,6 +601,18 @@ def _agent_report_work_status_check_exists(conn: sqlite3.Connection) -> bool:
 def _workflow_idempotency_unique_exists(conn: sqlite3.Connection) -> bool:
     indexes = _index_details(conn, "workflow_ledger_events")
     return any(columns == ("idempotency_key",) and unique for columns, unique in indexes.values())
+
+
+def _plan_active_index_valid(conn: sqlite3.Connection) -> bool:
+    """Potvrđuje shape i WHERE uslov canonical ACTIVE uniqueness indeksa."""
+    details = _index_details(conn, "plans")
+    if details.get(PLAN_ACTIVE_INDEX) != (("project_id",), True):
+        return False
+    row = conn.execute(
+        "SELECT sql FROM sqlite_master WHERE type='index' AND name=?", (PLAN_ACTIVE_INDEX,)
+    ).fetchone()
+    sql = " ".join(str(row["sql"] if row else "").upper().split())
+    return "WHERE STATUS = 'ACTIVE'" in sql
 
 
 def _agent_reports_needs_rebuild(conn: sqlite3.Connection) -> bool:
@@ -723,6 +746,13 @@ def _ensure_workflow_ledger_indexes(conn: sqlite3.Connection) -> None:
     conn.execute(
         "CREATE INDEX IF NOT EXISTS ix_workflow_ledger_source "
         "ON workflow_ledger_events (source_kind, source_id)"
+    )
+
+
+def _ensure_plan_active_index(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        f"CREATE UNIQUE INDEX IF NOT EXISTS {PLAN_ACTIVE_INDEX} "
+        "ON plans (project_id) WHERE status = 'ACTIVE'"
     )
 
 

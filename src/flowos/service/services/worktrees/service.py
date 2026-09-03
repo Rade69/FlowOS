@@ -9,6 +9,7 @@ Pravila:
 
 import contextlib
 import logging
+import os
 import subprocess
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -145,12 +146,10 @@ class WorktreeService:
         return self._parse_worktree_list(raw)
 
     def list_flowos_worktrees(self) -> list[WorktreeInfo]:
-        """Vraća samo FlowOS worktree-je (u worktrees_dir)."""
+        """Vraća samo FlowOS managed worktree-je (strukturno unutar worktrees_dir)."""
         all_wt = self.list_worktrees()
-        wt_dir = str(self.worktrees_dir).replace("\\", "/")
-        return [
-            wt for wt in all_wt if wt.path.replace("\\", "/").startswith(wt_dir) and not wt.is_main
-        ]
+        wt_root = self._canonical_key(str(self.worktrees_dir))
+        return [wt for wt in all_wt if self._is_within(self._canonical_key(wt.path), wt_root)]
 
     # ── Status ─────────────────────────────────────────────────
 
@@ -206,23 +205,37 @@ class WorktreeService:
 
     # ── Cleanup ────────────────────────────────────────────────
 
+    def _resolve_cleanup_target(self, worktree_path: str) -> tuple[WorktreeInfo | None, str]:
+        """Vraca matched WorktreeInfo i prazan razlog kada je cleanup dozvoljen.
+
+        Hard identity/scope guard: unknown, main i unmanaged worktree se
+        odbijaju. Status provera koristi matched canonical path, ne originalni
+        caller input.
+        """
+        info = self._find_worktree(worktree_path)
+        if not info:
+            return None, "Worktree ne postoji."
+
+        if info.is_main:
+            return info, "Glavni ili unmanaged worktree se ne može obrisati."
+
+        status = self.get_status(info.path)
+        if status.get("has_conflicts"):
+            return info, "Worktree ima konflikte — prvo ih razrešite."
+
+        return info, ""
+
     def can_cleanup(self, worktree_path: str) -> tuple[bool, str]:
         """Proverava da li worktree može biti obrisan.
 
         Returns:
             (može, razlog_zašto_ne).
         """
-        info = self._find_worktree(worktree_path)
-        if not info:
-            return False, "Worktree ne postoji."
-
-        if info.is_main:
-            return False, "Glavni worktree se ne može obrisati."
-
-        status = self.get_status(worktree_path)
-        if status.get("has_conflicts"):
-            return False, "Worktree ima konflikte — prvo ih razrešite."
-
+        info, reason = self._resolve_cleanup_target(worktree_path)
+        if info is None:
+            return False, reason
+        if reason:
+            return False, reason
         return True, ""
 
     def cleanup(self, worktree_path: str, force: bool = False) -> None:
@@ -232,21 +245,25 @@ class WorktreeService:
             worktree_path: Putanja do worktree-ja.
             force: Ako True, koristi --force.
 
+        force dodaje `--force` git flagu, ali NE zaobilazi hard identity/
+        scope zaštite (nepoznat, glavni ili unmanaged worktree, konflikti).
+        Destructive target je uvek matched canonical path, ne originalni input.
+
         Raises:
             WorktreeError: Ako brisanje ne uspe.
         """
-        can, reason = self.can_cleanup(worktree_path)
-        if not can and not force:
+        info, reason = self._resolve_cleanup_target(worktree_path)
+        if info is None or reason:
             raise WorktreeError(f"Worktree ne može biti obrisan: {reason}")
 
         args = ["worktree", "remove"]
         if force:
             args.append("--force")
-        args.append(worktree_path)
+        args.append(info.path)
 
         try:
             self._git(args)
-            logger.info("Worktree uklonjen: %s", worktree_path)
+            logger.info("Worktree uklonjen: %s", info.path)
         except subprocess.CalledProcessError as e:
             raise WorktreeError(f"Neuspelo uklanjanje worktree-ja: {e.stderr}") from e
 
@@ -386,11 +403,31 @@ class WorktreeService:
             created_at=datetime.now(tz=UTC).isoformat(),
         )
 
+    @staticmethod
+    def _canonical_key(path: str) -> str:
+        """Platform-correct canonical path key za identity poređenje.
+
+        Normalizuje separatore i ``.``/``..``, resolve-a symlinke kada putanja
+        postoji, i na Windowsu primenjuje case-fold (``normcase``). Koristi se
+        isključivo za poređenje identiteta putanja, nikad za textual prefix.
+        """
+        raw = os.path.normpath(os.path.abspath(str(path)))
+        if os.path.exists(raw):
+            raw = os.path.realpath(raw)
+        return os.path.normcase(raw)
+
+    @staticmethod
+    def _is_within(child: str, parent: str) -> bool:
+        """Strukturni path containment — bez textual prefix poređenja."""
+        child_path = Path(child)
+        parent_path = Path(parent)
+        return child_path != parent_path and child_path.is_relative_to(parent_path)
+
     def _find_worktree(self, path: str) -> WorktreeInfo | None:
-        """Pronalazi worktree po putanji."""
-        worktrees = self.list_worktrees()
-        for wt in worktrees:
-            if wt.path == path or wt.path.startswith(path):
+        """Pronalazi worktree po tačnoj canonical putanji."""
+        target = self._canonical_key(path)
+        for wt in self.list_worktrees():
+            if self._canonical_key(wt.path) == target:
                 return wt
         return None
 
@@ -424,9 +461,10 @@ class WorktreeService:
         is_bare = data.get("bare", "") == "true"
         is_detached = data.get("detached", "") == "true"
 
-        # Detektuj glavni worktree (nije u worktrees_dir)
-        wt_dir = str(self.worktrees_dir).replace("\\", "/")
-        is_main = not path.replace("\\", "/").startswith(wt_dir)
+        # Detektuj managed worktree (strukturno unutar worktrees_dir).
+        # Glavni worktree i svi unmanaged linked worktree-ji su `is_main`.
+        wt_root = self._canonical_key(str(self.worktrees_dir))
+        is_main = not self._is_within(self._canonical_key(path), wt_root)
 
         # Izvuci task_id iz putanje (worktrees/<task_id>)
         task_id = None

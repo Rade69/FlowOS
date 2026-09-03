@@ -116,9 +116,15 @@ class PlanProgressView(QFrame):
         lo.addWidget(self._tree)
 
     def render(self, data):  # type: ignore[override]
-        self._plan_label.setText(  # type: ignore[union-attr]
-            "Nema aktivnog plana" if not data else f"Aktivni plan: {data.get('plan_title', '')}"
-        )
+        status = data.get("plan_status", "") if data else ""
+        title = data.get("plan_title", "") if data else ""
+        if not status:
+            label = "Nema aktivnog plana"
+        elif status == "DRAFT":
+            label = f"Nacrt plana: {title}"
+        else:
+            label = f"Aktivni plan: {title}"
+        self._plan_label.setText(label)  # type: ignore[union-attr]
         self._clear_status()
         self._tree.clear()  # type: ignore[union-attr]
         if not data:

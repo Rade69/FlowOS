@@ -103,12 +103,14 @@ class GuiApiClient(QObject):
 
     # ── Plan ───────────────────────────────────────────
 
-    def get_plan_progress(self, project_id: str):
-        # FLOW-1201: emituje (project_id, payload) da potrošač može odbaciti
-        # zakašnjeli odgovor koji ne pripada trenutno aktivnom projektu.
+    def get_plan_progress(self, project_id: str, generation: int = 0):
+        # FLOW-1201: emituje (project_id, generation, payload) da potrošač može
+        # odbaciti zakašnjeli odgovor (stari generation ili drugi projekat).
         self._get(
             f"/projects/{project_id}/plan-progress",
-            lambda data, pid=project_id: self.plan_progress_received.emit((pid, data)),
+            lambda data, pid=project_id, gen=generation: self.plan_progress_received.emit(
+                (pid, gen, data)
+            ),
         )
 
     def import_plan(self, project_id: str, markdown_text: str, on_success) -> None:
@@ -121,25 +123,31 @@ class GuiApiClient(QObject):
 
     # ── Resume ─────────────────────────────────────────
 
-    def get_resume(self, project_id: str):
+    def get_resume(self, project_id: str, generation: int = 0):
         self._get(
             f"/projects/{project_id}/resume",
-            lambda data, pid=project_id: self.resume_received.emit((pid, data)),
+            lambda data, pid=project_id, gen=generation: self.resume_received.emit(
+                (pid, gen, data)
+            ),
         )
 
-    def regenerate_resume(self, project_id: str):
+    def regenerate_resume(self, project_id: str, generation: int = 0):
         self._post(
             f"/projects/{project_id}/resume/regenerate",
             {},
-            lambda data, pid=project_id: self.resume_received.emit((pid, data)),
+            lambda data, pid=project_id, gen=generation: self.resume_received.emit(
+                (pid, gen, data)
+            ),
         )
 
     # ── Sessions ───────────────────────────────────────
 
-    def get_active_sessions(self, project_id: str):
+    def get_active_sessions(self, project_id: str, generation: int = 0):
         self._get(
             f"/sessions/active?project_id={project_id}",
-            lambda data, pid=project_id: self.sessions_received.emit((pid, data)),
+            lambda data, pid=project_id, gen=generation: self.sessions_received.emit(
+                (pid, gen, data)
+            ),
         )
 
     def create_tracked_session(
@@ -148,6 +156,7 @@ class GuiApiClient(QObject):
         agent_type: str,
         repo_path: str,
         pid: int,
+        generation: int = 0,
     ) -> None:
         """Kreira EXTERNAL_TRACKED sesiju za već pokrenut agentski proces."""
         self._post(
@@ -159,7 +168,9 @@ class GuiApiClient(QObject):
                 "execution_mode": "EXTERNAL_TRACKED",
                 "pid": pid,
             },
-            lambda data, pid=project_id: self.sessions_received.emit((pid, data)),
+            lambda data, pid=project_id, gen=generation: self.sessions_received.emit(
+                (pid, gen, data)
+            ),
         )
 
     # ── Plan Items ─────────────────────────────────────
@@ -169,10 +180,12 @@ class GuiApiClient(QObject):
 
     # ── Timeline ────────────────────────────────────────
 
-    def get_timeline(self, project_id: str, limit: int = 30):
+    def get_timeline(self, project_id: str, limit: int = 30, generation: int = 0):
         self._get(
             f"/projects/{project_id}/timeline?limit={limit}",
-            lambda data, pid=project_id: self.timeline_received.emit((pid, data)),
+            lambda data, pid=project_id, gen=generation: self.timeline_received.emit(
+                (pid, gen, data)
+            ),
         )
 
     # ── Agents ──────────────────────────────────────────
@@ -246,10 +259,12 @@ class GuiApiClient(QObject):
 
     # ── Worktrees ───────────────────────────────────────
 
-    def fetch_worktrees(self, project_id: str):
+    def fetch_worktrees(self, project_id: str, generation: int = 0):
         self._get(
             f"/worktrees?project_id={project_id}",
-            lambda data, pid=project_id: self.worktrees_received.emit((pid, data)),
+            lambda data, pid=project_id, gen=generation: self.worktrees_received.emit(
+                (pid, gen, data)
+            ),
         )
 
     def prepare_integration(self, worktree_id: str, base_branch: str = "main"):

@@ -17,7 +17,7 @@ class PlanController(QObject):
         super().__init__(parent)
         self._api = api
 
-    def import_plan(self, project_id: str, file_path: str) -> None:
+    def import_plan(self, project_id: str, file_path: str, generation: int = 0) -> None:
         try:
             markdown_text = Path(file_path).read_text(encoding="utf-8")
         except OSError as exc:
@@ -28,7 +28,7 @@ class PlanController(QObject):
             if "error" in data:
                 self.import_failed.emit(str(data["error"]))
                 return
-            self._api.get_plan_progress(project_id)
+            self._api.get_plan_progress(project_id, generation)
             self.import_succeeded.emit(data)
 
         self._api.import_plan(project_id, markdown_text, _on_success)

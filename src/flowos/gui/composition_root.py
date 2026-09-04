@@ -74,6 +74,7 @@ class FlowOsGui:
         self._system_controller = system_controller
         self._active_project_id: str | None = None
         self._active_project_repo_path: str | None = None
+        self._active_project_generation: int = 0
         self._refresh_timer: QTimer | None = None
         self._projects: list[dict] = []
 
@@ -152,7 +153,9 @@ class FlowOsGui:
             if self._worktrees_page_view:
                 api.worktrees_received.connect(self._on_worktrees)
                 self._worktrees_page_view.refresh_requested.connect(
-                    lambda: api.fetch_worktrees(self._active_project_id or "")
+                    lambda: api.fetch_worktrees(
+                        self._active_project_id or "", self._begin_generation()
+                    )
                 )
                 self._worktrees_page_view.integrate_requested.connect(
                     lambda wid: api.prepare_integration(wid)
@@ -232,7 +235,11 @@ class FlowOsGui:
 
         path, _ = QFileDialog.getOpenFileName(self._window, "Uvezi plan", "", "Markdown (*.md)")
         if path and self._plan_controller and self._active_project_id:
-            self._plan_controller.import_plan(self._active_project_id, path)
+            # Novi generation: posle import-a samo najnoviji plan prikaz smije
+            # da se renderuje (stariji pending plan odgovori postaju zastarjeli).
+            self._plan_controller.import_plan(
+                self._active_project_id, path, self._begin_generation()
+            )
 
     def _load_plan_item_details(self, item_id: str) -> None:
         if self._api:
@@ -318,14 +325,20 @@ class FlowOsGui:
         self._window.set_topbar_info(project=proj.get("name", ""))
         self._window.topbar.set_active_project(proj.get("id", ""))
 
+    def _begin_generation(self) -> int:
+        """Monotono rastuća project-data generacija; svaki load batch dobija novu."""
+        self._active_project_generation += 1
+        return self._active_project_generation
+
     def _load_project_data(self, project_id: str) -> None:
+        generation = self._begin_generation()
         if self._controller:
-            self._controller.load_plan_progress(project_id)
-            self._controller.load_resume(project_id)
-            self._controller.load_sessions(project_id)
+            self._controller.load_plan_progress(project_id, generation)
+            self._controller.load_resume(project_id, generation)
+            self._controller.load_sessions(project_id, generation)
         if self._api:
-            self._api.fetch_worktrees(project_id)
-            self._api.get_timeline(project_id)
+            self._api.fetch_worktrees(project_id, generation)
+            self._api.get_timeline(project_id, generation)
         if self._tasks_page:
             self._tasks_page.set_project_id(project_id)
 
@@ -380,9 +393,9 @@ class FlowOsGui:
             self._controller.load_projects()
 
     def _on_plan_progress(self, data: tuple) -> None:
-        project_id, payload = data
-        if project_id != self._active_project_id:
-            return  # FLOW-1201: zakašnjeli odgovor za drugi projekat — ignoriši
+        project_id, generation, payload = data
+        if project_id != self._active_project_id or generation != self._active_project_generation:
+            return  # FLOW-1201: zakašnjeli odgovor (drugi projekat ili starija generacija)
 
         # Plan stranica (puna tabela)
         if self._plan_page_view:
@@ -428,9 +441,9 @@ class FlowOsGui:
             self._details_view.render(data)
 
     def _on_sessions(self, data: tuple) -> None:
-        project_id, sessions = data
-        if project_id != self._active_project_id:
-            return  # FLOW-1201: zakašnjeli odgovor za drugi projekat — ignoriši
+        project_id, generation, sessions = data
+        if project_id != self._active_project_id or generation != self._active_project_generation:
+            return  # FLOW-1201: zakašnjeli odgovor (drugi projekat ili starija generacija)
         if self._sessions_overview:
             self._sessions_overview.render(sessions)
         if self._sessions_page_view:
@@ -439,9 +452,9 @@ class FlowOsGui:
         self._window.set_topbar_info(sessions=len(sessions))
 
     def _on_resume(self, data: tuple) -> None:
-        project_id, payload = data
-        if project_id != self._active_project_id:
-            return  # FLOW-1201: zakašnjeli odgovor za drugi projekat — ignoriši
+        project_id, generation, payload = data
+        if project_id != self._active_project_id or generation != self._active_project_generation:
+            return  # FLOW-1201: zakašnjeli odgovor (drugi projekat ili starija generacija)
         if self._resume_hero:
             self._resume_hero.render(payload)
         if not self._reconciliation_view:
@@ -466,16 +479,16 @@ class FlowOsGui:
         )
 
     def _on_timeline(self, data: tuple) -> None:
-        project_id, items = data
-        if project_id != self._active_project_id:
-            return  # FLOW-1201: zakašnjeli odgovor za drugi projekat — ignoriši
+        project_id, generation, items = data
+        if project_id != self._active_project_id or generation != self._active_project_generation:
+            return  # FLOW-1201: zakašnjeli odgovor (drugi projekat ili starija generacija)
         if self._activity_view:
             self._activity_view.render(items)
 
     def _on_worktrees(self, data: tuple) -> None:
-        project_id, items = data
-        if project_id != self._active_project_id:
-            return  # FLOW-1201: zakašnjeli odgovor za drugi projekat — ignoriši
+        project_id, generation, items = data
+        if project_id != self._active_project_id or generation != self._active_project_generation:
+            return  # FLOW-1201: zakašnjeli odgovor (drugi projekat ili starija generacija)
         if self._worktrees_page_view:
             self._worktrees_page_view.render(items)
 

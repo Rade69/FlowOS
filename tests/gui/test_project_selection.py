@@ -34,13 +34,13 @@ class SpyController:
         self.sessions_calls = []
         self.projects_calls = 0
 
-    def load_plan_progress(self, pid):
+    def load_plan_progress(self, pid, generation=0):
         self.plan_calls.append(pid)
 
-    def load_resume(self, pid):
+    def load_resume(self, pid, generation=0):
         self.resume_calls.append(pid)
 
-    def load_sessions(self, pid):
+    def load_sessions(self, pid, generation=0):
         self.sessions_calls.append(pid)
 
     def load_projects(self):
@@ -59,10 +59,10 @@ class SpyApi:
         self.worktrees_calls = []
         self.created = []
 
-    def get_timeline(self, pid):
+    def get_timeline(self, pid, generation=0):
         self.timeline_calls.append(pid)
 
-    def fetch_worktrees(self, pid):
+    def fetch_worktrees(self, pid, generation=0):
         self.worktrees_calls.append(pid)
 
     def create_project(self, name, repo_path):
@@ -227,11 +227,11 @@ def test_t11_late_response_after_switch_is_ignored(gui_env):
     gui._on_project_selected("b")
 
     # Zakašnjeli A odgovori stižu tek sada, kad je aktivan B.
-    gui._on_plan_progress(("a", {"phases": [], "plan_title": "A plan", "blocked": 0}))
-    gui._on_sessions(("a", [{"id": "sA"}]))
-    gui._on_resume(("a", {"status": "A", "workspace_state": {}}))
-    gui._on_timeline(("a", [{"id": "actA"}]))
-    gui._on_worktrees(("a", [{"id": "wtA"}]))
+    gui._on_plan_progress(("a", 1, {"phases": [], "plan_title": "A plan", "blocked": 0}))
+    gui._on_sessions(("a", 1, [{"id": "sA"}]))
+    gui._on_resume(("a", 1, {"status": "A", "workspace_state": {}}))
+    gui._on_timeline(("a", 1, [{"id": "actA"}]))
+    gui._on_worktrees(("a", 1, [{"id": "wtA"}]))
 
     # Svi ekrani ostaju u očišćenom stanju — A se ne renderuje pod B.
     assert views["plan_page"].renders[-1] is None
@@ -256,3 +256,41 @@ def test_t12_combo_signal_wiring_changes_active_project(gui_env):
     assert gui._active_project_id == "b"
     assert window.topbar._proj_label.text() == "Project B"
     assert controller.plan_calls[-1] == "b"
+
+
+def test_t13_same_project_out_of_order_refresh(gui_env):
+    """FLOW-1201: stariji odgovor istog projekta NE sme prepisati noviji refresh.
+
+    Pada ako se ukloni generation check a ostane samo project_id guard.
+    """
+    gui, _controller, _api, views, _window = gui_env
+    gui._on_projects([PROJECT_A])  # A aktivan, generation 1
+    gui._load_project_data("a")  # novi refresh istog projekta, generation 2
+
+    # Noviji odgovor (generation 2) stiže prvi.
+    gui._on_plan_progress(("a", 2, {"phases": [], "plan_title": "Fresh A", "blocked": 0}))
+    assert views["plan_page"].renders[-1]["plan_title"] == "Fresh A"
+
+    # Zakašnjeli stariji odgovor (generation 1) ne sme prepisati generation 2.
+    gui._on_plan_progress(("a", 1, {"phases": [], "plan_title": "Stale A", "blocked": 0}))
+    assert views["plan_page"].renders[-1]["plan_title"] == "Fresh A"
+
+
+def test_t14_a_b_a_stale_response_ignored(gui_env):
+    """FLOW-1201: A→B→A — zakašnjeli A odgovor iz prve generacije se ignoriše.
+
+    Pada ako se ukloni generation check a ostane samo project_id guard.
+    """
+    gui, _controller, _api, views, _window = gui_env
+    gui._on_projects([PROJECT_A, PROJECT_B])  # A aktivan, generation 1
+    # A generation 1 ostaje "pending" — ne emitujemo ga još.
+    gui._on_project_selected("b")  # B aktivan, generation 2
+    gui._on_project_selected("a")  # ponovo A, generation 3
+
+    # Novi A odgovor (generation 3) se renderuje.
+    gui._on_plan_progress(("a", 3, {"phases": [], "plan_title": "Fresh A", "blocked": 0}))
+    assert views["plan_page"].renders[-1]["plan_title"] == "Fresh A"
+
+    # Zakašnjeli A odgovor iz prve generacije (generation 1) se ignoriše.
+    gui._on_plan_progress(("a", 1, {"phases": [], "plan_title": "Stale A", "blocked": 0}))
+    assert views["plan_page"].renders[-1]["plan_title"] == "Fresh A"

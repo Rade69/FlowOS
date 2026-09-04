@@ -33,15 +33,21 @@ class SpyController:
         self.resume_calls = []
         self.sessions_calls = []
         self.projects_calls = 0
+        self.plan_generations = []
+        self.resume_generations = []
+        self.sessions_generations = []
 
     def load_plan_progress(self, pid, generation=0):
         self.plan_calls.append(pid)
+        self.plan_generations.append(generation)
 
     def load_resume(self, pid, generation=0):
         self.resume_calls.append(pid)
+        self.resume_generations.append(generation)
 
     def load_sessions(self, pid, generation=0):
         self.sessions_calls.append(pid)
+        self.sessions_generations.append(generation)
 
     def load_projects(self):
         self.projects_calls += 1
@@ -58,12 +64,16 @@ class SpyApi:
         self.timeline_calls = []
         self.worktrees_calls = []
         self.created = []
+        self.timeline_generations = []
+        self.worktrees_generations = []
 
     def get_timeline(self, pid, generation=0):
         self.timeline_calls.append(pid)
+        self.timeline_generations.append(generation)
 
     def fetch_worktrees(self, pid, generation=0):
         self.worktrees_calls.append(pid)
+        self.worktrees_generations.append(generation)
 
     def create_project(self, name, repo_path):
         self.created.append((name, repo_path))
@@ -294,3 +304,56 @@ def test_t14_a_b_a_stale_response_ignored(gui_env):
     # Zakašnjeli A odgovor iz prve generacije (generation 1) se ignoriše.
     gui._on_plan_progress(("a", 1, {"phases": [], "plan_title": "Stale A", "blocked": 0}))
     assert views["plan_page"].renders[-1]["plan_title"] == "Fresh A"
+
+
+def test_t15_worktrees_refresh_is_full_batch(gui_env):
+    """FLOW-1201 F1-A: Worktrees refresh pokreće full batch, ne orphanuje ostale.
+
+    Pada ako Worktrees refresh samo bumpuje generation i šalje samo Worktrees.
+    """
+    gui, controller, api, _views, _window = gui_env
+    gui._on_projects([PROJECT_A])  # A aktivan, generation 1
+
+    # Resetuj evidenciju nakon inicijalnog load-a.
+    controller.plan_generations.clear()
+    controller.resume_generations.clear()
+    controller.sessions_generations.clear()
+    api.timeline_generations.clear()
+    api.worktrees_generations.clear()
+
+    gui._refresh_worktrees()  # full batch generation 2
+
+    assert gui._active_project_generation == 2
+    # Svi project-scoped resursi dobijaju istu (novu) generaciju — nijedan nije orphanovan.
+    assert controller.plan_generations == [2]
+    assert controller.resume_generations == [2]
+    assert controller.sessions_generations == [2]
+    assert api.timeline_generations == [2]
+    assert api.worktrees_generations == [2]
+
+
+def test_t16_plan_import_success_triggers_full_batch(gui_env):
+    """FLOW-1201 F1-B: uspješan import pokreće full batch; nijedan resource nije orphanovan.
+
+    Pada ako import bumpuje generation prije završetka i refreshuje samo Plan.
+    """
+    gui, controller, api, _views, _window = gui_env
+    gui._on_projects([PROJECT_A])  # A aktivan, generation 1
+
+    # Dok import nije završen generation ostaje na 1 (bez preuranjenog bump-a).
+    assert gui._active_project_generation == 1
+
+    controller.plan_generations.clear()
+    controller.resume_generations.clear()
+    controller.sessions_generations.clear()
+    api.timeline_generations.clear()
+    api.worktrees_generations.clear()
+
+    gui._on_plan_imported("a")  # uspješan import → full batch generation 2
+
+    assert gui._active_project_generation == 2
+    assert controller.plan_generations == [2]
+    assert controller.resume_generations == [2]
+    assert controller.sessions_generations == [2]
+    assert api.timeline_generations == [2]
+    assert api.worktrees_generations == [2]

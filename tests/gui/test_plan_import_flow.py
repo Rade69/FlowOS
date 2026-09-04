@@ -13,8 +13,8 @@ def test_import_plan_delegates_to_plan_controller(monkeypatch, tmp_path):
         def __init__(self):
             self.calls = []
 
-        def import_plan(self, project_id, file_path, generation=0):
-            self.calls.append((project_id, file_path, generation))
+        def import_plan(self, project_id, file_path):
+            self.calls.append((project_id, file_path))
 
     class DirectApiCallForbidden:
         def _post(self, *_args, **_kwargs):
@@ -26,7 +26,6 @@ def test_import_plan_delegates_to_plan_controller(monkeypatch, tmp_path):
     gui._api = DirectApiCallForbidden()
     gui._plan_controller = controller
     gui._active_project_id = "project-1"
-    gui._active_project_generation = 0
 
     monkeypatch.setattr(
         QFileDialog,
@@ -36,10 +35,10 @@ def test_import_plan_delegates_to_plan_controller(monkeypatch, tmp_path):
 
     gui._on_import_plan()
 
-    assert controller.calls == [("project-1", str(plan_file), 1)]
+    assert controller.calls == [("project-1", str(plan_file))]
 
 
-def test_plan_controller_reads_markdown_text_and_refreshes_progress(tmp_path):
+def test_plan_controller_reads_markdown_text_and_emits_success(tmp_path):
     from flowos.gui.controllers.plan import PlanController
 
     plan_file = tmp_path / "plan.md"
@@ -48,19 +47,19 @@ def test_plan_controller_reads_markdown_text_and_refreshes_progress(tmp_path):
     class FakeApi:
         def __init__(self):
             self.imports = []
-            self.refreshed = []
 
         def import_plan(self, project_id, markdown_text, on_success):
             self.imports.append((project_id, {"markdown_text": markdown_text}))
             on_success({"plan_id": "draft-plan"})
 
-        def get_plan_progress(self, project_id, generation=0):
-            self.refreshed.append((project_id, generation))
-
     api = FakeApi()
     controller = PlanController(api)
+    succeeded = []
+    controller.import_succeeded.connect(succeeded.append)
 
     controller.import_plan("project-1", str(plan_file))
 
     assert api.imports == [("project-1", {"markdown_text": "# Plan\n"})]
-    assert api.refreshed == [("project-1", 0)]
+    # FLOW-1201: PlanController NE šalje Plan-only refresh; signalizira uspjeh
+    # sa project_id, a FlowOsGui pokreće full batch.
+    assert succeeded == ["project-1"]

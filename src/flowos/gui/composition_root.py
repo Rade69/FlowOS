@@ -119,6 +119,7 @@ class FlowOsGui:
         ctrl.error_occurred.connect(self._on_error)
         if self._plan_controller:
             self._plan_controller.import_failed.connect(ctrl.error_occurred.emit)
+            self._plan_controller.import_succeeded.connect(self._on_plan_imported)
         if self._agents_controller:
             self._agents_controller.tracking_failed.connect(ctrl.error_occurred.emit)
         if self._system_controller:
@@ -152,11 +153,7 @@ class FlowOsGui:
             api.plan_item_received.connect(self._on_plan_item_received)
             if self._worktrees_page_view:
                 api.worktrees_received.connect(self._on_worktrees)
-                self._worktrees_page_view.refresh_requested.connect(
-                    lambda: api.fetch_worktrees(
-                        self._active_project_id or "", self._begin_generation()
-                    )
-                )
+                self._worktrees_page_view.refresh_requested.connect(self._refresh_worktrees)
                 self._worktrees_page_view.integrate_requested.connect(
                     lambda wid: api.prepare_integration(wid)
                 )
@@ -235,11 +232,20 @@ class FlowOsGui:
 
         path, _ = QFileDialog.getOpenFileName(self._window, "Uvezi plan", "", "Markdown (*.md)")
         if path and self._plan_controller and self._active_project_id:
-            # Novi generation: posle import-a samo najnoviji plan prikaz smije
-            # da se renderuje (stariji pending plan odgovori postaju zastarjeli).
-            self._plan_controller.import_plan(
-                self._active_project_id, path, self._begin_generation()
-            )
+            # FLOW-1201: ne povećavaj generation prije importa. Pending odgovori
+            # trenutne generacije smiju normalno završiti; full refresh ide
+            # tek kroz import_succeeded -> _on_plan_imported.
+            self._plan_controller.import_plan(self._active_project_id, path)
+
+    def _on_plan_imported(self, project_id: str) -> None:
+        """Posle uspješnog importa pokreće novi kompletan project-data batch."""
+        if project_id == self._active_project_id:
+            self._load_project_data(project_id)
+
+    def _refresh_worktrees(self) -> None:
+        """Worktrees refresh je full project refresh — ne orfuje druge resurse."""
+        if self._active_project_id:
+            self._load_project_data(self._active_project_id)
 
     def _load_plan_item_details(self, item_id: str) -> None:
         if self._api:

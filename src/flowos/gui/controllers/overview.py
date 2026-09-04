@@ -14,9 +14,11 @@ from flowos.gui.theme.labels import status_label
 
 class OverviewController(QObject):
     projects_loaded = Signal(list)
-    plan_progress_loaded = Signal(dict)
-    resume_loaded = Signal(dict)
-    sessions_loaded = Signal(list)
+    # FLOW-1201: project-scoped signali nose (project_id, dto) da GUI sloj može
+    # odbaciti zakašnjele odgovore koji ne pripadaju aktivnom projektu.
+    plan_progress_loaded = Signal(object)
+    resume_loaded = Signal(object)
+    sessions_loaded = Signal(object)
     health_updated = Signal(bool, str)
     error_occurred = Signal(str)
 
@@ -63,54 +65,66 @@ class OverviewController(QObject):
             ]
         )
 
-    def _on_plan_progress(self, data: dict):
-        if "error" in data:
-            self.error_occurred.emit(data["error"])
+    def _on_plan_progress(self, data):
+        project_id, payload = data
+        if "error" in payload:
+            self.error_occurred.emit(payload["error"])
             return
-        plan = data.get("plan")
+        plan = payload.get("plan")
         self.plan_progress_loaded.emit(
-            {
-                "plan_title": plan.get("title", "") if plan else "",
-                "plan_status": plan.get("status", "") if plan else "",
-                "phases": data.get("phases", []),
-                "total": data.get("total_items", 0),
-                "completed": data.get("completed_items", 0),
-                "blocked": data.get("blocked_items", 0),
-            }
+            (
+                project_id,
+                {
+                    "plan_title": plan.get("title", "") if plan else "",
+                    "plan_status": plan.get("status", "") if plan else "",
+                    "phases": payload.get("phases", []),
+                    "total": payload.get("total_items", 0),
+                    "completed": payload.get("completed_items", 0),
+                    "blocked": payload.get("blocked_items", 0),
+                },
+            )
         )
 
-    def _on_resume(self, data: dict):
-        if "error" in data:
-            self.error_occurred.emit(data["error"])
+    def _on_resume(self, data):
+        project_id, payload = data
+        if "error" in payload:
+            self.error_occurred.emit(payload["error"])
             return
         self.resume_loaded.emit(
-            {
-                "status": data.get("resume_status", "NO_HISTORY"),
-                "where_stopped": data.get("where_stopped", ""),
-                "next_step": data.get("next_concrete_step", ""),
-                "preconditions": data.get("resume_preconditions", ""),
-                "confidence": data.get("confidence", "LOW"),
-                "last_activity": data.get("last_activity_at", ""),
-                "last_commit": data.get("last_commit_sha", ""),
-            }
+            (
+                project_id,
+                {
+                    "status": payload.get("resume_status", "NO_HISTORY"),
+                    "where_stopped": payload.get("where_stopped", ""),
+                    "next_step": payload.get("next_concrete_step", ""),
+                    "preconditions": payload.get("resume_preconditions", ""),
+                    "confidence": payload.get("confidence", "LOW"),
+                    "last_activity": payload.get("last_activity_at", ""),
+                    "last_commit": payload.get("last_commit_sha", ""),
+                },
+            )
         )
 
-    def _on_sessions(self, data: list):
-        if not isinstance(data, list):
-            self.sessions_loaded.emit([])
+    def _on_sessions(self, data):
+        project_id, payload = data
+        if not isinstance(payload, list):
+            self.sessions_loaded.emit((project_id, []))
             return
         self.sessions_loaded.emit(
-            [
-                {
-                    "id": s.get("id", ""),
-                    "agent_type": s.get("agent_type", ""),
-                    "plan_item_id": s.get("plan_item_id"),
-                    "status": status_label(s.get("status", "")),
-                    "started_at": s.get("started_at", ""),
-                    "last_activity_at": s.get("last_activity_at", ""),
-                    "worktree_path": s.get("worktree_path"),
-                    "branch_name": s.get("branch_name", ""),
-                }
-                for s in data
-            ]
+            (
+                project_id,
+                [
+                    {
+                        "id": s.get("id", ""),
+                        "agent_type": s.get("agent_type", ""),
+                        "plan_item_id": s.get("plan_item_id"),
+                        "status": status_label(s.get("status", "")),
+                        "started_at": s.get("started_at", ""),
+                        "last_activity_at": s.get("last_activity_at", ""),
+                        "worktree_path": s.get("worktree_path"),
+                        "branch_name": s.get("branch_name", ""),
+                    }
+                    for s in payload
+                ],
+            )
         )

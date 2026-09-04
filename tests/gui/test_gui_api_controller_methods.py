@@ -36,7 +36,10 @@ def test_public_post_methods_build_canonical_payloads(qapp, monkeypatch):
             "pid": 1234,
         },
     )
-    assert posts[1][2] is client.sessions_received
+    # FLOW-1201: project-scoped signal je per-request closure koji prenosi
+    # project_id uz odgovor (stale-response guard), ne goli sessions_received.
+    assert callable(posts[1][2])
+    assert not hasattr(posts[1][2], "emit")
     assert posts[2] == ("/system/shutdown/confirm", {}, callback)
 
 

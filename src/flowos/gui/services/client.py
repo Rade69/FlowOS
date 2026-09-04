@@ -61,7 +61,7 @@ class GuiApiClient(QObject):
     # ── System ─────────────────────────────────────────
 
     def check_health(self):
-        self._get("/health", self.health_received)  # type: ignore[arg-type]
+        self._get("/health", self.health_received)
 
     def prepare_shutdown(self, on_ready) -> None:
         """Provjerava smije li se servis ugasiti i vraća dict ili None."""
@@ -92,7 +92,7 @@ class GuiApiClient(QObject):
     # ── Projects ───────────────────────────────────────
 
     def get_projects(self):
-        self._get("/projects", self.projects_received)  # type: ignore[arg-type]
+        self._get("/projects", self.projects_received)
 
     def create_project(self, name: str, repo_path: str):
         body = {"name": name, "repo_path": repo_path}
@@ -104,7 +104,12 @@ class GuiApiClient(QObject):
     # ── Plan ───────────────────────────────────────────
 
     def get_plan_progress(self, project_id: str):
-        self._get(f"/projects/{project_id}/plan-progress", self.plan_progress_received)  # type: ignore[arg-type]
+        # FLOW-1201: emituje (project_id, payload) da potrošač može odbaciti
+        # zakašnjeli odgovor koji ne pripada trenutno aktivnom projektu.
+        self._get(
+            f"/projects/{project_id}/plan-progress",
+            lambda data, pid=project_id: self.plan_progress_received.emit((pid, data)),
+        )
 
     def import_plan(self, project_id: str, markdown_text: str, on_success) -> None:
         """Uvozi plan koristeći canonical PlanImportRequest polje."""
@@ -117,15 +122,25 @@ class GuiApiClient(QObject):
     # ── Resume ─────────────────────────────────────────
 
     def get_resume(self, project_id: str):
-        self._get(f"/projects/{project_id}/resume", self.resume_received)  # type: ignore[arg-type]
+        self._get(
+            f"/projects/{project_id}/resume",
+            lambda data, pid=project_id: self.resume_received.emit((pid, data)),
+        )
 
     def regenerate_resume(self, project_id: str):
-        self._post(f"/projects/{project_id}/resume/regenerate", {}, self.resume_received)
+        self._post(
+            f"/projects/{project_id}/resume/regenerate",
+            {},
+            lambda data, pid=project_id: self.resume_received.emit((pid, data)),
+        )
 
     # ── Sessions ───────────────────────────────────────
 
     def get_active_sessions(self, project_id: str):
-        self._get(f"/sessions/active?project_id={project_id}", self.sessions_received)  # type: ignore[arg-type]
+        self._get(
+            f"/sessions/active?project_id={project_id}",
+            lambda data, pid=project_id: self.sessions_received.emit((pid, data)),
+        )
 
     def create_tracked_session(
         self,
@@ -144,27 +159,30 @@ class GuiApiClient(QObject):
                 "execution_mode": "EXTERNAL_TRACKED",
                 "pid": pid,
             },
-            self.sessions_received,
+            lambda data, pid=project_id: self.sessions_received.emit((pid, data)),
         )
 
     # ── Plan Items ─────────────────────────────────────
 
     def get_plan_item(self, item_id: str):
-        self._get(f"/plan-items/{item_id}", self.plan_item_received)  # type: ignore[arg-type]
+        self._get(f"/plan-items/{item_id}", self.plan_item_received)
 
     # ── Timeline ────────────────────────────────────────
 
     def get_timeline(self, project_id: str, limit: int = 30):
-        self._get(f"/projects/{project_id}/timeline?limit={limit}", self.timeline_received)  # type: ignore[arg-type]
+        self._get(
+            f"/projects/{project_id}/timeline?limit={limit}",
+            lambda data, pid=project_id: self.timeline_received.emit((pid, data)),
+        )
 
     # ── Agents ──────────────────────────────────────────
 
     def scan_agents(self):
-        self._get("/agents/scan", self.agents_scanned)  # type: ignore[arg-type]
+        self._get("/agents/scan", self.agents_scanned)
 
     # ── HTTP helpers ───────────────────────────────────
 
-    def _get(self, path: str, signal: Signal):
+    def _get(self, path: str, signal: Any):
         url = f"{self._base_url}{path}"
         req = QNetworkRequest()
         req.setUrl(url)
@@ -229,7 +247,10 @@ class GuiApiClient(QObject):
     # ── Worktrees ───────────────────────────────────────
 
     def fetch_worktrees(self, project_id: str):
-        self._get(f"/worktrees?project_id={project_id}", self.worktrees_received)  # type: ignore[arg-type]
+        self._get(
+            f"/worktrees?project_id={project_id}",
+            lambda data, pid=project_id: self.worktrees_received.emit((pid, data)),
+        )
 
     def prepare_integration(self, worktree_id: str, base_branch: str = "main"):
         self._post(

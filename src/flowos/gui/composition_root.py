@@ -150,7 +150,7 @@ class FlowOsGui:
             api.project_created.connect(self._on_project_created)
             api.plan_item_received.connect(self._on_plan_item_received)
             if self._worktrees_page_view:
-                api.worktrees_received.connect(self._worktrees_page_view.render)
+                api.worktrees_received.connect(self._on_worktrees)
                 self._worktrees_page_view.refresh_requested.connect(
                     lambda: api.fetch_worktrees(self._active_project_id or "")
                 )
@@ -161,9 +161,7 @@ class FlowOsGui:
                     lambda wid: api.cleanup_worktree(wid)
                 )
 
-        self._window.topbar.refresh_requested.connect(lambda: self._refresh_all())
-        self._window.topbar.project_selected.connect(self._on_project_selected)
-        self._window.topbar.add_project_requested.connect(self._on_add_project)
+        self._wire_topbar()
         self._window.page_changed.connect(self._on_page_changed)
         self._window.shutdown_requested.connect(self._on_shutdown_requested)
 
@@ -178,6 +176,12 @@ class FlowOsGui:
         # PlanProgressView: uvoz plana
         if self._plan_page_view:
             self._plan_page_view.import_requested.connect(self._on_import_plan)
+
+    def _wire_topbar(self) -> None:
+        """Povezuje TopBar signale na orkestraciju (izdvojeno radi testiranja wiring-a)."""
+        self._window.topbar.refresh_requested.connect(lambda: self._refresh_all())
+        self._window.topbar.project_selected.connect(self._on_project_selected)
+        self._window.topbar.add_project_requested.connect(self._on_add_project)
 
     def _on_page_changed(self, page_name: str) -> None:
         if page_name == "Agenti" and self._api:
@@ -375,13 +379,17 @@ class FlowOsGui:
         if self._controller:
             self._controller.load_projects()
 
-    def _on_plan_progress(self, data: dict) -> None:
+    def _on_plan_progress(self, data: tuple) -> None:
+        project_id, payload = data
+        if project_id != self._active_project_id:
+            return  # FLOW-1201: zakašnjeli odgovor za drugi projekat — ignoriši
+
         # Plan stranica (puna tabela)
         if self._plan_page_view:
-            self._plan_page_view.render(data)
+            self._plan_page_view.render(payload)
 
         # Pregled — CurrentPhaseView
-        phases = data.get("phases", [])
+        phases = payload.get("phases", [])
         if self._current_phase:
             self._current_phase.render(phases)
 
@@ -395,12 +403,12 @@ class FlowOsGui:
             self._status_bar.render(counts)
 
         # Sidebar
-        plan_title = data.get("plan_title", "")
+        plan_title = payload.get("plan_title", "")
         if plan_title and self._active_project_id:
             self._window._sidebar.set_project_info({"plan_title": plan_title})
 
         # Topbar — faza
-        phases = data.get("phases", [])
+        phases = payload.get("phases", [])
         active_phase = ""
         for ph in phases:
             items = ph.get("items", [])
@@ -413,13 +421,16 @@ class FlowOsGui:
 
         # AttentionPanel
         if self._attention_panel:
-            self._attention_panel.render({"blocked_items": data.get("blocked", 0)})
+            self._attention_panel.render({"blocked_items": payload.get("blocked", 0)})
 
     def _on_plan_item_received(self, data: dict) -> None:
         if isinstance(data, dict) and "error" not in data and self._details_view:
             self._details_view.render(data)
 
-    def _on_sessions(self, sessions: list) -> None:
+    def _on_sessions(self, data: tuple) -> None:
+        project_id, sessions = data
+        if project_id != self._active_project_id:
+            return  # FLOW-1201: zakašnjeli odgovor za drugi projekat — ignoriši
         if self._sessions_overview:
             self._sessions_overview.render(sessions)
         if self._sessions_page_view:
@@ -427,12 +438,15 @@ class FlowOsGui:
         self._window.set_status(connected=True, sessions=len(sessions))
         self._window.set_topbar_info(sessions=len(sessions))
 
-    def _on_resume(self, data: dict) -> None:
+    def _on_resume(self, data: tuple) -> None:
+        project_id, payload = data
+        if project_id != self._active_project_id:
+            return  # FLOW-1201: zakašnjeli odgovor za drugi projekat — ignoriši
         if self._resume_hero:
-            self._resume_hero.render(data)
+            self._resume_hero.render(payload)
         if not self._reconciliation_view:
             return
-        ws_state = data.get("workspace_state", {})
+        ws_state = payload.get("workspace_state", {})
         if ws_state and ws_state.get("reconciliation_status") not in (None, "CURRENT"):
             self._reconciliation_view.render(
                 {
@@ -451,9 +465,19 @@ class FlowOsGui:
             f"color: {RED}; border: none; background: transparent;"
         )
 
-    def _on_timeline(self, items: list) -> None:
+    def _on_timeline(self, data: tuple) -> None:
+        project_id, items = data
+        if project_id != self._active_project_id:
+            return  # FLOW-1201: zakašnjeli odgovor za drugi projekat — ignoriši
         if self._activity_view:
             self._activity_view.render(items)
+
+    def _on_worktrees(self, data: tuple) -> None:
+        project_id, items = data
+        if project_id != self._active_project_id:
+            return  # FLOW-1201: zakašnjeli odgovor za drugi projekat — ignoriši
+        if self._worktrees_page_view:
+            self._worktrees_page_view.render(items)
 
     def _on_agents_scanned(self, data: dict) -> None:
         if self._agents_page:

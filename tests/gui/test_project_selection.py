@@ -89,7 +89,11 @@ _VIEW_NAMES = [
 
 
 @pytest.fixture
-def gui_env(qtbot):
+def gui_env(qtbot, monkeypatch):
+    # FLOW-1201 F2: production closeEvent otvara modalni QMessageBox koji bi
+    # blokirao pytest-qt teardown (widget.close()). U testu se close
+    # confirmation neutrališe — production closeEvent se ne mijenja.
+    monkeypatch.setattr(MainWindow, "closeEvent", lambda self, event: event.accept())
     window = MainWindow()
     qtbot.addWidget(window)
     controller = SpyController()
@@ -98,6 +102,8 @@ def gui_env(qtbot):
     gui = FlowOsGui(window=window, controller=None, api=None, views=views)
     gui._controller = controller
     gui._api = api
+    # Uspostavi stvaran TopBar signal path (isti kod koji _wire_controller poziva u live modu).
+    gui._wire_topbar()
     return gui, controller, api, views, window
 
 
@@ -202,3 +208,51 @@ def test_t10_failure_during_switch_leaves_no_false_consistency(gui_env):
     # TopBar je već na B, ali Plan ekran je očišćen (ne prikazuje A podatke kao B).
     assert window.topbar._proj_label.text() == "Project B"
     assert views["plan_page"].renders[-1] is None
+
+
+def test_t11_late_response_after_switch_is_ignored(gui_env):
+    """FLOW-1201 F1: zakašnjeli A odgovor posle switch-a na B mora biti odbačen.
+
+    Test pada ako se stale-response guard ukloni — tada bi se A podaci
+    renderovali na ekranima koji su već prebačeni na B (ili očišćeni).
+    """
+    gui, _controller, _api, views, _window = gui_env
+    gui._on_projects([PROJECT_A, PROJECT_B])
+    # Prethodno prikazani A podaci (aktivno stanje A pre switch-a).
+    views["plan_page"].render({"plan_title": "A plan"})
+    views["sessions_page"].render([{"id": "sA"}])
+    views["resume_hero"].render({"status": "A"})
+    views["activity"].render([{"id": "actA"}])
+    views["worktrees_page"].render([{"id": "wtA"}])
+    gui._on_project_selected("b")
+
+    # Zakašnjeli A odgovori stižu tek sada, kad je aktivan B.
+    gui._on_plan_progress(("a", {"phases": [], "plan_title": "A plan", "blocked": 0}))
+    gui._on_sessions(("a", [{"id": "sA"}]))
+    gui._on_resume(("a", {"status": "A", "workspace_state": {}}))
+    gui._on_timeline(("a", [{"id": "actA"}]))
+    gui._on_worktrees(("a", [{"id": "wtA"}]))
+
+    # Svi ekrani ostaju u očišćenom stanju — A se ne renderuje pod B.
+    assert views["plan_page"].renders[-1] is None
+    assert views["sessions_page"].renders[-1] == []
+    assert views["resume_hero"].renders[-1] is None
+    assert views["activity"].renders[-1] == []
+    assert views["worktrees_page"].renders[-1] == []
+
+
+def test_t12_combo_signal_wiring_changes_active_project(gui_env):
+    """FLOW-1201 F3: stvaran Qt signal path (QComboBox) menja aktivan projekat.
+
+    Test pada ako se ukloni `topbar.project_selected.connect(self._on_project_selected)`.
+    """
+    gui, controller, _api, _views, window = gui_env
+    gui._on_projects([PROJECT_A, PROJECT_B])
+    assert gui._active_project_id == "a"
+
+    # Stvarni Qt tok: currentIndexChanged → _on_combo_changed → project_selected.emit.
+    window.topbar._project_combo.setCurrentIndex(1)  # Project B
+
+    assert gui._active_project_id == "b"
+    assert window.topbar._proj_label.text() == "Project B"
+    assert controller.plan_calls[-1] == "b"

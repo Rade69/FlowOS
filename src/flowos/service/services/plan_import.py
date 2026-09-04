@@ -510,15 +510,17 @@ class PlanImportService:
                 for dep_data in item_data.dependencies:
                     depends_on_id = item_id_map.get(dep_data.depends_on_key)
                     if depends_on_id:
-                        # Proveri ciklus
-                        try:
-                            progress.check_cycle(item_id, depends_on_id)
-                        except Exception:
-                            result.unclear_sections.append(
-                                f"Ciklična zavisnost ignorisana: "
-                                f"{item_data.item_key} → {dep_data.depends_on_key}"
-                            )
-                            continue
+                        # Blocking cycle provjera samo za blocking tipove.
+                        # INFORMATIONAL ne smije biti odbačen zbog ciklusa.
+                        if dep_data.dependency_type in ("BLOCKS_START", "BLOCKS_VERIFICATION"):
+                            try:
+                                progress.check_cycle(item_id, depends_on_id)
+                            except Exception:
+                                result.unclear_sections.append(
+                                    f"Ciklična zavisnost ignorisana: "
+                                    f"{item_data.item_key} → {dep_data.depends_on_key}"
+                                )
+                                continue
 
                         dep = PlanItemDependency(
                             plan_item_id=item_id,

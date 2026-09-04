@@ -360,6 +360,52 @@ class TestPlanImportService:
         after = session.query(Plan).count()
         assert after == before
 
+    def test_informational_edge_preserved_when_blocking_first(self, session: Session):
+        """A2: blocking edge prvo, INFORMATIONAL suprotni edge poslije — oba sačuvana.
+
+        Prije fix-a, INFORMATIONAL A→B bi bio odbačen jer check_cycle prolazi
+        kroz postojeći BLOCKS_START B→A i pogrešno detektuje ciklus.
+        """
+        from flowos.service.services.infrastructure.persistence.plan_models import (
+            PlanItem,
+            PlanItemDependency,
+        )
+
+        project = Project(name="Test", repo_path="C:/test")
+        session.add(project)
+        session.commit()
+
+        # FLOW-002 (sequence 0) ima BLOCKS_START → FLOW-001;
+        # FLOW-001 (sequence 1) ima INFORMATIONAL → FLOW-002.
+        markdown = (
+            "## Faza 1 — Test\n\n"
+            "#### FLOW-002 — Item B\n\nZavršiti FLOW-001 prije FLOW-002.\n\n"
+            "#### FLOW-001 — Item A\n\nVidi FLOW-002 za detalje.\n\n"
+        )
+
+        svc = PlanImportService(session)
+        svc.import_plan(project.id, markdown)
+
+        a = session.query(PlanItem).filter(PlanItem.item_key == "FLOW-001").first()
+        b = session.query(PlanItem).filter(PlanItem.item_key == "FLOW-002").first()
+        assert a is not None and b is not None
+
+        blocking = {
+            (d.plan_item_id, d.depends_on_plan_item_id)
+            for d in session.query(PlanItemDependency)
+            .filter(PlanItemDependency.dependency_type == "BLOCKS_START")
+            .all()
+        }
+        informational = {
+            (d.plan_item_id, d.depends_on_plan_item_id)
+            for d in session.query(PlanItemDependency)
+            .filter(PlanItemDependency.dependency_type == "INFORMATIONAL")
+            .all()
+        }
+
+        assert (b.id, a.id) in blocking
+        assert (a.id, b.id) in informational
+
 
 # ═══════════════════════════════════════════════════════════════════
 # FLOW-1104 regression testovi

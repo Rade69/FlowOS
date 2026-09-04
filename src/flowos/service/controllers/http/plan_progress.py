@@ -7,6 +7,7 @@ Bez ORM/persistence importa.
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
+from flowos.service.services.plan_import import PlanImportError
 from flowos.service.services.plan_progress import (
     PlanProgressError,
     PlanProgressService,
@@ -181,7 +182,10 @@ def import_plan(project_id: str, data: PlanImportRequest, session: Session = Dep
     markdown = data.markdown_text
     if not markdown.strip():
         raise HTTPException(status_code=400, detail="markdown_text ne sme biti prazan")
-    result, _ = PlanProgressService(session).import_plan(project_id, markdown)
+    try:
+        result, _ = PlanProgressService(session).import_plan(project_id, markdown)
+    except PlanImportError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     return result
 
 

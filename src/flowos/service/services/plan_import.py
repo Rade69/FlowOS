@@ -12,6 +12,15 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+
+class PlanImportError(ValueError):
+    """Greška pri importu plana (npr. plan bez ijedne FLOW stavke).
+
+    Podiže se PRE bilo kakvog DB write-a, tako da transakcija ne ostavlja
+    parcijalni import (fail-closed).
+    """
+
+
 # ═══════════════════════════════════════════════════════════════════
 # Parsirani tipovi
 # ═══════════════════════════════════════════════════════════════════
@@ -422,6 +431,13 @@ class PlanImportService:
         # Parsiraj
         parser = PlanMarkdownParser()
         result = parser.parse(markdown)
+
+        # Fail-closed: plan bez ijedne FLOW stavke ne smije ući u bazu.
+        parsed_items = sum(len(phase.items) for phase in result.phases)
+        if parsed_items == 0:
+            raise PlanImportError(
+                "Plan ne sadrži nijednu FLOW stavku; očekuje se '#### FLOW-xxxx — naslov'"
+            )
 
         # Kreiraj Plan
         plan = Plan(

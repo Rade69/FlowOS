@@ -244,12 +244,22 @@ class PlanProgressService:
             PlanPhase,
         )
 
+        # A2-FIX: ACTIVE plan ima prednost nad novijim DRAFT-om. Import DRAFT-a
+        # ne smije sakriti stvarni ACTIVE plan prije Human activation-a.
+        # SUPERSEDED planovi se nikad ne vraćaju kao current.
         plan = (
             self._session.query(Plan)
-            .filter(Plan.project_id == project_id, Plan.status.in_(("ACTIVE", "DRAFT")))
+            .filter(Plan.project_id == project_id, Plan.status == "ACTIVE")
             .order_by(Plan.created_at.desc())
             .first()
         )
+        if not plan:
+            plan = (
+                self._session.query(Plan)
+                .filter(Plan.project_id == project_id, Plan.status == "DRAFT")
+                .order_by(Plan.created_at.desc())
+                .first()
+            )
 
         if not plan:
             return {

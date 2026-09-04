@@ -384,3 +384,51 @@ Opis stavke.
             "unclear_count",
             "unclear_sections",
         }
+
+
+class TestPlanProgressSelection:
+    """A2-FIX: current-plan selection — ACTIVE ima prednost, SUPERSEDED se ne vraća."""
+
+    def _create_plan(self, app, project_id, title, status, created_at=None):
+        factory = app.state.session_factory
+        with factory() as s:
+            plan = Plan(project_id=project_id, title=title, status=status)
+            if created_at is not None:
+                plan.created_at = created_at
+            s.add(plan)
+            s.commit()
+            return plan.id
+
+    def test_t1_active_preferred_over_newer_draft(self, client: TestClient, app, project_id: str):
+        from datetime import UTC, datetime
+
+        active_id = self._create_plan(
+            app, project_id, "Active", "ACTIVE", datetime(2026, 1, 1, tzinfo=UTC)
+        )
+        self._create_plan(app, project_id, "Draft", "DRAFT", datetime(2026, 1, 2, tzinfo=UTC))
+
+        resp = client.get(f"/projects/{project_id}/plan-progress")
+        assert resp.status_code == 200
+        assert resp.json()["plan"]["id"] == active_id
+        assert resp.json()["plan"]["status"] == "ACTIVE"
+
+    def test_t2_draft_fallback_without_active(self, client: TestClient, app, project_id: str):
+        from datetime import UTC, datetime
+
+        self._create_plan(app, project_id, "Draft old", "DRAFT", datetime(2026, 1, 1, tzinfo=UTC))
+        newer_id = self._create_plan(
+            app, project_id, "Draft new", "DRAFT", datetime(2026, 1, 2, tzinfo=UTC)
+        )
+
+        resp = client.get(f"/projects/{project_id}/plan-progress")
+        assert resp.status_code == 200
+        assert resp.json()["plan"]["id"] == newer_id
+
+    def test_t3_superseded_not_returned(self, client: TestClient, app, project_id: str):
+        active_id = self._create_plan(app, project_id, "Active", "ACTIVE")
+        self._create_plan(app, project_id, "Superseded", "SUPERSEDED")
+
+        resp = client.get(f"/projects/{project_id}/plan-progress")
+        assert resp.status_code == 200
+        assert resp.json()["plan"]["id"] == active_id
+        assert resp.json()["plan"]["status"] == "ACTIVE"

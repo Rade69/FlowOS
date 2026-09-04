@@ -338,6 +338,28 @@ class TestPlanImportService:
         assert service_result.stats["unclear"] == 1
         assert direct_result.stats["unclear"] == 1
 
+    def test_import_zero_items_rejected_no_plan_created(self, session: Session):
+        """A2-FIX: validne faze bez ijedne FLOW stavke -> import FAIL, nema Plan-a."""
+        from flowos.service.services.infrastructure.persistence.plan_models import Plan
+        from flowos.service.services.plan_import import PlanImportError
+
+        project = Project(name="Test", repo_path="C:/test")
+        session.add(project)
+        session.commit()
+
+        before = session.query(Plan).count()
+        svc = PlanImportService(session)
+
+        with pytest.raises(PlanImportError):
+            svc.import_plan(
+                project.id,
+                "## Faza 1 — Test\n\n### FLOW-001 — H3 heading nije canonical item\n\nOpis.",
+            )
+
+        session.rollback()
+        after = session.query(Plan).count()
+        assert after == before
+
 
 # ═══════════════════════════════════════════════════════════════════
 # FLOW-1104 regression testovi
@@ -436,3 +458,24 @@ Obavezno:
             "[Bracketed] ostaje bracketed.",
             "Trailing punctuation ostaje nepromijenjena!",
         ]
+
+
+class TestRealContinuationDocument:
+    """A2-FIX: stvarni research-integrated nastavak dokument parsira se tačno."""
+
+    def test_document_parses_4_phases_17_items(self):
+        from pathlib import Path
+
+        doc = (
+            Path(__file__).resolve().parents[2]
+            / "docs"
+            / "FlowOS-plan-nastavak-poslije-FLOW-1201-research-integrated-v3.md"
+        )
+        markdown = doc.read_text(encoding="utf-8")
+        result = PlanMarkdownParser().parse(markdown)
+
+        assert len(result.phases) == 4
+        item_keys = [item.item_key for phase in result.phases for item in phase.items]
+        assert len(item_keys) == 17
+        assert "FLOW-1202" in item_keys
+        assert "FLOW-1504" in item_keys

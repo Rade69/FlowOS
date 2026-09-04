@@ -41,7 +41,7 @@ Ova pravila važe za sve naredne stavke:
 
 ## Faza 12 — Projekat i Task kao stvarna radna površina
 
-### FLOW-1202 — Povezati Zadaci ekran sa stvarnim `/tasks` backendom
+#### FLOW-1202 — Povezati Zadaci ekran sa stvarnim `/tasks` backendom
 
 **Rizik:** MEDIUM
 
@@ -66,7 +66,7 @@ Završiti FLOW-1201 prije FLOW-1202.
 
 ---
 
-### FLOW-1203 — Napraviti minimalni Task Detail read model
+#### FLOW-1203 — Napraviti minimalni Task Detail read model
 
 **Rizik:** HIGH
 
@@ -92,7 +92,7 @@ Završiti FLOW-1202 prije FLOW-1203.
 
 ---
 
-### FLOW-1204 — Napraviti prvi funkcionalni Task Detail GUI
+#### FLOW-1204 — Napraviti prvi funkcionalni Task Detail GUI
 
 **Rizik:** MEDIUM
 
@@ -115,7 +115,7 @@ Završiti FLOW-1203 prije FLOW-1204.
 
 ---
 
-### FLOW-1205 — Hardenovati Git observation i reconciliation correctness
+#### FLOW-1205 — Hardenovati Git observation i reconciliation correctness
 
 **Rizik:** HIGH
 
@@ -144,7 +144,7 @@ Završiti FLOW-1204 prije FLOW-1205. FLOW-1202–1204 ne moraju čekati ovaj tas
 
 ## Faza 13 — Workflow Ledger postaje vidljiv korisniku
 
-### FLOW-1301 — Izložiti Task workflow history kao read-only tok
+#### FLOW-1301 — Izložiti Task workflow history kao read-only tok
 
 **Rizik:** HIGH
 
@@ -168,7 +168,7 @@ Završiti FLOW-1203 prije FLOW-1301. Za završni acceptance ove faze FLOW-1205 m
 
 ---
 
-### FLOW-1302 — Prikazati Workflow History na Task Detail ekranu
+#### FLOW-1302 — Prikazati Workflow History na Task Detail ekranu
 
 **Rizik:** MEDIUM
 
@@ -191,7 +191,7 @@ Završiti FLOW-1301 prije FLOW-1302.
 
 ---
 
-### FLOW-1303 — Otvaranje reporta i test dokaza iz Task istorije
+#### FLOW-1303 — Otvaranje reporta i test dokaza iz Task istorije
 
 **Rizik:** MEDIUM
 
@@ -212,7 +212,7 @@ Završiti FLOW-1302 prije FLOW-1303.
 
 ---
 
-### FLOW-1304 — Razdvojiti workflow istoriju od tehničke aktivnosti
+#### FLOW-1304 — Razdvojiti workflow istoriju od tehničke aktivnosti
 
 **Rizik:** MEDIUM
 
@@ -233,7 +233,7 @@ Završiti FLOW-1302 prije FLOW-1304.
 
 ---
 
-### FLOW-1305 — Izmjeriti SQLite concurrency i transaction boundaries prije dogfooding write faze
+#### FLOW-1305 — Izmjeriti SQLite concurrency i transaction boundaries prije dogfooding write faze
 
 **Rizik:** MEDIUM-HIGH
 
@@ -261,7 +261,7 @@ Završiti FLOW-1304 prije FLOW-1305. FLOW-1305 mora biti CLOSED prije FLOW-1401.
 
 ## Faza 14 — Korisnička odluka u GUI-ju i prvi pravi dogfooding tok
 
-### FLOW-1401 — Dodati TASK_DECISION kontrole na Task Detail
+#### FLOW-1401 — Dodati TASK_DECISION kontrole na Task Detail
 
 **Rizik:** HIGH
 
@@ -285,7 +285,7 @@ Završiti FLOW-1302 i FLOW-1305 prije FLOW-1401. FLOW-1205 takođe mora biti CLO
 
 ---
 
-### FLOW-1402 — Prikazati posljedicu NEEDS_WORK/REJECTED bez skrivene magije
+#### FLOW-1402 — Prikazati posljedicu NEEDS_WORK/REJECTED bez skrivene magije
 
 **Rizik:** MEDIUM
 
@@ -306,7 +306,7 @@ Završiti FLOW-1401 prije FLOW-1402.
 
 ---
 
-### FLOW-1403 — Proći jedan kompletan stvarni FlowOS razvojni tok kroz FlowOS
+#### FLOW-1403 — Proći jedan kompletan stvarni FlowOS razvojni tok kroz FlowOS
 
 **Rizik:** HIGH
 
@@ -330,7 +330,7 @@ Završiti FLOW-1402 prije FLOW-1403.
 
 ---
 
-### FLOW-1404 — Provjeriti SessionTaskBinding promjenu u stvarnom radu
+#### FLOW-1404 — Provjeriti SessionTaskBinding promjenu u stvarnom radu
 
 **Rizik:** HIGH
 
@@ -353,7 +353,7 @@ Završiti FLOW-1403 prije FLOW-1404.
 
 ## Faza 15 — GUI pojednostavljenje na osnovu stvarnog korištenja
 
-### FLOW-1501 — Evidentirati stvarne UX odluke nakon dogfoodinga
+#### FLOW-1501 — Evidentirati stvarne UX odluke nakon dogfoodinga
 
 **Rizik:** LOW
 
@@ -371,7 +371,7 @@ Završiti FLOW-1404 prije FLOW-1501.
 
 ---
 
-### FLOW-1502 — Pojednostaviti glavnu navigaciju
+#### FLOW-1502 — Pojednostaviti glavnu navigaciju
 
 **Rizik:** MEDIUM
 
@@ -390,7 +390,7 @@ Završiti FLOW-1501 prije FLOW-1502.
 
 ---
 
-### FLOW-1503 — Ukloniti ili jasno označiti stare mock/placeholder pretpostavke
+#### FLOW-1503 — Ukloniti ili jasno označiti stare mock/placeholder pretpostavke
 
 **Rizik:** MEDIUM
 
@@ -409,7 +409,7 @@ Završiti FLOW-1502 prije FLOW-1503.
 
 ---
 
-### FLOW-1504 — Zamrznuti prvi dogfood GUI baseline i odrediti narednu fazu
+#### FLOW-1504 — Zamrznuti prvi dogfood GUI baseline i odrediti narednu fazu
 
 **Rizik:** LOW
 

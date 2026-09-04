@@ -182,7 +182,10 @@ class PlanProgressService:
 
             deps = (
                 self._session.query(PlanItemDependency)
-                .filter(PlanItemDependency.plan_item_id == current)
+                .filter(
+                    PlanItemDependency.plan_item_id == current,
+                    PlanItemDependency.dependency_type.in_(("BLOCKS_START", "BLOCKS_VERIFICATION")),
+                )
                 .all()
             )
             for dep in deps:

@@ -479,3 +479,49 @@ class TestRealContinuationDocument:
         assert len(item_keys) == 17
         assert "FLOW-1202" in item_keys
         assert "FLOW-1504" in item_keys
+
+    def test_document_has_exact_18_blocking_dependencies(self):
+        from pathlib import Path
+
+        doc = (
+            Path(__file__).resolve().parents[2]
+            / "docs"
+            / "FlowOS-plan-nastavak-poslije-FLOW-1201-research-integrated-v3.md"
+        )
+        markdown = doc.read_text(encoding="utf-8")
+        result = PlanMarkdownParser().parse(markdown)
+
+        blocks = {
+            (item.item_key, dep.depends_on_key)
+            for phase in result.phases
+            for item in phase.items
+            for dep in item.dependencies
+            if dep.dependency_type == "BLOCKS_START"
+        }
+
+        expected = {
+            ("FLOW-1203", "FLOW-1202"),
+            ("FLOW-1204", "FLOW-1203"),
+            ("FLOW-1205", "FLOW-1204"),
+            ("FLOW-1301", "FLOW-1203"),
+            ("FLOW-1302", "FLOW-1301"),
+            ("FLOW-1303", "FLOW-1302"),
+            ("FLOW-1304", "FLOW-1302"),
+            ("FLOW-1305", "FLOW-1304"),
+            ("FLOW-1401", "FLOW-1302"),
+            ("FLOW-1401", "FLOW-1305"),
+            ("FLOW-1401", "FLOW-1205"),
+            ("FLOW-1402", "FLOW-1401"),
+            ("FLOW-1403", "FLOW-1402"),
+            ("FLOW-1404", "FLOW-1403"),
+            ("FLOW-1501", "FLOW-1404"),
+            ("FLOW-1502", "FLOW-1501"),
+            ("FLOW-1503", "FLOW-1502"),
+            ("FLOW-1504", "FLOW-1503"),
+        }
+
+        assert blocks == expected
+        # FLOW-1202 ne smije zavisiti od FLOW-1201 (nije dio continuation plana)
+        assert ("FLOW-1202", "FLOW-1201") not in blocks
+        # Pogrešan blocking smer 1305 → 1401 ne smije postojati
+        assert ("FLOW-1305", "FLOW-1401") not in blocks

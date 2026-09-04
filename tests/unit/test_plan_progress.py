@@ -330,6 +330,47 @@ class TestDependencies:
         session.commit()
         assert item.status == "IN_PROGRESS"
 
+    def test_informational_backlink_does_not_cause_blocking_cycle(
+        self, plan_and_phase, svc: PlanProgressService, session: Session
+    ):
+        """A→B INFORMATIONAL + pokušaj B→A BLOCKS_START mora PASS (nije blocking ciklus)."""
+        _, phase = plan_and_phase
+        a = PlanItem(plan_phase_id=phase.id, item_key="FLOW-A", title="A")
+        b = PlanItem(plan_phase_id=phase.id, item_key="FLOW-B", title="B")
+        session.add_all([a, b])
+        session.flush()
+
+        # A → B INFORMATIONAL (backlink)
+        session.add(
+            PlanItemDependency(
+                plan_item_id=a.id, depends_on_plan_item_id=b.id, dependency_type="INFORMATIONAL"
+            )
+        )
+        session.commit()
+
+        # B → A BLOCKS_START ne smije biti odbačen kao ciklus
+        svc.check_cycle(b.id, a.id)
+
+    def test_blocking_cycle_rejected(
+        self, plan_and_phase, svc: PlanProgressService, session: Session
+    ):
+        """A→B BLOCKS_START + B→A BLOCKS_START mora biti odbačen kao stvarni ciklus."""
+        _, phase = plan_and_phase
+        a = PlanItem(plan_phase_id=phase.id, item_key="FLOW-A", title="A")
+        b = PlanItem(plan_phase_id=phase.id, item_key="FLOW-B", title="B")
+        session.add_all([a, b])
+        session.flush()
+
+        session.add(
+            PlanItemDependency(
+                plan_item_id=a.id, depends_on_plan_item_id=b.id, dependency_type="BLOCKS_START"
+            )
+        )
+        session.commit()
+
+        with pytest.raises(CyclicDependencyError, match="cikličnu"):
+            svc.check_cycle(b.id, a.id)
+
 
 # ═══════════════════════════════════════════════════════════════════
 # Izvođenje statusa faze

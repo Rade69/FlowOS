@@ -47,8 +47,6 @@ Ova pravila važe za sve naredne stavke:
 
 Postojeći `TasksPage` prestaje biti placeholder i prikazuje stvarne `ImplementationTask` zapise.
 
-Završiti FLOW-1201 prije FLOW-1202.
-
 **Obavezno:**
 1. Dodati minimalni read API client tok za taskove.
 2. Prikazati identitet taska, naslov, status i vezani PlanItem ako postoji.
@@ -239,7 +237,7 @@ Završiti FLOW-1302 prije FLOW-1304.
 
 Ovo je **evidence task**, ne unaprijed izabrana DB migracija.
 
-Završiti FLOW-1304 prije FLOW-1305. FLOW-1305 mora biti CLOSED prije FLOW-1401.
+Završiti FLOW-1304 prije FLOW-1305.
 
 **Obavezno:**
 1. Zadržati trenutni SQLite/WAL/pool model tokom mjerenja.
@@ -267,7 +265,9 @@ Završiti FLOW-1304 prije FLOW-1305. FLOW-1305 mora biti CLOSED prije FLOW-1401.
 
 Izložiti postojeći authority tok kroz minimalni GUI.
 
-Završiti FLOW-1302 i FLOW-1305 prije FLOW-1401. FLOW-1205 takođe mora biti CLOSED.
+Završiti FLOW-1302 prije FLOW-1401.
+Završiti FLOW-1305 prije FLOW-1401.
+Završiti FLOW-1205 prije FLOW-1401.
 
 **Obavezno:**
 1. `Prihvati rezultat` → `ACCEPTED`.

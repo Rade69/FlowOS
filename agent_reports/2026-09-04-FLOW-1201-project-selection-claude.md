@@ -8,7 +8,9 @@ report_type: implementation
 work_status: completed
 tasks:
   - FLOW-1201
-commits: []
+commits:
+  - 87074d715f3e745e7cf00b1dd4106a54769ee223
+  - a4bd34e67ba08b3f8b45adc386981fbe6497590f
 created_at: 2026-09-04T00:00:00+02:00
 ---
 
@@ -307,18 +309,37 @@ nevezan i nedirnut.
 
 ## NOT VERIFIED
 
-- `python -m pytest tests/gui/test_project_selection.py` kao jedna
-  atomarna invokacija — intermitentno zamrzavanje u ovom okruženju,
-  dokazano nevezano za FLOW-1201 kod (pogađa i čist SQLAlchemy test T7).
-  Uzrok nije identifikovan sa sigurnošću (nije system-wide memory/CPU
-  kontencija — trivijalni `python -c` pozivi rade trenutno dok pytest-qt
-  invokacije zastaju); vjerovatno pytest-qt/QApplication lifecycle
-  specifičnost ovog PySide6 6.11.1 + Windows okruženja. Svaki test
-  pojedinačno ima svjež PASS dokaz (vidi TARGETED TESTS).
 - LIVE dva-projektni switch (vidi LIVE TEST gore) — namjerno nije kreiran
   sintetički drugi projekat u pravoj bazi.
 - Ne-GUI-driven scenario (stvaran klik kroz TopBar combo u živoj aplikaciji)
   — nije pokušano, isti razlog kao LIVE TEST.
+
+Napomena: ranije prijavljeno pytest-qt „zamrzavanje" je riješeno u review
+fixes commit-u (uzrok je bio modalni `MainWindow.closeEvent` u teardown-u,
+ne environment) — vidi REVIEW FIXES.
+
+## REVIEW FIXES (post independent review)
+
+Nezavisni review je prijavio F1 (stale async response race), F2 (GUI test
+hung u teardown-u) i F3 (Qt signal wiring netestiran). Sve tri su rešene u
+commit-u `a4bd34e67ba08b3f8b45adc386981fbe6497590f`:
+
+- **F1** — project-scoped signali (`plan_progress_received`, `resume_received`,
+  `sessions_received`, `timeline_received`, `worktrees_received`) sada emituju
+  `(project_id, payload)`; `FlowOsGui` odbacuje odgovor ako se `project_id` ne
+  poklapa sa `_active_project_id` (guard u `_on_plan_progress`, `_on_sessions`,
+  `_on_resume`, `_on_timeline`, `_on_worktrees`). Test T11 dokazuje late-A
+  response posle switch-a na B.
+- **F2** — test fixture `gui_env` neutrališe modalni close confirmation samo u
+  testu (`monkeypatch` na `MainWindow.closeEvent`); production `closeEvent` je
+  netaknut. `pytest tests/gui/test_project_selection.py` sada završava normalno.
+- **F3** — izdvojen `FlowOsGui._wire_topbar()` i dodat test T12 koji menja
+  `QComboBox.currentIndex` kroz stvaran Qt signal path umjesto direktnog poziva
+  `_on_project_selected`. Mutation sanity: bez stale-guard-a T11 FAIL, bez
+  `project_selected.connect` T12 FAIL — obe mutacije vraćene.
+
+Rezultat: `tests/gui/test_project_selection.py` 12/12, `tests/gui/` 44/44,
+`python scripts/verify.py` 8/8.
 
 ## REMOTE BRANCH
 

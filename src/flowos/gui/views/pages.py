@@ -83,6 +83,7 @@ class TasksPage(QFrame):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setStyleSheet(f"background: {BG_PRIMARY};")
+        self._project_id: str | None = None
         lo = QVBoxLayout(self)
         lo.setContentsMargins(SPACING_XXL, SPACING_XXL, SPACING_XXL, SPACING_XXL)
         lo.setSpacing(SPACING_MD)
@@ -97,6 +98,10 @@ class TasksPage(QFrame):
         )
         lo.addWidget(self._tree)
         self.render([])
+
+    def set_project_id(self, project_id: str | None) -> None:
+        """Ažurira project context Tasks ekrana (FLOW-1201; task board je FLOW-1202)."""
+        self._project_id = project_id
 
     def render(self, tasks: list) -> None:  # type: ignore[override]
         self._tree.clear()

@@ -14,6 +14,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QAction, QColor, QFont, QIcon, QPalette
 from PySide6.QtWidgets import (
     QApplication,
+    QComboBox,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -121,6 +122,8 @@ def _status_color(status: str) -> str:
 
 class TopBar(QFrame):
     refresh_requested = Signal()
+    project_selected = Signal(str)
+    add_project_requested = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -132,6 +135,21 @@ class TopBar(QFrame):
 
         self._proj_label = _lbl("FlowOS", FONT_LG, True, BLUE)
         layout.addWidget(self._proj_label)
+
+        self._project_combo = QComboBox()
+        self._project_combo.setMinimumWidth(220)
+        self._project_combo.setToolTip("Aktivni projekat")
+        self._project_combo.currentIndexChanged.connect(self._on_combo_changed)
+        layout.addWidget(self._project_combo)
+
+        self._add_project_btn = QPushButton("＋ Dodaj projekat")
+        self._add_project_btn.setToolTip("Dodaj novi projekat")
+        self._add_project_btn.setStyleSheet(
+            f"QPushButton {{ background: {BG_CARD}; border: 1px solid {BORDER}; border-radius: 4px; color: {TEXT_PRIMARY}; padding: 4px 10px; }}"
+            f"QPushButton:hover {{ background: {BG_HOVER}; }}"
+        )
+        self._add_project_btn.clicked.connect(self.add_project_requested.emit)
+        layout.addWidget(self._add_project_btn)
 
         sep = QLabel("·")
         sep.setStyleSheet(f"color: {BORDER}; border: none; font-size: {FONT_LG}px;")
@@ -157,6 +175,51 @@ class TopBar(QFrame):
         )
         btn.clicked.connect(self.refresh_requested.emit)
         layout.addWidget(btn)
+
+        self._projects: list[dict] = []
+        self._suppress_selection_signal = False
+
+    def _on_combo_changed(self, index: int) -> None:
+        if self._suppress_selection_signal or index < 0:
+            return
+        project_id = self._project_combo.itemData(index)
+        if project_id:
+            self.project_selected.emit(str(project_id))
+
+    def set_projects(self, projects: list) -> None:
+        """Popunjava izbor projekata; čuva mapu id→name za ljudski prikaz."""
+        self._projects = [p for p in projects if isinstance(p, dict)]
+        current_id = self._project_combo.currentData()
+        self._suppress_selection_signal = True
+        try:
+            self._project_combo.clear()
+            for p in self._projects:
+                self._project_combo.addItem(p.get("name", "") or p.get("id", ""), p.get("id", ""))
+        finally:
+            self._suppress_selection_signal = False
+        if not self._projects:
+            self._project_combo.setPlaceholderText("Nema projekata")
+        else:
+            self._project_combo.setPlaceholderText("Izaberi projekat")
+        if current_id:
+            self.set_active_project(str(current_id))
+
+    def set_active_project(self, project_id: str | None) -> None:
+        """Sinhronizuje combo na aktivni projekat bez emitovanja signala."""
+        self._suppress_selection_signal = True
+        try:
+            if not project_id:
+                self._project_combo.setCurrentIndex(-1)
+                self._proj_label.setText("Nema izabranog projekta")
+                return
+            for i in range(self._project_combo.count()):
+                if self._project_combo.itemData(i) == project_id:
+                    self._project_combo.setCurrentIndex(i)
+                    break
+            else:
+                self._project_combo.setCurrentIndex(-1)
+        finally:
+            self._suppress_selection_signal = False
 
     def set_info(
         self, project: str = "", phase: str = "", sessions: int = -1, git_status: str = ""

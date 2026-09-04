@@ -75,6 +75,7 @@ class FlowOsGui:
         self._active_project_id: str | None = None
         self._active_project_repo_path: str | None = None
         self._refresh_timer: QTimer | None = None
+        self._projects: list[dict] = []
 
         self._resume_hero = views.get("resume_hero") if views else None
         self._status_bar = views.get("status_bar") if views else None
@@ -90,6 +91,7 @@ class FlowOsGui:
         self._conflicts_page = views.get("conflicts_page") if views else None
         self._projects_page = views.get("projects_page") if views else None
         self._details_view = views.get("details") if views else None
+        self._tasks_page = views.get("tasks_page") if views else None
 
         self._ws: QWebSocket | None = None
         if controller:
@@ -145,6 +147,7 @@ class FlowOsGui:
             api.timeline_received.connect(self._on_timeline)
             api.agents_scanned.connect(self._on_agents_scanned)
             api.projects_received.connect(self._on_projects_page)
+            api.project_created.connect(self._on_project_created)
             api.plan_item_received.connect(self._on_plan_item_received)
             if self._worktrees_page_view:
                 api.worktrees_received.connect(self._worktrees_page_view.render)
@@ -159,6 +162,8 @@ class FlowOsGui:
                 )
 
         self._window.topbar.refresh_requested.connect(lambda: self._refresh_all())
+        self._window.topbar.project_selected.connect(self._on_project_selected)
+        self._window.topbar.add_project_requested.connect(self._on_add_project)
         self._window.page_changed.connect(self._on_page_changed)
         self._window.shutdown_requested.connect(self._on_shutdown_requested)
 
@@ -250,12 +255,7 @@ class FlowOsGui:
             return
         self._controller.check_health()
         if self._active_project_id:
-            self._controller.load_plan_progress(self._active_project_id)
-            self._controller.load_resume(self._active_project_id)
-            self._controller.load_sessions(self._active_project_id)
-            if self._api:
-                self._api.fetch_worktrees(self._active_project_id)
-                self._api.get_timeline(self._active_project_id)
+            self._load_project_data(self._active_project_id)
         else:
             self._controller.load_projects()
 
@@ -265,29 +265,115 @@ class FlowOsGui:
         self._window.set_status(connected=ok)
 
     def _on_projects(self, projects: list) -> None:
-        if projects:
-            p = projects[0]
-            pid = p.get("id", "")
-            name = p.get("name", "")
-            repo = p.get("repo_path", "")
-            if pid and pid != self._active_project_id:
-                self._active_project_id = pid
-                self._active_project_repo_path = repo
-                if self._controller:
-                    self._controller.load_plan_progress(pid)
-                    self._controller.load_resume(pid)
-                    self._controller.load_sessions(pid)
-                if self._api:
-                    self._api.fetch_worktrees(pid)
-            self._window.set_project_info(
-                {
-                    "name": name,
-                    "last_activity": p.get("updated_at", ""),
-                }
-            )
-            self._window.set_topbar_info(project=name)
-        else:
+        self._projects = projects
+        self._window.topbar.set_projects(projects)
+        if not projects:
+            self._active_project_id = None
+            self._active_project_repo_path = None
             self._window.set_project_info(None)
+            self._window.set_topbar_info(project="")
+            self._window.topbar.set_active_project(None)
+            self._clear_project_screens()
+            return
+        if self._active_project_id is None:
+            # Startup / prvi load: zadržano postojeće ponašanje — najnoviji projekat
+            # (backend vraća listu po created_at DESC) postaje aktivan.
+            self._select_project(projects[0].get("id", ""))
+        else:
+            self._sync_project_ui()
+
+    def _project_by_id(self, project_id: str) -> dict | None:
+        for p in self._projects:
+            if p.get("id") == project_id:
+                return p
+        return None
+
+    def _select_project(self, project_id: str) -> None:
+        proj = self._project_by_id(project_id)
+        if proj is None:
+            return
+        self._active_project_id = project_id
+        self._active_project_repo_path = proj.get("repo_path", "")
+        self._clear_project_screens()
+        self._window.set_project_info(
+            {"name": proj.get("name", ""), "last_activity": proj.get("updated_at", "")}
+        )
+        self._window.set_topbar_info(project=proj.get("name", ""))
+        self._window.topbar.set_active_project(project_id)
+        self._load_project_data(project_id)
+
+    def _sync_project_ui(self) -> None:
+        proj = self._project_by_id(self._active_project_id or "")
+        if proj is None:
+            if self._projects:
+                self._select_project(self._projects[0].get("id", ""))
+            return
+        self._window.set_project_info(
+            {"name": proj.get("name", ""), "last_activity": proj.get("updated_at", "")}
+        )
+        self._window.set_topbar_info(project=proj.get("name", ""))
+        self._window.topbar.set_active_project(proj.get("id", ""))
+
+    def _load_project_data(self, project_id: str) -> None:
+        if self._controller:
+            self._controller.load_plan_progress(project_id)
+            self._controller.load_resume(project_id)
+            self._controller.load_sessions(project_id)
+        if self._api:
+            self._api.fetch_worktrees(project_id)
+            self._api.get_timeline(project_id)
+        if self._tasks_page:
+            self._tasks_page.set_project_id(project_id)
+
+    def _clear_project_screens(self) -> None:
+        """Čisti project-scoped ekrane prije prebacivanja (stale-data zaštita)."""
+        if self._plan_page_view:
+            self._plan_page_view.render(None)
+        if self._current_phase:
+            self._current_phase.render([])
+        if self._status_bar:
+            self._status_bar.render({})
+        if self._sessions_overview:
+            self._sessions_overview.render([])
+        if self._sessions_page_view:
+            self._sessions_page_view.render([])
+        if self._resume_hero:
+            self._resume_hero.render(None)
+        if self._activity_view:
+            self._activity_view.render([])
+        if self._worktrees_page_view:
+            self._worktrees_page_view.render([])
+        if self._attention_panel:
+            self._attention_panel.render({})
+        if self._details_view:
+            self._details_view.render(None)
+        if self._reconciliation_view:
+            self._reconciliation_view.render(None)
+        if self._tasks_page:
+            self._tasks_page.set_project_id(None)
+
+    def _on_project_selected(self, project_id: str) -> None:
+        if project_id and project_id != self._active_project_id:
+            self._select_project(project_id)
+
+    def _on_add_project(self) -> None:
+        if not self._api:
+            return
+        from PySide6.QtWidgets import QFileDialog, QInputDialog
+
+        name, ok = QInputDialog.getText(self._window, "Dodaj projekat", "Ime projekta:")
+        if not ok or not name.strip():
+            return
+        repo_path = QFileDialog.getExistingDirectory(self._window, "Izaberi repo direktorijum")
+        if not repo_path:
+            return
+        self._api.create_project(name.strip(), repo_path)
+
+    def _on_project_created(self, data) -> None:
+        if isinstance(data, dict) and "error" in data:
+            return  # greška već prikazana kroz error_occurred signal
+        if self._controller:
+            self._controller.load_projects()
 
     def _on_plan_progress(self, data: dict) -> None:
         # Plan stranica (puna tabela)
@@ -450,6 +536,7 @@ def create_gui(use_live: bool = True) -> FlowOsGui:
     agents_page = AgentsPage()
     conflicts_page = ConflictsPage()
     projects_page = ProjectsPage()
+    tasks_page = TasksPage()
 
     # Layout — Pregled
     window.set_central_widgets(
@@ -461,7 +548,7 @@ def create_gui(use_live: bool = True) -> FlowOsGui:
     window.set_page_widget("Projekti", _wrap_in_page(projects_page))
     window.set_page_widget("Plan", _wrap_in_page(plan_page_view))
     window.set_page_widget("Sesije", _wrap_in_page(sessions_page_view))
-    window.set_page_widget("Zadaci", _wrap_in_page(TasksPage()))
+    window.set_page_widget("Zadaci", _wrap_in_page(tasks_page))
     window.set_page_widget("Agenti", _wrap_in_page(agents_page))
     window.set_page_widget("Radna stabla", _wrap_in_page(worktrees_page_view))
     window.set_page_widget("Konflikti", _wrap_in_page(conflicts_page))
@@ -503,6 +590,7 @@ def create_gui(use_live: bool = True) -> FlowOsGui:
             "agents_page": agents_page,
             "conflicts_page": conflicts_page,
             "projects_page": projects_page,
+            "tasks_page": tasks_page,
             "details": details_view,
         },
     )

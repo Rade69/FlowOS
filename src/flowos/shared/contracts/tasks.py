@@ -92,6 +92,8 @@ class TaskResponse(BaseModel):
     description: str | None
     status: str
     priority: str
+    # FLOW-1202A: eksplicitno polje — GUI mora razlikovati linked od unassigned.
+    plan_item_id: str | None = None
     created_at: datetime
     updated_at: datetime | None
     done_at: datetime | None

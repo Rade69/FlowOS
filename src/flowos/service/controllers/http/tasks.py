@@ -25,7 +25,7 @@ def get_session(request: Request) -> Session:  # type: ignore[misc]  # FastAPI g
 
 
 def _task_to_response(t) -> TaskResponse:
-    return TaskResponse(  # type: ignore[call-arg]
+    return TaskResponse(
         id=t.id,
         project_id=t.project_id,
         title=t.title,

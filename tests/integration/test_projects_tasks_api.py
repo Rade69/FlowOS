@@ -262,3 +262,65 @@ class TestTasksAPI:
 
         resp = client.get(f"/tasks/{tid}")
         assert resp.status_code == 404
+
+    def test_t1_unassigned_task_returns_plan_item_id_null(
+        self, client: TestClient, project_id: str
+    ):
+        """FLOW-1202A T1: Task bez PlanItem veze mora eksplicitno vratiti null."""
+        client.post("/tasks", json={"project_id": project_id, "title": "Unassigned"})
+        resp = client.get(f"/tasks?project_id={project_id}")
+        assert resp.status_code == 200
+        tasks = resp.json()
+        assert len(tasks) == 1
+        assert "plan_item_id" in tasks[0]
+        assert tasks[0]["plan_item_id"] is None
+
+    def test_t2_linked_task_returns_plan_item_id(self, client: TestClient, project_id: str, engine):
+        """FLOW-1202A T2: Task vezan za PlanItem vraća tačan plan_item_id kroz HTTP."""
+        from flowos.service.services.infrastructure.persistence.models import Task
+        from flowos.service.services.infrastructure.persistence.plan_models import (
+            Plan,
+            PlanItem,
+            PlanPhase,
+        )
+
+        factory = sessionmaker(bind=engine)
+        with factory() as db:
+            plan = Plan(project_id=project_id, title="Plan", status="DRAFT")
+            db.add(plan)
+            db.flush()
+            phase = PlanPhase(plan_id=plan.id, phase_key="F1", title="Faza 1", sequence=1)
+            db.add(phase)
+            db.flush()
+            item = PlanItem(
+                plan_phase_id=phase.id,
+                item_key="FLOW-001",
+                title="Item",
+                sequence=0,
+                risk_level="MEDIUM",
+                status="NOT_STARTED",
+            )
+            db.add(item)
+            db.flush()
+            task = Task(project_id=project_id, title="Linked", plan_item_id=item.id)
+            db.add(task)
+            db.commit()
+            item_id = item.id
+
+        resp = client.get(f"/tasks?project_id={project_id}")
+        assert resp.status_code == 200
+        tasks = resp.json()
+        assert len(tasks) == 1
+        assert tasks[0]["plan_item_id"] == item_id
+
+    def test_t3_project_scoping(self, client: TestClient):
+        """FLOW-1202A T3: GET /tasks?project_id=A vraća samo Task A."""
+        a = client.post("/projects", json={"name": "A", "repo_path": "C:/a"}).json()
+        b = client.post("/projects", json={"name": "B", "repo_path": "C:/b"}).json()
+        client.post("/tasks", json={"project_id": a["id"], "title": "Task A"})
+        client.post("/tasks", json={"project_id": b["id"], "title": "Task B"})
+
+        resp = client.get(f"/tasks?project_id={a['id']}")
+        assert resp.status_code == 200
+        tasks = resp.json()
+        assert [t["title"] for t in tasks] == ["Task A"]

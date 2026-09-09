@@ -58,8 +58,10 @@ Glavni arhitektonski i fazni plan je [FlowOS-novi-detaljan-plan-PySide6.md](./Fl
 - Pretpostaviti da isti filesystem mogu dijeliti Claude Code, Codex, pi i korisnik. Sve postojeće izmjene pripadaju njima dok se ne dokaže suprotno.
 - Ne vraćati, prepisivati, premještati ili uključivati tuđe necommitovane izmjene u vlastiti commit.
 - Pregledati modul koji se mijenja, njegove pozivaoce, ulaze/izlaze, testove i relevantne ugovore.
-- Ako je GitNexus indeksiran za ovaj repo, obavezno pokrenuti upstream impact analizu prije izmjene funkcije, klase ili metode i prijaviti direct callers, procese i nivo rizika korisniku.
-- Ako GitNexus nije dostupan ili repo još nije indeksiran, ručno pronaći reference i eksplicitno prijaviti blast radius prije izmjene simbola.
+- Ako je GitNexus i/ili Graft indeksiran za ovaj repo, obavezno pokrenuti upstream impact analizu prije izmjene funkcije, klase ili metode i prijaviti direct callers, procese i nivo rizika korisniku.
+- Ako nijedan alat nije dostupan ili repo još nije indeksiran, ručno pronaći reference i eksplicitno prijaviti blast radius prije izmjene simbola.
+- **Nula callera iz graph alata = UNKNOWN, ne LOW risk.** Oba alata imaju potvrđenu rupu za pozive kroz kompozitni/atributni objekat (`self._api.X()`); nula rezultata traži grep provjeru. Detalji i dokazi: [CLAUDE.md](./CLAUDE.md) §"Code intelligence alati".
+- Ne vjerovati alatovom self-reported "tokens saved" tekstu (potvrđeno nepouzdan); jedini autoritativan izvor potrošnje je native agent usage.
 - Ako je rizik HIGH ili CRITICAL, upozoriti korisnika prije editovanja.
 - Za rename/refactor koristiti graph-aware rename kada je dostupan; ne raditi slijepi globalni find-and-replace.
 - U dijeljenom treeju ponovo pročitati svaki fajl neposredno prije izmjene, naročito aktivne collision fajlove. Ne oslanjati se na keširani sadržaj.
@@ -106,7 +108,7 @@ Korisniku sažeti:
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **FlowOS** (12027 symbols, 17981 relationships, 203 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **FlowOS** (12376 symbols, 18645 relationships, 215 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

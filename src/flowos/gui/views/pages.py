@@ -90,7 +90,7 @@ class TasksPage(QFrame):
 
         lo.addWidget(_lbl("ZADACI", FONT_XL, True))
         self._tree = QTreeWidget()
-        self._tree.setHeaderLabels(["Naziv", "Status", "Prioritet", "Plan stavka"])
+        self._tree.setHeaderLabels(["Naziv", "Status", "Prioritet", "Plan stavka", "Task ID"])
         self._tree.setStyleSheet(
             f"QTreeWidget {{ background: {BG_CARD}; border: 1px solid {BORDER}; border-radius: {RADIUS_MD}px; }}"
             f"QTreeWidget::item {{ padding: {SPACING_SM}px; color: {TEXT_PRIMARY}; }}"
@@ -114,7 +114,8 @@ class TasksPage(QFrame):
                     t.get("title", ""),
                     t.get("status", "—"),
                     t.get("priority", "—"),
-                    t.get("plan_item_id", "—") or "—",
+                    t.get("plan_item_id") or "Nije vezano za plan",
+                    t.get("id", ""),
                 ],
             )
 

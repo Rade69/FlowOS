@@ -84,6 +84,21 @@ class TestGuiApiClientAuthPropagation:
         url = captured[0].url().toString()
         assert "live-token-x" not in url
 
+    def test_tasks_read_uses_project_route_and_context_envelope(self, qapp):
+        """FLOW-1202: Tasks client čuva project/generation uz payload."""
+        client = GuiApiClient(base_url="http://127.0.0.1:9187", token="live-token-x")
+        requests = []
+        received = []
+        client.tasks_received.connect(received.append)
+        client._get = lambda path, callback: requests.append((path, callback))
+
+        client.get_tasks("project-a", generation=7)
+        path, callback = requests[0]
+        callback([{"id": "task-a"}])
+
+        assert path == "/tasks?project_id=project-a"
+        assert received == [("project-a", 7, [{"id": "task-a"}])]
+
 
 class TestMockModeNoAuth:
     def test_mock_gui_has_no_api_client(self, qapp):

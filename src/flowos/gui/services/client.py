@@ -25,6 +25,7 @@ class GuiApiClient(QObject):
     resume_received = Signal(object)
     sessions_received = Signal(object)
     worktrees_received = Signal(object)
+    tasks_received = Signal(object)
     integration_prepared = Signal(object)
     worktree_cleaned = Signal(object)
     plan_item_received = Signal(object)
@@ -186,6 +187,14 @@ class GuiApiClient(QObject):
             lambda data, pid=project_id, gen=generation: self.timeline_received.emit(
                 (pid, gen, data)
             ),
+        )
+
+    # ── Tasks ────────────────────────────────────────────────────────────
+
+    def get_tasks(self, project_id: str, generation: int = 0):
+        self._get(
+            f"/tasks?project_id={project_id}",
+            lambda data, pid=project_id, gen=generation: self.tasks_received.emit((pid, gen, data)),
         )
 
     # ── Agents ──────────────────────────────────────────

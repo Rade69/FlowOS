@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QFileDialog, QInputDialog
 
 from flowos.gui.composition_root import FlowOsGui
 from flowos.gui.views.overview_skeleton import MainWindow
+from flowos.gui.views.pages import TasksPage
 
 PROJECT_A = {"id": "a", "name": "Project A", "repo_path": "C:/a", "updated_at": ""}
 PROJECT_B = {"id": "b", "name": "Project B", "repo_path": "C:/b", "updated_at": ""}
@@ -63,9 +64,11 @@ class SpyApi:
     def __init__(self):
         self.timeline_calls = []
         self.worktrees_calls = []
+        self.tasks_calls = []
         self.created = []
         self.timeline_generations = []
         self.worktrees_generations = []
+        self.tasks_generations = []
 
     def get_timeline(self, pid, generation=0):
         self.timeline_calls.append(pid)
@@ -74,6 +77,10 @@ class SpyApi:
     def fetch_worktrees(self, pid, generation=0):
         self.worktrees_calls.append(pid)
         self.worktrees_generations.append(generation)
+
+    def get_tasks(self, pid, generation=0):
+        self.tasks_calls.append(pid)
+        self.tasks_generations.append(generation)
 
     def create_project(self, name, repo_path):
         self.created.append((name, repo_path))
@@ -357,3 +364,98 @@ def test_t16_plan_import_success_triggers_full_batch(gui_env):
     assert controller.sessions_generations == [2]
     assert api.timeline_generations == [2]
     assert api.worktrees_generations == [2]
+
+
+def test_t17_project_load_requests_tasks_with_batch_generation(gui_env):
+    """FLOW-1202 T5: Tasks read koristi isti project/generation batch."""
+    gui, _controller, api, _views, _window = gui_env
+
+    gui._on_projects([PROJECT_A])
+
+    assert api.tasks_calls == ["a"]
+    assert api.tasks_generations == [1]
+
+
+def test_t18_late_tasks_response_after_switch_is_ignored(gui_env):
+    """FLOW-1202 T6: zakašnjeli A Tasks payload ne smije biti prikazan pod B."""
+    gui, _controller, _api, views, _window = gui_env
+    gui._on_projects([PROJECT_A, PROJECT_B])
+    gui._on_project_selected("b")
+
+    gui._on_tasks(("a", 1, [{"id": "task-a", "title": "Stale A"}]))
+
+    assert views["tasks_page"].renders[-1] == ("project_id", "b")
+
+
+def test_t19_same_project_older_tasks_generation_is_ignored(gui_env):
+    """FLOW-1202 T7: generation 1 ne prepisuje generation 2 istog projekta."""
+    gui, _controller, _api, views, _window = gui_env
+    gui._on_projects([PROJECT_A])
+    gui._load_project_data("a")
+
+    fresh = [{"id": "fresh", "title": "Fresh A"}]
+    gui._on_tasks(("a", 2, fresh))
+    gui._on_tasks(("a", 1, [{"id": "stale", "title": "Stale A"}]))
+
+    assert views["tasks_page"].renders[-1] == fresh
+
+
+def test_t20_project_switch_clears_rendered_tasks(gui_env):
+    """FLOW-1202 T8: stari Task redovi nestaju prije odgovora novog projekta."""
+    gui, _controller, _api, views, _window = gui_env
+    gui._on_projects([PROJECT_A, PROJECT_B])
+    views["tasks_page"].render([{"id": "task-a", "title": "Task A"}])
+
+    gui._on_project_selected("b")
+
+    assert [] in views["tasks_page"].renders
+    assert views["tasks_page"].renders[-1] == ("project_id", "b")
+
+
+def test_t21_tasks_page_renders_backend_identity_and_assignment(qtbot):
+    """FLOW-1202 T9: stvarni TasksPage prikazuje Task contract i unassigned stanje."""
+    page = TasksPage()
+    qtbot.addWidget(page)
+
+    page.render(
+        [
+            {
+                "id": "task-1",
+                "title": "Linked task",
+                "status": "IN_PROGRESS",
+                "priority": "HIGH",
+                "plan_item_id": "plan-1",
+            },
+            {
+                "id": "task-2",
+                "title": "Unassigned task",
+                "status": "OPEN",
+                "priority": "NORMAL",
+                "plan_item_id": None,
+            },
+        ]
+    )
+
+    assert page._tree.topLevelItemCount() == 2
+    linked = page._tree.topLevelItem(0)
+    unassigned = page._tree.topLevelItem(1)
+    assert [linked.text(i) for i in range(5)] == [
+        "Linked task",
+        "IN_PROGRESS",
+        "HIGH",
+        "plan-1",
+        "task-1",
+    ]
+    assert unassigned.text(3) == "Nije vezano za plan"
+    assert unassigned.text(4) == "task-2"
+
+
+def test_t22_tasks_error_payload_is_not_rendered_as_rows(gui_env):
+    """FLOW-1202: transport error envelope nije Tasks kolekcija."""
+    gui, _controller, _api, views, _window = gui_env
+    gui._on_projects([PROJECT_A])
+    renders_before = list(views["tasks_page"].renders)
+
+    gui._on_tasks(("a", 1, {"error": "backend unavailable"}))
+
+    assert views["tasks_page"].renders == renders_before

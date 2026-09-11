@@ -147,6 +147,7 @@ class FlowOsGui:
         if self._api:
             api = self._api
             api.timeline_received.connect(self._on_timeline)
+            api.tasks_received.connect(self._on_tasks)
             api.agents_scanned.connect(self._on_agents_scanned)
             api.projects_received.connect(self._on_projects_page)
             api.project_created.connect(self._on_project_created)
@@ -338,6 +339,8 @@ class FlowOsGui:
 
     def _load_project_data(self, project_id: str) -> None:
         generation = self._begin_generation()
+        if self._tasks_page:
+            self._tasks_page.set_project_id(project_id)
         if self._controller:
             self._controller.load_plan_progress(project_id, generation)
             self._controller.load_resume(project_id, generation)
@@ -345,8 +348,7 @@ class FlowOsGui:
         if self._api:
             self._api.fetch_worktrees(project_id, generation)
             self._api.get_timeline(project_id, generation)
-        if self._tasks_page:
-            self._tasks_page.set_project_id(project_id)
+            self._api.get_tasks(project_id, generation)
 
     def _clear_project_screens(self) -> None:
         """Čisti project-scoped ekrane prije prebacivanja (stale-data zaštita)."""
@@ -373,6 +375,7 @@ class FlowOsGui:
         if self._reconciliation_view:
             self._reconciliation_view.render(None)
         if self._tasks_page:
+            self._tasks_page.render([])
             self._tasks_page.set_project_id(None)
 
     def _on_project_selected(self, project_id: str) -> None:
@@ -497,6 +500,13 @@ class FlowOsGui:
             return  # FLOW-1201: zakašnjeli odgovor (drugi projekat ili starija generacija)
         if self._worktrees_page_view:
             self._worktrees_page_view.render(items)
+
+    def _on_tasks(self, data: tuple) -> None:
+        project_id, generation, items = data
+        if project_id != self._active_project_id or generation != self._active_project_generation:
+            return
+        if self._tasks_page and isinstance(items, list):
+            self._tasks_page.render(items)
 
     def _on_agents_scanned(self, data: dict) -> None:
         if self._agents_page:

@@ -26,9 +26,11 @@ def engine():
         c.execute("PRAGMA foreign_keys=ON;")
         c.close()
 
+    import flowos.service.services.infrastructure.persistence.activity_models  # noqa: F401
     import flowos.service.services.infrastructure.persistence.conflict_models  # noqa: F401
     import flowos.service.services.infrastructure.persistence.models  # noqa: F401
     import flowos.service.services.infrastructure.persistence.plan_models  # noqa: F401
+    import flowos.service.services.infrastructure.persistence.report_models  # noqa: F401
     import flowos.service.services.infrastructure.persistence.resume_models  # noqa: F401
     import flowos.service.services.infrastructure.persistence.worktree_models  # noqa: F401
 
